@@ -1,3 +1,4 @@
+# mermaid demo — safe to revert after PR bot smoke test
 version: 2
 groups:
   release:
