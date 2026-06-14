@@ -61,6 +61,7 @@ Requires [Docker](https://docs.docker.com/get-docker/) and [act](https://github.
 | Cross-repo dispatch tutorial | [docs/tutorials/cross-repo-pipeline.md](docs/tutorials/cross-repo-pipeline.md) |
 | Extended examples | [docs/examples.md](docs/examples.md) |
 | Monorepo development | [docs/development.md](docs/development.md) |
+| Mermaid topology + PR bot | [docs/mermaid-demo.md](docs/mermaid-demo.md) |
 | **Glossary (monorepo contributors)** | [docs/glossary.md](docs/glossary.md) |
 | Publishing actions | [docs/action-repos.md](docs/action-repos.md) |
 | **Migrating to 1.0 (v0.5 deprecations)** | [docs/migration/v0.5.md](docs/migration/v0.5.md) |
