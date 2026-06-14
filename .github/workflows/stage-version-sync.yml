@@ -1,6 +1,7 @@
 name: Version sync
 
 on:
+  workflow_dispatch:
   workflow_call:
     outputs:
       version:

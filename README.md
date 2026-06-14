@@ -1,25 +1,63 @@
 # pipeline-compose
 
-Compile declarative pipeline YAML into ordered GitHub Actions workflows — explicit `needs:` graphs, shared context between stages, and no `workflow_run` chains.
+Define **in what order** your GitHub Actions workflows run. Add one pipeline file and one `run` step — no compile step and no generated workflow to commit.
 
-# Setup
+The action reads your pipeline YAML, dispatches each stage workflow in order, waits for completion, and passes outputs to later stages.
 
-Use **one pipeline file** per repository. pipeline-compose validates your YAML and emits a static reusable workflow you commit to the repo. A small runner workflow checks freshness on PR and runs the pipeline on tags.
+# Usage
 
-**Fixed paths (convention):**
+```yaml
+- uses: aeswibon/pipeline-compose/run@master
+  with:
+    # Path to pipeline YAML (stage order and wiring)
+    pipeline_file: .github/pipelines/pipeline.yml
 
-| Path | You |
-|------|-----|
-| `.github/pipelines/pipeline.yml` | Edit — stage order and wiring |
-| `.github/workflows/pipeline.generated.yml` | Commit — compiled output (do not edit by hand) |
-| `.github/workflows/pipeline.yml` | Copy once from [templates/pipeline-runner.yml](templates/pipeline-runner.yml) |
-| `.github/workflows/stage-*.yml` | Your callable stage workflows |
+    # Git ref for each workflow_dispatch (default: GITHUB_REF)
+    ref: ''
 
-**Steps:**
+    # Token with actions:write to dispatch workflows (default: GITHUB_TOKEN)
+    github_token: ''
+```
 
-1. **Create stage workflows** — each with `on: workflow_call:` only (no tag/push triggers on stages).
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `pipeline_file` | yes | — | Path to pipeline YAML |
+| `ref` | no | `GITHUB_REF` | Ref passed to each stage dispatch |
+| `github_token` | no | `GITHUB_TOKEN` | Token with `actions: write` |
 
-2. **Define the pipeline** — `.github/pipelines/pipeline.yml`:
+| Output | Description |
+|--------|-------------|
+| `results_json` | JSON array of `{ stageId, runId, outputs }` per completed stage |
+
+# Scenarios
+
+## Run ordered workflows on tag push
+
+```yaml
+name: Release
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: aeswibon/pipeline-compose/run@master
+        with:
+          pipeline_file: .github/pipelines/pipeline.yml
+```
+
+Template: [templates/pipeline-run.yml](templates/pipeline-run.yml)
+
+## Define a pipeline file
+
+Create `.github/pipelines/pipeline.yml`:
 
 ```yaml
 name: pipeline
@@ -40,125 +78,39 @@ stages:
       skip_publish: ${{ context.version-sync.skip_publish }}
 ```
 
-3. **Add the runner** — copy [templates/pipeline-runner.yml](templates/pipeline-runner.yml) to `.github/workflows/pipeline.yml`.
-
-4. **Compile and commit** — run the compile action (or CLI) and commit both the pipeline and generated workflow together.
-
-5. **Push a tag** — the runner calls `pipeline.generated.yml`, which runs stages in order via compiled `needs:` edges.
-
-More walkthroughs: [docs/examples.md](docs/examples.md).
-
-# Usage
-
-```yaml
-- uses: aeswibon/pipeline-compose/compile@master
-  with:
-    # Path to canonical pipeline YAML
-    pipeline_file: .github/pipelines/pipeline.yml
-
-    # Write generated workflow to this path
-    output: .github/workflows/pipeline.generated.yml
-
-    # Fail when output exists and differs from compiled result
-    check: 'false'
-
-    # Optional: inline YAML; stages replace file stages
-    pipeline_inline: ''
-```
-
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `pipeline_file` | yes | — | Path to pipeline YAML |
-| `output` | no | — | Write generated workflow to this path |
-| `check` | no | `false` | Fail when `output` is stale vs compiled result |
-| `pipeline_inline` | no | `''` | Inline YAML; `stages` replace file stages |
-
-| Output | Description |
-|--------|-------------|
-| `workflow_path` | Path written when `output` is set |
-| `workflow_yaml` | Generated YAML when `output` is not set |
-
-# Scenarios
-
-## CI freshness check on pull request
-
-Add to your runner or existing CI workflow:
-
-```yaml
-- uses: actions/checkout@v6
-- uses: aeswibon/pipeline-compose/compile@master
-  with:
-    pipeline_file: .github/pipelines/pipeline.yml
-    output: .github/workflows/pipeline.generated.yml
-    check: "true"
-```
-
-Fails the job if someone changed the pipeline but forgot to recompile and commit `pipeline.generated.yml`.
-
-## Run pipeline on tag push
-
-Use the [runner template](templates/pipeline-runner.yml). On `v*` tag push, the `run-pipeline` job calls the committed generated workflow:
-
-```yaml
-run-pipeline:
-  if: startsWith(github.ref, 'refs/tags/v')
-  uses: ./.github/workflows/pipeline.generated.yml
-  secrets: inherit
-```
+Each stage `workflow` path must point at an existing workflow file in your repo.
 
 ## Pass outputs between stages
 
-In pipeline YAML:
+Reference a prior stage's job outputs in later stage inputs:
 
 ```yaml
 inputs:
   version: ${{ context.version-sync.version }}
 ```
 
-Compiles to:
+At runtime the action resolves these from the completed stage's outputs.
 
-```yaml
-with:
-  version: ${{ needs.version-sync.outputs.version }}
-```
-
-## Conditional stage
+## Skip a stage conditionally
 
 ```yaml
 stages:
-  - id: version-sync
-    workflow: .github/workflows/stage-version-sync.yml
+  - id: deploy
+    workflow: .github/workflows/deploy.yml
     when: startsWith(github.ref, 'refs/tags/v')
 ```
 
-`when:` becomes job `if:` in the generated workflow.
+Stages with a false `when` expression are not dispatched.
 
-## Inline override (experiments)
+## Prepare stage workflows
 
-```yaml
-- uses: aeswibon/pipeline-compose/compile@master
-  with:
-    pipeline_file: .github/pipelines/pipeline.yml
-    pipeline_inline: |
-      stages:
-        - id: release-publish
-          workflow: .github/workflows/stage-release-publish.yml
-          inputs:
-            version: "0.0.0"
-            skip_publish: "true"
-    output: /tmp/experiment.generated.yml
-```
+Each stage workflow must include `workflow_dispatch`. If downstream stages need values, declare matching `workflow_dispatch` inputs.
+
+Stage jobs must expose outputs listed under `outputs` in the pipeline file. See [docs/examples.md](docs/examples.md) for full stage contracts and troubleshooting.
 
 # Recommended permissions
 
-Compile-only check:
-
-```yaml
-permissions:
-  contents: read
-```
-
-When stages push commits, retag, create releases, or dispatch workflows:
+When the run action dispatches other workflows in the same repository:
 
 ```yaml
 permissions:
@@ -173,20 +125,6 @@ permissions:
 | `@master` | Latest on the default branch |
 | `@v1` | After tag `v1` is published on this repository |
 
-Pin a release tag when you want stable behavior:
-
-```bash
-git tag v1 && git push origin v1
-```
-
-# See also
-
-| Doc | Contents |
-|-----|----------|
-| [docs/examples.md](docs/examples.md) | Multi-stage deploy, stage contracts, CLI, troubleshooting |
-| [docs/development.md](docs/development.md) | Building and testing pipeline-compose locally |
-| [schema/pipeline-v1.schema.json](schema/pipeline-v1.schema.json) | Pipeline YAML schema |
-
 # License
 
-MIT
+The scripts and documentation in this project are released under the [MIT License](LICENSE)

@@ -37,31 +37,14 @@ jobs:
           pnpm exec tsx bin/pipeline-compose.ts compile
           .github/pipelines/pipeline.yml
           -o /tmp/cli-out.yml
-      - run: grep -q 'workflow_call' /tmp/cli-out.yml
+          --compile-action ./compile
+      - run: grep -q 'compile-check' /tmp/cli-out.yml
       - uses: ./compile
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           output: /tmp/action-out.yml
+          compile_action: ./compile
       - run: diff /tmp/cli-out.yml /tmp/action-out.yml
-
-  compile-pipeline-freshness:
-    name: Pipeline freshness
-    runs-on: ubuntu-latest
-    needs: unit-tests
-    steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run bundle
-      - uses: ./compile
-        with:
-          pipeline_file: .github/pipelines/pipeline.yml
-          output: .github/workflows/pipeline.generated.yml
-          check: 'true'
 
   workflow-lint:
     name: Workflow lint

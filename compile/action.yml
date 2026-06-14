@@ -9,7 +9,16 @@ inputs:
     required: false
     default: ''
   output:
-    description: Output path for generated workflow
+    description: Output path for generated workflow (default .github/workflows/pipeline.yml)
+    required: false
+  workflow_output:
+    description: Path embedded in compile-check job (defaults to output)
+    required: false
+  compile_action:
+    description: Compile action ref for compile-check job (default aeswibon/pipeline-compose/compile@master)
+    required: false
+  default_branch:
+    description: Default branch in generated on.push.branches (default master)
     required: false
   check:
     description: Fail if output exists and differs from compiled result

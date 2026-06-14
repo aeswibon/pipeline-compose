@@ -10,12 +10,20 @@ async function run(): Promise<void> {
   const pipelineInline = core.getInput('pipeline_inline') || '';
   const outputPath = core.getInput('output') || '';
   const check = core.getInput('check') === 'true';
+  const workflowOutput = core.getInput('workflow_output') || undefined;
+  const compileAction = core.getInput('compile_action') || undefined;
+  const defaultBranch = core.getInput('default_branch') || undefined;
 
   const fileYaml = fs.readFileSync(pipelineFile, 'utf8');
   const pipeline = validatePipeline(
     loadPipeline({ fileYaml, inlineYaml: pipelineInline }),
   );
-  const generated = generateWorkflow(pipeline);
+  const generated = generateWorkflow(pipeline, {
+    pipelineFile,
+    workflowOutput: workflowOutput || outputPath || undefined,
+    compileAction,
+    defaultBranch,
+  });
 
   if (check) {
     if (!outputPath) {
@@ -28,7 +36,7 @@ async function run(): Promise<void> {
     const existing = fs.readFileSync(outputPath, 'utf8');
     if (existing !== generated) {
       core.setFailed(
-        `Generated workflow is stale. Run: pnpm exec pipeline-compose compile ${pipelineFile} -o ${outputPath}`,
+        `Generated workflow is stale. Run: pipeline-compose compile ${pipelineFile} -o ${outputPath}`,
       );
       return;
     }

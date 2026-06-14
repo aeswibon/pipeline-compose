@@ -36982,7 +36982,7 @@ __webpack_unused_export__ = parser.Parser;
 exports.qg = publicApi.parse;
 __webpack_unused_export__ = publicApi.parseAllDocuments;
 __webpack_unused_export__ = publicApi.parseDocument;
-exports.As = publicApi.stringify;
+__webpack_unused_export__ = publicApi.stringify;
 __webpack_unused_export__ = visit.visit;
 __webpack_unused_export__ = visit.visitAsync;
 
@@ -42982,8 +42982,6 @@ var __webpack_exports__ = {};
 var core = __nccwpck_require__(6966);
 ;// CONCATENATED MODULE: external "node:fs"
 const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
-;// CONCATENATED MODULE: external "node:path"
-const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 // EXTERNAL MODULE: ./node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/dist/index.js
 var dist = __nccwpck_require__(84);
 ;// CONCATENATED MODULE: ./src/compile/parser.ts
@@ -43006,6 +43004,8 @@ var ajv = __nccwpck_require__(4547);
 var ajv_default = /*#__PURE__*/__nccwpck_require__.n(ajv);
 ;// CONCATENATED MODULE: external "node:url"
 const external_node_url_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:url");
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 ;// CONCATENATED MODULE: ./src/compile/topo-sort.ts
 function sortStages(stages) {
     const byId = new Map(stages.map((s) => [s.id, s]));
@@ -43070,164 +43070,242 @@ function validatePipeline(pipeline) {
     return { ...pipeline, stages: sortStages(pipeline.stages) };
 }
 
-;// CONCATENATED MODULE: ./src/compile/codegen.ts
-
-const DEFAULT_WORKFLOW_OUTPUT = '.github/workflows/pipeline.yml';
-const DEFAULT_COMPILE_ACTION = 'aeswibon/pipeline-compose/compile@master';
-const DEFAULT_BRANCH = 'master';
-const DEFAULT_TAG_PREFIX = 'v';
-function normalizeWorkflowPath(workflow) {
-    if (workflow.startsWith('./')) {
-        return workflow;
+;// CONCATENATED MODULE: ./src/run/github.ts
+class GitHubActionsClient {
+    token;
+    owner;
+    repo;
+    apiUrl;
+    constructor(token, owner, repo, apiUrl = process.env.GITHUB_API_URL ?? 'https://api.github.com') {
+        this.token = token;
+        this.owner = owner;
+        this.repo = repo;
+        this.apiUrl = apiUrl;
     }
-    return `./${workflow}`;
-}
-function resolveInput(value) {
-    return value.replace(/\$\{\{\s*context\.([a-z0-9-]+)\.([a-z0-9_]+)\s*\}\}/gi, (_, stageId, output) => `\${{ needs.${stageId}.outputs.${output} }}`);
-}
-function stageJob(stage) {
-    const job = {
-        uses: normalizeWorkflowPath(stage.workflow),
-        secrets: 'inherit',
-    };
-    if (stage.needs?.length) {
-        job.needs = stage.needs;
+    async request(path, init) {
+        const res = await fetch(`${this.apiUrl}${path}`, {
+            ...init,
+            headers: {
+                Accept: 'application/vnd.github+json',
+                Authorization: `Bearer ${this.token}`,
+                'X-GitHub-Api-Version': '2022-11-28',
+                ...(init?.headers ?? {}),
+            },
+        });
+        if (!res.ok) {
+            const body = await res.text();
+            throw new Error(`GitHub API ${init?.method ?? 'GET'} ${path} failed (${res.status}): ${body}`);
+        }
+        if (res.status === 204) {
+            return undefined;
+        }
+        return (await res.json());
     }
-    if (stage.environment) {
-        job.environment = stage.environment;
+    async getWorkflowByPath(workflowPath) {
+        const normalized = workflowPath.replace(/^\.\//, '');
+        const data = await this.request(`/repos/${this.owner}/${this.repo}/actions/workflows?per_page=100`);
+        const match = data.workflows.find((w) => w.path === normalized || w.path.endsWith(`/${normalized}`));
+        if (!match) {
+            throw new Error(`Workflow not found: ${workflowPath}`);
+        }
+        return match;
     }
-    if (stage.inputs && Object.keys(stage.inputs).length > 0) {
-        job.with = Object.fromEntries(Object.entries(stage.inputs).map(([k, v]) => [k, resolveInput(v)]));
-    }
-    return job;
-}
-function isLocalCompileAction(action) {
-    return action.startsWith('./');
-}
-function compileCheckSteps(pipelineFile, workflowOutput, compileAction) {
-    const steps = [{ uses: 'actions/checkout@v6' }];
-    if (isLocalCompileAction(compileAction)) {
-        steps.push({
-            name: 'Verify bundled compile action',
-            run: 'bash scripts/verify-bundles.sh',
+    async dispatchWorkflow(workflowId, ref, inputs) {
+        await this.request(`/repos/${this.owner}/${this.repo}/actions/workflows/${workflowId}/dispatches`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ref: stripRefPrefix(ref), inputs }),
         });
     }
-    steps.push({
-        uses: compileAction,
-        with: {
-            pipeline_file: pipelineFile,
-            output: workflowOutput,
-            check: 'true',
-        },
-    });
-    return steps;
-}
-function stageIf(tagPrefix, when) {
-    const tagGate = `startsWith(github.ref, 'refs/tags/${tagPrefix}')`;
-    if (!when) {
-        return tagGate;
+    async waitForRun(workflowId, ref, notBeforeMs, timeoutMs, pollMs) {
+        const refName = stripRefPrefix(ref);
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+            const data = await this.request(`/repos/${this.owner}/${this.repo}/actions/workflows/${workflowId}/runs?event=workflow_dispatch&per_page=10`);
+            const run = data.workflow_runs.find((candidate) => {
+                const created = Date.parse(candidate.created_at);
+                return created >= notBeforeMs - 5000 && candidate.head_branch === refName;
+            });
+            if (run) {
+                return run;
+            }
+            await sleep(pollMs);
+        }
+        throw new Error(`Timed out waiting for workflow run on ${refName}`);
     }
-    return `${tagGate} && (${when})`;
+    async waitForRunCompletion(runId, timeoutMs, pollMs) {
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+            const run = await this.request(`/repos/${this.owner}/${this.repo}/actions/runs/${runId}`);
+            if (run.status === 'completed') {
+                return run;
+            }
+            await sleep(pollMs);
+        }
+        throw new Error(`Timed out waiting for workflow run ${runId}`);
+    }
+    async listRunJobs(runId) {
+        const data = await this.request(`/repos/${this.owner}/${this.repo}/actions/runs/${runId}/jobs?per_page=100`);
+        return data.jobs;
+    }
 }
-function generateWorkflow(pipeline, opts = {}) {
-    const pipelineFile = opts.pipelineFile ?? `.github/pipelines/${pipeline.name}.yml`;
-    const workflowOutput = opts.workflowOutput ?? DEFAULT_WORKFLOW_OUTPUT;
-    const compileAction = opts.compileAction ?? DEFAULT_COMPILE_ACTION;
-    const defaultBranch = opts.defaultBranch ?? DEFAULT_BRANCH;
-    const tagPrefix = opts.tagPrefix ?? DEFAULT_TAG_PREFIX;
-    const compileCheckIf = `github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/${tagPrefix}')`;
-    const jobs = {
-        'compile-check': {
-            name: 'Compile check',
-            if: compileCheckIf,
-            'runs-on': 'ubuntu-latest',
-            permissions: {
-                contents: 'read',
-            },
-            steps: compileCheckSteps(pipelineFile, workflowOutput, compileAction),
-        },
+function stripRefPrefix(ref) {
+    return ref.replace(/^refs\/heads\//, '').replace(/^refs\/tags\//, '');
+}
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+;// CONCATENATED MODULE: ./src/lib/expressions.ts
+function evaluateExpression(expr, ctx) {
+    const trimmed = expr.trim();
+    const startsWithMatch = trimmed.match(/^startsWith\(\s*([^,]+)\s*,\s*'([^']*)'\s*\)$/);
+    if (startsWithMatch) {
+        const val = resolveRef(startsWithMatch[1].trim(), ctx);
+        return String(val ?? '').startsWith(startsWithMatch[2]);
+    }
+    const eqMatch = trimmed.match(/^context\.([a-z0-9-]+)\.([a-z0-9_]+)\s*==\s*'([^']*)'$/);
+    if (eqMatch) {
+        const stage = ctx.context[eqMatch[1]];
+        return stage?.[eqMatch[2]] === eqMatch[3];
+    }
+    if (trimmed === 'true') {
+        return true;
+    }
+    if (trimmed === 'false') {
+        return false;
+    }
+    throw new Error(`Unsupported expression: ${expr}`);
+}
+function resolveRef(ref, ctx) {
+    const parts = ref.split('.');
+    const root = parts[0];
+    if (root === 'github') {
+        return parts.slice(1).reduce((acc, key) => {
+            if (acc && typeof acc === 'object') {
+                return acc[key];
+            }
+            return undefined;
+        }, ctx.github);
+    }
+    throw new Error(`Unsupported ref: ${ref}`);
+}
+function mergeContext(base, stageId, outputs) {
+    return {
+        ...base,
+        [stageId]: outputs,
     };
+}
+
+;// CONCATENATED MODULE: ./src/run/inputs.ts
+function resolveInputValue(template, context) {
+    return template.replace(/\$\{\{\s*context\.([a-z0-9-]+)\.([a-z0-9_]+)\s*\}\}/gi, (_, stageId, key) => context[stageId]?.[key] ?? '');
+}
+function resolveStageInputs(inputs, context) {
+    if (!inputs) {
+        return {};
+    }
+    return Object.fromEntries(Object.entries(inputs).map(([key, value]) => [
+        key,
+        resolveInputValue(value, context),
+    ]));
+}
+
+;// CONCATENATED MODULE: ./src/run/orchestrator.ts
+
+
+
+function shouldRunStage(stage, ctx) {
+    if (!stage.when) {
+        return true;
+    }
+    return evaluateExpression(stage.when, ctx);
+}
+function collectJobOutputs(jobs, declaredOutputs) {
+    if (!declaredOutputs?.length) {
+        return {};
+    }
+    for (const job of jobs) {
+        if (job.conclusion !== 'success' || !job.outputs) {
+            continue;
+        }
+        if (declaredOutputs.every((key) => job.outputs?.[key] != null)) {
+            return Object.fromEntries(declaredOutputs.map((key) => [key, job.outputs[key]]));
+        }
+    }
+    throw new Error(`Could not find job outputs for keys: ${declaredOutputs.join(', ')}`);
+}
+async function runPipeline(pipeline, client, options) {
+    const timeoutMs = options.timeoutMs ?? 60 * 60 * 1000;
+    const pollMs = options.pollMs ?? 10_000;
+    const results = [];
+    let context = {};
     for (const stage of pipeline.stages) {
-        jobs[stage.id] = {
-            ...stageJob(stage),
-            if: stageIf(tagPrefix, stage.when),
+        const evalCtx = {
+            github: options.github,
+            context: context,
         };
+        if (!shouldRunStage(stage, evalCtx)) {
+            continue;
+        }
+        const workflow = await client.getWorkflowByPath(stage.workflow);
+        const inputs = resolveStageInputs(stage.inputs, context);
+        const dispatchAt = Date.now();
+        await client.dispatchWorkflow(workflow.id, options.ref, inputs);
+        let run = await client.waitForRun(workflow.id, options.ref, dispatchAt, timeoutMs, pollMs);
+        run = await client.waitForRunCompletion(run.id, timeoutMs, pollMs);
+        if (run.conclusion !== 'success') {
+            throw new Error(`Stage "${stage.id}" failed (${workflow.path}, run ${run.id}, conclusion=${run.conclusion})`);
+        }
+        const jobs = await client.listRunJobs(run.id);
+        const outputs = collectJobOutputs(jobs, stage.outputs);
+        context = mergeContext(context, stage.id, outputs);
+        results.push({ stageId: stage.id, runId: run.id, outputs });
     }
-    const doc = {
-        name: 'Pipeline',
-        on: {
-            push: {
-                branches: [defaultBranch],
-                tags: [`${tagPrefix}*`],
-            },
-            pull_request: {},
-        },
-        permissions: {
-            contents: 'write',
-            actions: 'write',
-        },
-        concurrency: {
-            group: 'pipeline-${{ github.ref }}',
-            'cancel-in-progress': false,
-        },
-        jobs,
-    };
-    const header = [
-        '# Generated by pipeline-compose — do not edit manually',
-        `# Source: ${pipelineFile}`,
-        '',
-    ].join('\n');
-    return `${header}${(0,dist/* stringify */.As)(doc)}`;
+    return results;
 }
 
-;// CONCATENATED MODULE: ./src/compile/index.ts
+;// CONCATENATED MODULE: ./src/run/index.ts
 
 
 
 
 
 
+function githubContextFromEnv() {
+    return {
+        ref: process.env.GITHUB_REF ?? '',
+        sha: process.env.GITHUB_SHA ?? '',
+        repository: process.env.GITHUB_REPOSITORY ?? '',
+        event_name: process.env.GITHUB_EVENT_NAME ?? '',
+        workflow: process.env.GITHUB_WORKFLOW ?? '',
+    };
+}
 async function run() {
     const pipelineFile = core.getInput('pipeline_file', { required: true });
-    const pipelineInline = core.getInput('pipeline_inline') || '';
-    const outputPath = core.getInput('output') || '';
-    const check = core.getInput('check') === 'true';
-    const workflowOutput = core.getInput('workflow_output') || undefined;
-    const compileAction = core.getInput('compile_action') || undefined;
-    const defaultBranch = core.getInput('default_branch') || undefined;
+    const ref = core.getInput('ref') || process.env.GITHUB_REF || '';
+    const token = core.getInput('github_token') || process.env.GITHUB_TOKEN || '';
+    const repository = process.env.GITHUB_REPOSITORY ?? '';
+    if (!token) {
+        throw new Error('github_token input or GITHUB_TOKEN env is required');
+    }
+    if (!repository.includes('/')) {
+        throw new Error('GITHUB_REPOSITORY must be set to owner/repo');
+    }
+    if (!ref) {
+        throw new Error('ref input or GITHUB_REF env is required');
+    }
+    const [owner, repo] = repository.split('/');
     const fileYaml = external_node_fs_namespaceObject.readFileSync(pipelineFile, 'utf8');
-    const pipeline = validatePipeline(loadPipeline({ fileYaml, inlineYaml: pipelineInline }));
-    const generated = generateWorkflow(pipeline, {
-        pipelineFile,
-        workflowOutput: workflowOutput || outputPath || undefined,
-        compileAction,
-        defaultBranch,
+    const pipeline = validatePipeline(loadPipeline({ fileYaml }));
+    core.info(`Running pipeline "${pipeline.name}" on ref ${ref}`);
+    const client = new GitHubActionsClient(token, owner, repo);
+    const results = await runPipeline(pipeline, client, {
+        ref,
+        github: githubContextFromEnv(),
     });
-    if (check) {
-        if (!outputPath) {
-            throw new Error('output is required when check=true');
-        }
-        if (!external_node_fs_namespaceObject.existsSync(outputPath)) {
-            core.setFailed(`Missing generated workflow: ${outputPath}`);
-            return;
-        }
-        const existing = external_node_fs_namespaceObject.readFileSync(outputPath, 'utf8');
-        if (existing !== generated) {
-            core.setFailed(`Generated workflow is stale. Run: pipeline-compose compile ${pipelineFile} -o ${outputPath}`);
-            return;
-        }
-        core.info('Generated workflow is up to date.');
-        return;
-    }
-    if (!outputPath) {
-        core.setOutput('workflow_yaml', generated);
-        core.info(generated);
-        return;
-    }
-    external_node_fs_namespaceObject.mkdirSync(external_node_path_namespaceObject.dirname(outputPath), { recursive: true });
-    external_node_fs_namespaceObject.writeFileSync(outputPath, generated);
-    core.setOutput('workflow_path', outputPath);
-    core.info(`Wrote ${outputPath}`);
+    core.setOutput('results_json', JSON.stringify(results));
+    core.info(`Pipeline completed (${results.length} stage(s)).`);
 }
 run().catch((e) => core.setFailed(e instanceof Error ? e.message : String(e)));
 

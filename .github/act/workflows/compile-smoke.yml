@@ -30,4 +30,4 @@ jobs:
           output: /tmp/act-compile-out.yml
 
       - name: Assert generated workflow shape
-        run: grep -q 'workflow_call' /tmp/act-compile-out.yml
+        run: grep -q 'compile-check' /tmp/act-compile-out.yml

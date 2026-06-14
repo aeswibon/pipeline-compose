@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 missing=0
-for path in compile/dist/index.js eval/dist/index.js; do
+for path in compile/dist/index.js eval/dist/index.js run/dist/index.js; do
   if [[ ! -f "$path" ]]; then
     echo "Missing $path" >&2
     missing=1
@@ -18,4 +18,4 @@ if [[ "$missing" -ne 0 ]]; then
   exit 1
 fi
 
-echo "Bundled actions OK (compile/dist, eval/dist)."
+echo "Bundled actions OK (compile/dist, eval/dist, run/dist)."

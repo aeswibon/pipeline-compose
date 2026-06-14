@@ -1,21 +1,23 @@
 # pipeline-compose — usage examples
 
-Extended guide for pipeline YAML, the compile action, runner workflow, and stage contracts. Start with the [README](../README.md) for copy-paste usage.
+Extended guide for the **run** action, pipeline YAML, and stage contracts.
+
+- [README](../README.md) — usage and scenarios
+- [docs/development.md](development.md) — this repository layout and local development
 
 ## Mental model
 
 | Piece | Role |
 |-------|------|
-| **Pipeline YAML** (`.github/pipelines/pipeline.yml`) | Declarative source — stages, order, inputs |
-| **Generated workflow** (`pipeline.generated.yml`) | Static GitHub workflow with `needs:` edges (commit this) |
-| **Runner workflow** (`pipeline.yml`) | Compile check on PR/branch; runs generated graph on tags |
-| **Stage workflows** | Callable-only (`workflow_call`) — never trigger release logic on their own |
+| **Pipeline YAML** | Order file — stages, `needs`, inputs |
+| **Stage workflows** | Your existing workflows + `workflow_dispatch` |
+| **Entry workflow** | Triggers on tag/PR/manual; one `run` step |
 
-pipeline-compose **compiles** the pipeline file into the generated workflow. GitHub Actions runs the generated file, not the pipeline YAML directly.
+No generated workflow. No compile step.
 
 ---
 
-## Example 1 — Two-stage tag release (this repo)
+## Example 1 — Tag release (this repo)
 
 **Pipeline** — `.github/pipelines/pipeline.yml`
 
@@ -37,232 +39,112 @@ stages:
       skip_publish: ${{ context.version-sync.skip_publish }}
 ```
 
-**Compiled output** — `.github/workflows/pipeline.generated.yml` (do not edit by hand)
+**Entry** — `.github/workflows/pipeline.yml`
 
 ```yaml
+on:
+  push:
+    tags: ["v*"]
 jobs:
-  version-sync:
-    uses: ./.github/workflows/stage-version-sync.yml
-    secrets: inherit
-  release-publish:
-    uses: ./.github/workflows/stage-release-publish.yml
-    secrets: inherit
-    needs:
-      - version-sync
-    with:
-      version: ${{ needs.version-sync.outputs.version }}
-      skip_publish: ${{ needs.version-sync.outputs.skip_publish }}
+  run-pipeline:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./run
+        with:
+          pipeline_file: .github/pipelines/pipeline.yml
 ```
 
-**Runner** — `.github/workflows/pipeline.yml` (see [templates/pipeline-runner.yml](../templates/pipeline-runner.yml))
-
-Compile freshness runs on PR and branch push (`compile-check` job). Tag push runs `run-pipeline` only.
-
-**Flow on `git push origin v0.2.0`:**
-
-1. Runner `run-pipeline` job calls committed generated workflow.
-2. `version-sync` updates `package.json`, commits to `master`, retags.
-3. `release-publish` creates the GitHub Release (and may dispatch CI).
+**On `git push origin v0.2.0`:** the run action dispatches `stage-version-sync.yml`, waits, then dispatches `stage-release-publish.yml` with outputs from the first stage.
 
 ---
 
-## Example 2 — Consumer setup from scratch
+## Example 2 — Stage with `workflow_dispatch`
 
-1. **Copy the runner template**
-
-   ```bash
-   cp templates/pipeline-runner.yml .github/workflows/pipeline.yml
-   ```
-
-2. **Create the pipeline file** — `.github/pipelines/pipeline.yml` (see Example 1 or your own stages).
-
-3. **Add stage workflows** — each with `on: workflow_call:` only.
-
-4. **Compile and commit**
-
-   ```bash
-   # using the action locally via npx/tsx, or compile in CI first run
-   pnpm exec tsx bin/pipeline-compose.ts compile .github/pipelines/pipeline.yml \
-     -o .github/workflows/pipeline.generated.yml
-   git add .github/pipelines/pipeline.yml .github/workflows/pipeline.generated.yml
-   ```
-
-5. **Push and tag** — runner handles the rest.
-
-You do **not** need to clone pipeline-compose into your repo. Use `aeswibon/pipeline-compose/compile@master` (or `@v1` after the first release tag is published).
-
----
-
-## Example 3 — Sync → build → deploy
-
-**`.github/pipelines/pipeline.yml`**
-
-```yaml
-name: pipeline
-version: 1
-context:
-  ref: ${{ github.ref }}
-stages:
-  - id: version-sync
-    workflow: .github/workflows/stage-version-sync.yml
-    when: startsWith(github.ref, 'refs/tags/v')
-    outputs:
-      - version
-
-  - id: build
-    workflow: .github/workflows/test-and-build.yml
-    needs:
-      - version-sync
-    inputs:
-      release: "true"
-      version: ${{ context.version-sync.version }}
-    outputs:
-      - image_tag
-
-  - id: deploy
-    workflow: .github/workflows/deploy.yml
-    needs:
-      - build
-    environment: production
-    inputs:
-      image_tag: ${{ context.build.image_tag }}
-```
-
-Compile to `.github/workflows/pipeline.generated.yml`. Use the same runner template; tag push triggers the full graph.
-
----
-
-## Example 4 — Writing a stage workflow
-
-**`.github/workflows/stage-version-sync.yml`**
+Stages must be dispatchable. Dual `workflow_call` + `workflow_dispatch` is fine:
 
 ```yaml
 name: Version sync
 on:
+  workflow_dispatch:
   workflow_call:
     outputs:
       version:
         value: ${{ jobs.version-sync.outputs.version }}
-      skip_publish:
-        value: ${{ jobs.version-sync.outputs.skip_publish }}
 
 jobs:
   version-sync:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.tag.outputs.version }}
-      skip_publish: ${{ steps.git-state.outputs.skip_publish }}
+      version: ${{ steps.out.outputs.version }}
     steps:
-      - uses: actions/checkout@v6
-      # resolve tag, sync files, commit + retag ...
+      - id: out
+        run: echo "version=1.0.0" >> "$GITHUB_OUTPUT"
 ```
 
-Rules:
-
-- Expose **outputs** at the `workflow_call` level (map from job outputs).
-- Accept **inputs** under `workflow_call.inputs` when downstream stages need them.
-- Do **not** add tag/branch triggers on stage workflows if they should only run via the pipeline.
-- The generated job passes `secrets: inherit` (pipeline-compose adds this automatically).
-
----
-
-## Example 5 — CLI
-
-```bash
-pnpm exec tsx bin/pipeline-compose.ts compile .github/pipelines/pipeline.yml
-
-pnpm exec tsx bin/pipeline-compose.ts compile .github/pipelines/pipeline.yml \
-  -o .github/workflows/pipeline.generated.yml
-
-pnpm exec tsx bin/pipeline-compose.ts compile .github/pipelines/pipeline.yml \
-  -o .github/workflows/pipeline.generated.yml \
-  --check
-```
-
----
-
-## Example 6 — Compile action
-
-**CI freshness gate:**
+Downstream inputs use `workflow_dispatch` inputs when dispatched by `run`:
 
 ```yaml
-- uses: aeswibon/pipeline-compose/compile@master
-  with:
-    pipeline_file: .github/pipelines/pipeline.yml
-    output: .github/workflows/pipeline.generated.yml
-    check: "true"
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: true
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Release ${{ inputs.version }}"
 ```
 
-**Inline override:**
+---
+
+## Example 3 — Context wiring
+
+| Pipeline source | Resolved at runtime |
+|-----------------|---------------------|
+| `${{ context.version-sync.version }}` | Output from `version-sync` stage job |
+| `${{ context.build.image_tag }}` | Output from `build` stage job |
+
+---
+
+## Example 4 — Conditional stage
 
 ```yaml
-- uses: aeswibon/pipeline-compose/compile@master
-  with:
-    pipeline_file: .github/pipelines/pipeline.yml
-    pipeline_inline: |
-      stages:
-        - id: release-publish
-          workflow: .github/workflows/stage-release-publish.yml
-          inputs:
-            version: "0.0.0"
-            skip_publish: "true"
-    output: /tmp/experiment.generated.yml
+stages:
+  - id: deploy
+    workflow: .github/workflows/deploy.yml
+    when: startsWith(github.ref, 'refs/tags/v')
 ```
 
-When `pipeline_inline` is set, its `stages` list **replaces** the file's stages. Top-level `context` keys **shallow-merge** with the file.
+Skipped stages are not dispatched.
 
 ---
 
-## Example 7 — Context wiring
-
-| Pipeline source | Compiled |
-|-----------------|----------|
-| `${{ context.version-sync.version }}` | `${{ needs.version-sync.outputs.version }}` |
-| `${{ context.build.image_tag }}` | `${{ needs.build.outputs.image_tag }}` |
-
----
-
-## Example 8 — Recommended repo layout
+## Example 5 — Repo layout
 
 ```text
 .github/
   pipelines/
-    pipeline.yml               # canonical pipeline (edit this)
+    pipeline.yml       # edit this (order only)
   workflows/
-    pipeline.yml               # runner (copy from templates/)
-    pipeline.generated.yml     # compiled graph (commit; CI checks freshness)
-    stage-version-sync.yml     # callable stage
-    stage-release-publish.yml  # callable stage
-    ci.yml                     # optional: your own tests (separate from runner)
+    release.yml        # entry: one run step (or use pipeline.yml)
+    stage-sync.yml
+    stage-build.yml
+    ci.yml
 templates/
-  pipeline-runner.yml          # copy-paste starter for consumers
+  pipeline-run.yml     # copy-paste entry workflow
 ```
-
-**Edit flow:**
-
-1. Change `.github/pipelines/pipeline.yml` or a stage workflow.
-2. Run compile (CLI or action).
-3. Commit pipeline + generated workflow together.
-4. Runner `compile-check` / CI `--check` prevents drift.
-
----
-
-## Example 9 — Local testing
-
-```bash
-pnpm install
-pnpm test
-pnpm run build
-pnpm run lint:workflows
-
-pnpm exec tsx bin/pipeline-compose.ts compile .github/pipelines/pipeline.yml \
-  -o /tmp/out.yml && cat /tmp/out.yml
-
-export ACT_DOCKER_SOCKET="${HOME}/.orbstack/run/docker.sock"
-pnpm run act:compile
-```
-
-See [.github/act/README.md](../.github/act/README.md).
 
 ---
 
@@ -270,18 +152,22 @@ See [.github/act/README.md](../.github/act/README.md).
 
 | Symptom | Likely cause |
 |---------|----------------|
-| Stage runs on its own when you push a tag | Stage workflow has `push: tags` — remove it; only the runner should listen for tags. |
-| `needs.X.outputs.Y` empty | Stage workflow missing `workflow_call.outputs`, or upstream job did not set job outputs. |
-| CI fails "Stale generated workflow" | Recompile and commit `pipeline.generated.yml` after editing the pipeline. |
-| YAML parse error on generated `name:` | Recompile with current pipeline-compose (emitter quotes automatically). |
-| `context.foo.bar` not rewritten | Typo in stage id or output name; must match an earlier stage's `id` and declared `outputs`. |
+| `Workflow not found` | Wrong `workflow` path in pipeline YAML |
+| `Could not find job outputs` | Stage job did not set outputs listed in pipeline `outputs:` |
+| Stage fails immediately | Missing `workflow_dispatch` on stage workflow |
+| `403` on dispatch | Missing `actions: write` on the entry job |
+| Wrong ref in stage | Pass `ref:` to `run` or dispatch from the intended tag event |
+
+---
+
+## Optional: compile action
+
+[`compile/`](../../compile/action.yml) emits a static reusable workflow for advanced users who want native GitHub `needs:` graphs and are OK committing generated YAML. Not required for normal use.
 
 ---
 
 ## Related
 
-- [README](../README.md) — setup and compile action usage
-- [docs/development.md](development.md) — local development on pipeline-compose
-- [pipeline.yml](../.github/pipelines/pipeline.yml) — live dogfood example
-- [pipeline-runner template](../templates/pipeline-runner.yml)
-- [pipeline v1 schema](../schema/pipeline-v1.schema.json)
+- [README](../README.md)
+- [docs/development.md](development.md)
+- [schema/pipeline-v1.schema.json](../schema/pipeline-v1.schema.json)

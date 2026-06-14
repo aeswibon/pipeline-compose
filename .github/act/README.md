@@ -49,7 +49,7 @@ These use `workflow_dispatch` only — they do not run on push/PR to GitHub.
 |------|---------|
 | `.github/act/workflow-dispatch-compile.json` | Inputs for compile smoke |
 
-Expected: compile smoke writes `/tmp/act-compile-out.yml` with `workflow_call` and stage jobs.
+Expected: compile smoke writes `/tmp/act-compile-out.yml` with `compile-check` and stage jobs.
 
 ## Guardrails
 
