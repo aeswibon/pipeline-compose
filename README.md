@@ -31,8 +31,8 @@ stage-version-sync  →  stage-release-publish
 |-------|------|----------|
 | Pipeline source | `.github/pipelines/*.yml` | — |
 | Generated graph | `*.generated.yml` | `workflow_call` only |
-| Entry workflow | e.g. `tag-release.yml` | tag push, dispatch, … |
-| Stage workflows | e.g. `stage-*.yml` | `workflow_call` only |
+| Entry workflow | `tag-release.yml` | tag push only |
+| Stage workflows | `stage-*.yml` | `workflow_call` only (no tag/push triggers) |
 
 Stage workflows should **not** listen for tags or pushes directly. The entry workflow is the only front door; stages run when the compiled graph calls them.
 
@@ -102,9 +102,10 @@ git tag v0.2.0 && git push origin v0.2.0
 
 | What runs | Purpose |
 |-----------|---------|
-| `tag-release.yml` | Compiles pipeline, then runs generated graph on tag push |
+| `tag-release.yml` | Tag push → calls committed generated pipeline |
 | `version-sync` stage | Sync `package.json`, commit to `master`, move tag |
 | `release-publish` stage | Create GitHub Release; dispatch CI if already synced |
+| `ci.yml` | Compile freshness check (`check: true`) on PR/master |
 
 ## Actions & packages
 

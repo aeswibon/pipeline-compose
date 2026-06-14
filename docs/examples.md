@@ -64,14 +64,12 @@ on:
   push:
     tags: ["v*"]
 jobs:
-  compile-tag-release-pipeline:
-    # ... compile action verifies / regenerates ...
   run-tag-release-pipeline:
-    needs: compile-tag-release-pipeline
-    if: startsWith(github.ref, 'refs/tags/v')
     uses: ./.github/workflows/tag-release.generated.yml
     secrets: inherit
 ```
+
+Compile + freshness check run in **CI** (`compile-tag-release-freshness`), not on tag push.
 
 **Flow on `git push origin v0.2.0`:**
 

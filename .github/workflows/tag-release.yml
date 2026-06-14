@@ -1,17 +1,8 @@
 name: Tag release
 
 on:
-  workflow_dispatch:
   push:
-    branches: [master]
     tags: ["v*"]
-    paths:
-      - ".github/pipelines/**"
-      - ".github/workflows/stage-version-sync.yml"
-      - ".github/workflows/stage-release-publish.yml"
-      - "schema/**"
-      - "src/compile/**"
-      - "compile/**"
 
 permissions:
   contents: write
@@ -22,44 +13,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  compile-tag-release-pipeline:
-    name: Compile tag-release pipeline
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
-      startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - run: pnpm run bundle
-
-      - name: Compile pipeline with compile action
-        uses: ./compile
-        with:
-          pipeline_file: .github/pipelines/tag-release.yml
-          output: .github/workflows/tag-release.generated.yml
-
-      - name: Verify committed generated workflow is fresh
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        uses: ./compile
-        with:
-          pipeline_file: .github/pipelines/tag-release.yml
-          output: .github/workflows/tag-release.generated.yml
-          check: "true"
-
   run-tag-release-pipeline:
     name: Run tag-release pipeline
-    needs: compile-tag-release-pipeline
-    if: startsWith(github.ref, 'refs/tags/v')
     uses: ./.github/workflows/tag-release.generated.yml
     secrets: inherit

@@ -1,8 +1,5 @@
 name: Version sync
 
-# Callable stage only. Invoked by tag-release.generated.yml via tag-release.yml.
-# Do not add push, tag, or workflow_dispatch triggers here.
-
 on:
   workflow_call:
     outputs:
