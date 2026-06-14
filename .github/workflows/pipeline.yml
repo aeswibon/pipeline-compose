@@ -25,3 +25,4 @@ jobs:
       - uses: ./run
         with:
           pipeline_file: .github/pipelines/pipeline.yml
+          github_token: ${{ github.token }}

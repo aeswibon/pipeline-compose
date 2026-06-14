@@ -23,7 +23,7 @@ The action reads your pipeline YAML, dispatches each stage workflow in order, wa
 |-------|----------|---------|-------------|
 | `pipeline_file` | yes | — | Path to pipeline YAML |
 | `ref` | no | `GITHUB_REF` | Ref passed to each stage dispatch |
-| `github_token` | no | `GITHUB_TOKEN` | Token with `actions: write` |
+| `github_token` | no | `github.token` in workflow | Token with `actions: write` |
 
 | Output | Description |
 |--------|-------------|
@@ -51,6 +51,7 @@ jobs:
       - uses: aeswibon/pipeline-compose/run@master
         with:
           pipeline_file: .github/pipelines/pipeline.yml
+          github_token: ${{ github.token }}
 ```
 
 Template: [templates/pipeline-run.yml](templates/pipeline-run.yml)
@@ -122,8 +123,8 @@ permissions:
 
 | Ref | When to use |
 |-----|-------------|
+| `@v0.1.0` | Released tag |
 | `@master` | Latest on the default branch |
-| `@v1` | After tag `v1` is published on this repository |
 
 # License
 
