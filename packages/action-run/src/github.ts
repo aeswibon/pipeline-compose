@@ -237,6 +237,10 @@ export class GitHubActionsClient {
 
     throw new Error(`Timed out waiting for artifact ${name} on run ${runId}`);
   }
+
+  withRepo(owner: string, repo: string): GitHubActionsClient {
+    return new GitHubActionsClient(this.token, owner, repo, this.apiUrl);
+  }
 }
 
 export function stripRefPrefix(ref: string): string {

@@ -1,11 +1,13 @@
 import type { Pipeline, PipelineStage } from '@aeswibon/pipeline-compose-core';
-import { evaluateExpression, mergeContext } from '@aeswibon/pipeline-compose-core';
+import { evaluateExpression, mergeContext, parseRepoSlug } from '@aeswibon/pipeline-compose-core';
 import { resolveStageInputs } from './inputs.js';
 import type { GitHubActionsClient, WorkflowJob } from './github.js';
 
 export type OrchestratorOptions = {
   ref: string;
   github: Record<string, unknown>;
+  defaultOwner: string;
+  defaultRepo: string;
   timeoutMs?: number;
   pollMs?: number;
 };
@@ -105,6 +107,33 @@ async function collectStageOutputs(
   );
 }
 
+function clientForStage(
+  cache: Map<string, GitHubActionsClient>,
+  baseClient: GitHubActionsClient,
+  stage: PipelineStage,
+  defaultOwner: string,
+  defaultRepo: string,
+): GitHubActionsClient {
+  if (!stage.repo) {
+    return baseClient;
+  }
+
+  const { owner, repo } = parseRepoSlug(stage.repo);
+  if (owner === defaultOwner && repo === defaultRepo) {
+    return baseClient;
+  }
+
+  const key = `${owner}/${repo}`;
+  const existing = cache.get(key);
+  if (existing) {
+    return existing;
+  }
+
+  const scoped = baseClient.withRepo(owner, repo);
+  cache.set(key, scoped);
+  return scoped;
+}
+
 export async function runPipeline(
   pipeline: Pipeline,
   client: GitHubActionsClient,
@@ -115,6 +144,7 @@ export async function runPipeline(
   const results: StageResult[] = [];
   const skipped = new Set<string>();
   let context: Record<string, Record<string, string>> = {};
+  const repoClients = new Map<string, GitHubActionsClient>();
 
   for (const stage of pipeline.stages) {
     const evalCtx = {
@@ -141,13 +171,21 @@ export async function runPipeline(
       );
     }
 
-    const workflow = await client.getWorkflowByPath(stage.workflow);
+    const stageClient = clientForStage(
+      repoClients,
+      client,
+      stage,
+      options.defaultOwner,
+      options.defaultRepo,
+    );
+
+    const workflow = await stageClient.getWorkflowByPath(stage.workflow);
     const inputs = resolveStageInputs(stage.inputs, context);
     const dispatchAt = Date.now();
 
-    await client.dispatchWorkflow(workflow.id, options.ref, inputs);
+    await stageClient.dispatchWorkflow(workflow.id, options.ref, inputs);
 
-    let run = await client.waitForRun(
+    let run = await stageClient.waitForRun(
       workflow.id,
       options.ref,
       dispatchAt,
@@ -155,7 +193,7 @@ export async function runPipeline(
       pollMs,
     );
 
-    run = await client.waitForRunCompletion(run.id, timeoutMs, pollMs);
+    run = await stageClient.waitForRunCompletion(run.id, timeoutMs, pollMs);
 
     if (run.conclusion !== 'success') {
       throw new Error(
@@ -164,7 +202,7 @@ export async function runPipeline(
     }
 
     const outputs = await collectStageOutputs(
-      client,
+      stageClient,
       run.id,
       stage.id,
       stage.outputs,

@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { ResolvedPipeline, ResolvedStage } from './parser.js';
 import { resolveStageGroup } from './parser.js';
+import { parseRepoSlug } from '../lib/expressions.js';
 
 export type ValidationIssueLevel = 'warn' | 'error';
 
@@ -81,6 +82,23 @@ export function collectPipelineIssues(
           level: 'error',
           code: 'workflow.missing',
           message: `Missing workflow file for stage "${stage.id}": ${stage.workflow}`,
+        });
+      }
+    }
+
+    if (stage.repo) {
+      try {
+        parseRepoSlug(stage.repo);
+        issues.push({
+          level: 'warn',
+          code: 'stage.cross-repo',
+          message: `Stage "${stage.id}" dispatches in ${stage.repo}; github_token must have actions:write on that repository`,
+        });
+      } catch {
+        issues.push({
+          level: 'error',
+          code: 'stage.repo-invalid',
+          message: `Stage "${stage.id}" has invalid repo slug "${stage.repo}" (expected owner/repo)`,
         });
       }
     }
@@ -225,4 +243,27 @@ export function formatValidateReport(report: ValidateReport): string {
 
 export function validateReportExitCode(report: ValidateReport): number {
   return report.issues.some((issue) => issue.level === 'error') ? 1 : 0;
+}
+
+export function serializeValidateReport(report: ValidateReport): string {
+  return JSON.stringify(
+    {
+      ok: validateReportExitCode(report) === 0,
+      pipeline: {
+        name: report.pipeline.name,
+        group: report.pipeline.group,
+        stageCount: report.pipeline.stages.length,
+        stages: report.pipeline.stages.map((stage) => ({
+          id: stage.id,
+          workflow: stage.workflow,
+          repo: stage.repo,
+          group: stage.resolvedGroup ?? resolveStageGroup(stage, report.pipeline.group),
+          pipelineKey: stage.pipelineKey,
+        })),
+      },
+      issues: report.issues,
+    },
+    null,
+    2,
+  );
 }

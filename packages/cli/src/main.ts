@@ -6,10 +6,13 @@ import {
   buildValidateReport,
   evaluateExpression,
   formatValidateReport,
+  formatWorkflowSyncPreview,
   generateWorkflow,
   loadPipelineDocumentFromFile,
   loadPipelineDocumentsFromInputs,
+  previewWorkflowSync,
   runWorkflowSync,
+  serializeValidateReport,
   validatePipelineDocument,
   validatePipelineDocuments,
   validateReportExitCode,
@@ -32,14 +35,14 @@ function evalUsage(): never {
 
 function validateUsage(): never {
   console.error(
-    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict]',
+    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict] [--json]',
   );
   process.exit(1);
 }
 
 function syncUsage(): never {
   console.error(
-    'Usage: pipeline-compose sync <pipeline.yml|pipeline-dir> [--repo-root <path>] [--check]',
+    'Usage: pipeline-compose sync <pipeline.yml|pipeline-dir> [--repo-root <path>] [--check] [--dry-run]',
   );
   process.exit(1);
 }
@@ -174,6 +177,7 @@ function runValidate(args: string[]): void {
   let repoRoot = '';
   let workflows = false;
   let strict = false;
+  let json = false;
   const positional: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -183,6 +187,8 @@ function runValidate(args: string[]): void {
       workflows = true;
     } else if (args[i] === '--strict') {
       strict = true;
+    } else if (args[i] === '--json') {
+      json = true;
     } else {
       positional.push(args[i]);
     }
@@ -201,13 +207,14 @@ function runValidate(args: string[]): void {
     strict,
   });
 
-  console.log(formatValidateReport(report));
+  console.log(json ? serializeValidateReport(report) : formatValidateReport(report));
   process.exit(validateReportExitCode(report));
 }
 
 function runSync(args: string[]): void {
   let repoRoot = '';
   let check = false;
+  let dryRun = false;
   const positional: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -215,6 +222,8 @@ function runSync(args: string[]): void {
       repoRoot = args[++i] ?? '';
     } else if (args[i] === '--check') {
       check = true;
+    } else if (args[i] === '--dry-run') {
+      dryRun = true;
     } else {
       positional.push(args[i]);
     }
@@ -228,6 +237,11 @@ function runSync(args: string[]): void {
   const resolvedRoot = resolveRepoRoot(repoRoot || undefined);
   const pipeline = loadResolvedPipeline(target);
   const plan = buildSyncPlan(pipeline, resolvedRoot);
+
+  if (dryRun) {
+    console.log(formatWorkflowSyncPreview(previewWorkflowSync(plan, resolvedRoot)));
+    return;
+  }
 
   try {
     const result = runWorkflowSync(plan, resolvedRoot, check);

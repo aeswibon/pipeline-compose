@@ -41,6 +41,8 @@ pnpm install
 | `pnpm run eval` | CLI eval (`--expression`, `--context`, `--github`) |
 | `pnpm run validate` | Validate pipeline groups, stages, and optional workflow hygiene |
 | `pnpm run sync:workflows` | Sync `workflows/{group}/` sources into flat `.github/workflows/` targets |
+| `pnpm run validate … --json` | Machine-readable validate report (for CI dashboards) |
+| `pnpm run sync:workflows … --dry-run` | Preview create/update actions without writing files |
 | `pnpm run bundle:actions` | Bundle Node actions with `@vercel/ncc` into `packages/action-*/dist` |
 | `pnpm run publish:actions [tag]` | Bundle and push action packages locally (CI does this on tag push) |
 | `pnpm run lint:workflows` | actionlint + yamllint |
@@ -69,9 +71,11 @@ Sources for sync live at `workflows/{group}/{stage-id}.yml` by convention (overr
 Supported by run and eval (subset of GitHub Actions syntax):
 
 - `startsWith(github.ref, 'refs/tags/v')`
+- `contains(github.ref, 'refs/tags/')`
 - `github.ref == 'refs/heads/master'`
 - `context.<stage>.<output> == 'value'`
 - `true` / `false`
+- Combine with `&&` and `||` (top-level only; no nested parentheses)
 
 Skipped stages also skip transitive dependents in the run orchestrator.
 
@@ -99,6 +103,8 @@ git tag v0.3.1 && git push origin v0.3.1
 Tag push runs `.github/workflows/release.yml`: **ci → version-sync → release-publish → publish-actions**.
 
 Version sync updates all workspace `package.json` files and `@v` refs in action README usage blocks (`packages/action-*/README.md`). It does **not** bump pins in `examples/` or tutorials — those stay on stable demo versions.
+
+**Do not bump `package.json` locally** for a new release. Merge changes with the current release version (e.g. `0.3.2`); on `git push origin v0.3.3`, CI version-sync rewrites all workspace versions and retags.
 
 Configure repository secret `ACTION_PUBLISH_TOKEN` before the first tag release (see [docs/action-repos.md](action-repos.md)).
 

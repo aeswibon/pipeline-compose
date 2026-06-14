@@ -18,6 +18,13 @@ export interface WorkflowSyncResult {
   missingSources: string[];
 }
 
+export interface WorkflowSyncPreview {
+  create: string[];
+  update: string[];
+  upToDate: string[];
+  missingSources: string[];
+}
+
 function defaultSourcePath(
   repoRoot: string,
   group: string | undefined,
@@ -78,6 +85,61 @@ export function buildSyncPlan(
 
 function ensureParentDir(filePath: string): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
+}
+
+export function previewWorkflowSync(
+  plan: WorkflowSyncPlan,
+  repoRoot: string,
+): WorkflowSyncPreview {
+  const create: string[] = [];
+  const update: string[] = [];
+  const upToDate: string[] = [];
+  const missingSources: string[] = [];
+
+  for (const mapping of plan.mappings) {
+    const sourcePath = path.resolve(repoRoot, mapping.from);
+    const targetPath = path.resolve(repoRoot, mapping.to);
+
+    if (!fs.existsSync(sourcePath)) {
+      missingSources.push(mapping.from);
+      continue;
+    }
+
+    const sourceText = fs.readFileSync(sourcePath, 'utf8');
+    if (!fs.existsSync(targetPath)) {
+      create.push(mapping.to);
+      continue;
+    }
+
+    const targetText = fs.readFileSync(targetPath, 'utf8');
+    if (targetText === sourceText) {
+      upToDate.push(mapping.to);
+    } else {
+      update.push(mapping.to);
+    }
+  }
+
+  return { create, update, upToDate, missingSources };
+}
+
+export function formatWorkflowSyncPreview(preview: WorkflowSyncPreview): string {
+  const lines: string[] = [];
+  for (const target of preview.create) {
+    lines.push(`create ${target}`);
+  }
+  for (const target of preview.update) {
+    lines.push(`update ${target}`);
+  }
+  for (const target of preview.upToDate) {
+    lines.push(`up-to-date ${target}`);
+  }
+  for (const source of preview.missingSources) {
+    lines.push(`missing-source ${source}`);
+  }
+  if (lines.length === 0) {
+    lines.push('No workflow sync changes.');
+  }
+  return lines.join('\n');
 }
 
 export function runWorkflowSync(

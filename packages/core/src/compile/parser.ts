@@ -7,6 +7,8 @@ export interface PipelineGroupMeta {
 export interface PipelineStage {
   id: string;
   workflow: string;
+  /** Target repository for cross-repo dispatch (owner/repo). Defaults to GITHUB_REPOSITORY. */
+  repo?: string;
   group?: string;
   when?: string;
   needs?: string[];

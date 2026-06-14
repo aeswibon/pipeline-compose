@@ -108,7 +108,8 @@ Order between pipelines comes from pipeline-level **`needs`**, not from the grou
 | `companion_workflows` | Workflow paths not driven by stages (e.g. native `release.yml`) |
 | `needs` | Other pipeline `name`s — run this pipeline after those (multi-file / v2) |
 | `id` | Stage identifier (used in `needs` and `context.<id>.*`) |
-| `workflow` | Path to a workflow file in **your** repo |
+| `repo` | Optional cross-repo target (`owner/repo`); token must have access |
+| `workflow` | Path to a workflow file in **your** repo (or target repo when `repo` is set) |
 | `needs` (stage) | Prior stage ids within the same pipeline |
 | `inputs` | Passed to `workflow_dispatch` (supports `${{ context.<stage>.<key> }}`) |
 | `outputs` | Keys collected from the stage for downstream `context` |
@@ -121,9 +122,11 @@ Schema: [pipeline-v1.schema.json](https://github.com/aeswibon/pipeline-compose/b
 The run action evaluates `when:` locally before dispatch. Supported forms:
 
 - `startsWith(github.ref, 'refs/tags/v')`
+- `contains(github.ref, 'refs/tags/')`
 - `github.ref == 'refs/heads/master'`
 - `context.<stage>.<output> == 'value'`
 - `true` / `false`
+- `expr1 && expr2` / `expr1 || expr2` (top-level; no nested parentheses)
 
 If a stage is skipped, downstream stages that `needs:` it are skipped too (recorded in `results_json` with `"skipped": true`).
 

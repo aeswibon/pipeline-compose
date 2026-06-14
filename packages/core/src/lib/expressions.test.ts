@@ -25,6 +25,29 @@ describe('evaluateExpression', () => {
     });
     expect(result).toBe(true);
   });
+
+  it('evaluates contains on github.ref', () => {
+    const result = evaluateExpression("contains(github.ref, 'tags/v')", {
+      github: { ref: 'refs/tags/v1.0.0' },
+      context: {},
+    });
+    expect(result).toBe(true);
+  });
+
+  it('evaluates && and || combinations', () => {
+    expect(
+      evaluateExpression("true && false || true", {
+        github: {},
+        context: {},
+      }),
+    ).toBe(true);
+    expect(
+      evaluateExpression("startsWith(github.ref, 'refs/tags/v') && context.ci.passed == 'true'", {
+        github: { ref: 'refs/tags/v1.0.0' },
+        context: { ci: { passed: 'true' } },
+      }),
+    ).toBe(true);
+  });
 });
 
 describe('mergeContext', () => {

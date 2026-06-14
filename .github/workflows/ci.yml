@@ -23,6 +23,9 @@ jobs:
       - run: pnpm run build
       - run: pnpm run test:coverage
       - run: bash scripts/ci/sync-versions-from-tag.test.sh
+      - run: bash scripts/ci/check-workspace-versions.test.sh
+      - run: git fetch --tags --force origin
+      - run: bash scripts/ci/check-workspace-versions.sh
 
   pipeline-validate:
     name: Pipeline validate

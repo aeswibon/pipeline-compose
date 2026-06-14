@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Cross-repo stages** — optional `repo: owner/repo` on stages; run action dispatches with a scoped GitHub client.
+- **Richer `when:`** — `contains()`, `&&`, and `||` on the run/eval path.
+- **CLI** — `validate --json` and `sync --dry-run` preview output.
+- **CI guard** — `check-workspace-versions.sh` ensures package.json versions match the latest release tag (sync still runs on tag push).
+- **Tests** — GitHub API client mocks; sync/validate preview coverage; coverage thresholds raised to 55%.
+
+### Changed
+
+- Workflow sync preview lists `create`, `update`, `up-to-date`, and `missing-source` actions without writing files.
+
 ## [0.3.2] - 2026-06-14
 
 ### Fixed

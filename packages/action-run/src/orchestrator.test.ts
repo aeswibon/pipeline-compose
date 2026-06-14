@@ -3,6 +3,13 @@ import type { Pipeline } from '@aeswibon/pipeline-compose-core';
 import { runPipeline } from './orchestrator.js';
 import type { GitHubActionsClient, WorkflowJob } from './github.js';
 
+const runOptions = {
+  ref: 'refs/tags/v1.0.0',
+  github: { ref: 'refs/tags/v1.0.0' },
+  defaultOwner: 'owner',
+  defaultRepo: 'repo',
+};
+
 function mockClient(handlers: {
   workflows?: Record<string, number>;
 }): GitHubActionsClient {
@@ -50,6 +57,9 @@ function mockClient(handlers: {
       }
       throw new Error(`unexpected artifact stage ${stageId}`);
     }),
+    withRepo: vi.fn(function withRepo(this: GitHubActionsClient) {
+      return this;
+    }),
   } as unknown as GitHubActionsClient;
 }
 
@@ -89,10 +99,7 @@ describe('runPipeline', () => {
       },
     });
 
-    const results = await runPipeline(pipeline, client, {
-      ref: 'refs/tags/v1.0.0',
-      github: { ref: 'refs/tags/v1.0.0' },
-    });
+    const results = await runPipeline(pipeline, client, runOptions);
 
     expect(results).toHaveLength(3);
     expect(client.dispatchWorkflow).toHaveBeenCalledTimes(3);
@@ -114,10 +121,7 @@ describe('runPipeline', () => {
       ],
     };
     const client = mockClient({});
-    const results = await runPipeline(pipelineWithWhen, client, {
-      ref: 'refs/tags/v1.0.0',
-      github: { ref: 'refs/tags/v1.0.0' },
-    });
+    const results = await runPipeline(pipelineWithWhen, client, runOptions);
     expect(results).toHaveLength(1);
     expect(results[0].skipped).toBe(true);
     expect(client.dispatchWorkflow).not.toHaveBeenCalled();
@@ -144,10 +148,7 @@ describe('runPipeline', () => {
       ],
     };
 
-    const results = await runPipeline(pipelineWithWhen, client, {
-      ref: 'refs/tags/v1.0.0',
-      github: { ref: 'refs/tags/v1.0.0' },
-    });
+    const results = await runPipeline(pipelineWithWhen, client, runOptions);
 
     expect(results).toHaveLength(3);
     expect(results.every((result) => result.skipped)).toBe(true);
@@ -171,6 +172,7 @@ describe('runPipeline', () => {
     });
 
     const results = await runPipeline(pipelineWithArtifact, client, {
+      ...runOptions,
       ref: 'refs/tags/v2.0.0',
       github: { ref: 'refs/tags/v2.0.0' },
     });
@@ -205,8 +207,38 @@ describe('runPipeline', () => {
           stages: [{ id: 'ci', workflow: '.github/workflows/ci.yml' }],
         },
         client,
-        { ref: 'refs/tags/v1.0.0', github: { ref: 'refs/tags/v1.0.0' } },
+        runOptions,
       ),
     ).rejects.toThrow(/Stage "ci" failed/);
+  });
+
+  it('uses withRepo for cross-repo stage dispatch', async () => {
+    const remoteClient = mockClient({
+      workflows: { '.github/workflows/remote.yml': 99 },
+    });
+    const client = mockClient({
+      workflows: { '.github/workflows/remote.yml': 99 },
+    });
+    vi.mocked(client.withRepo).mockReturnValue(remoteClient);
+
+    await runPipeline(
+      {
+        name: 'pipeline',
+        version: 1,
+        stages: [
+          {
+            id: 'remote',
+            workflow: '.github/workflows/remote.yml',
+            repo: 'other-org/other-repo',
+          },
+        ],
+      },
+      client,
+      runOptions,
+    );
+
+    expect(client.withRepo).toHaveBeenCalledWith('other-org', 'other-repo');
+    expect(remoteClient.dispatchWorkflow).toHaveBeenCalled();
+    expect(client.dispatchWorkflow).not.toHaveBeenCalled();
   });
 });

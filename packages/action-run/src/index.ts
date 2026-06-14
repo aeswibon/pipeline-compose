@@ -50,6 +50,8 @@ async function run(): Promise<void> {
   const results = await runPipeline(pipeline, client, {
     ref,
     github: githubContextFromEnv(),
+    defaultOwner: owner,
+    defaultRepo: repo,
   });
 
   core.setOutput('results_json', JSON.stringify(results));

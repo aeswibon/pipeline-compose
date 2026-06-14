@@ -38,6 +38,7 @@ export {
   formatPipelineTree,
   formatValidateReport,
   validateReportExitCode,
+  serializeValidateReport,
   workflowMatchesGroupConvention,
 } from './compile/validate-report.js';
 export type {
@@ -47,12 +48,15 @@ export type {
 } from './compile/validate-report.js';
 export {
   buildSyncPlan,
+  formatWorkflowSyncPreview,
   loadSyncConfig,
+  previewWorkflowSync,
   runWorkflowSync,
 } from './compile/sync-workflows.js';
 export type {
   WorkflowSyncMapping,
   WorkflowSyncPlan,
+  WorkflowSyncPreview,
   WorkflowSyncResult,
 } from './compile/sync-workflows.js';
-export { evaluateExpression, mergeContext } from './lib/expressions.js';
+export { evaluateExpression, mergeContext, parseRepoSlug } from './lib/expressions.js';
