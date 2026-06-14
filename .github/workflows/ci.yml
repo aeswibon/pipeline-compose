@@ -40,7 +40,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
-      - run: pnpm run validate .github/pipelines/pipeline.yml --workflows --strict
+      - run: pnpm run validate .github/pipelines/pipeline.yml --repo-root . --workflows --strict
       - run: >-
           pnpm run validate
           examples/run-tag-release/.github/pipelines/pipeline.yml
