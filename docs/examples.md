@@ -60,6 +60,18 @@ jobs:
 
 **On `git push origin v0.2.0`:** the run action dispatches `stage-version-sync.yml`, waits, then dispatches `stage-release-publish.yml` with outputs from the first stage.
 
+### Release notes from the pipeline
+
+`stage-release-publish.yml` does not use bare `--generate-notes`. It runs `scripts/ci/render-release-notes.sh`, which:
+
+1. Extracts the `## [X.Y.Z]` section from `CHANGELOG.md` (Keep a Changelog format)
+2. Appends GitHub's auto-generated commit summary below a `---` divider
+3. Falls back to generated notes only when there is no matching changelog section
+
+Maintain the version section in `CHANGELOG.md` before tagging. On tag push, the release stage publishes those notes automatically.
+
+To pass custom notes through pipeline context instead, add a `release_notes` output from an earlier stage and a `release_notes` input on the publish stage, then write the input to a file and pass it to `gh release create --notes-file`.
+
 ---
 
 ## Example 2 — Stage with `workflow_dispatch`

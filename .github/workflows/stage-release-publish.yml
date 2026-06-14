@@ -38,6 +38,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Render release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: bash scripts/ci/render-release-notes.sh "${VERSION}" release-notes.md
+
       - name: Create release if missing
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -50,7 +56,7 @@ jobs:
           fi
           gh release create "$tag" \
             --title "$tag" \
-            --generate-notes \
+            --notes-file release-notes.md \
             --verify-tag
           echo "Created GitHub release $tag"
 
