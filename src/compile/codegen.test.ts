@@ -25,6 +25,7 @@ describe('generateWorkflow', () => {
     expect(yaml).toContain('needs:');
     expect(yaml).toContain('- sync');
     expect(yaml).toContain('secrets: inherit');
+    expect(yaml).toContain('name: "Pipeline: release"');
     expect(yaml).toContain('needs.sync.outputs.version');
   });
 });

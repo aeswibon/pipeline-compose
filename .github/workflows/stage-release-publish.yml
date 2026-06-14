@@ -1,26 +1,28 @@
-name: Release on tag
+name: Release publish
+
+# Callable stage only. Invoked by tag-release.generated.yml via tag-release.yml.
+# Do not add push, tag, or workflow_dispatch triggers here.
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_call:
+    inputs:
+      version:
+        description: Semver without v prefix
+        type: string
+        required: true
+      skip_publish:
+        description: True when master and tag already had synced version files
+        type: string
+        required: false
+        default: "false"
 
 permissions:
   contents: write
   actions: write
 
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
-  sync:
-    uses: ./.github/workflows/sync-version.yml
-    secrets: inherit
-
-  github-release:
-    name: GitHub Release
-    needs: sync
+  create-github-release:
+    name: Create GitHub release
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -31,7 +33,7 @@ jobs:
       - name: Create release if missing
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ needs.sync.outputs.version }}
+          VERSION: ${{ inputs.version }}
         run: |
           tag="v${VERSION}"
           if gh release view "$tag" >/dev/null 2>&1; then
@@ -44,10 +46,9 @@ jobs:
             --verify-tag
           echo "Created GitHub release $tag"
 
-  ci:
-    name: Trigger CI
-    needs: sync
-    if: needs.sync.outputs.skip_publish == 'true'
+  dispatch-ci:
+    name: Dispatch CI when already synced
+    if: inputs.skip_publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

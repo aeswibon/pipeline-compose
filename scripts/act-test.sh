@@ -39,7 +39,7 @@ case "$TARGET" in
   ci)
     act workflow_dispatch \
       -W .github/act/workflows/test-smoke.yml \
-      -j test \
+      -j unit-tests \
       "${ARCH_ARGS[@]}" \
       "${SOCKET_ARGS[@]}"
     ;;
@@ -48,7 +48,7 @@ case "$TARGET" in
     act workflow_dispatch \
       -W .github/act/workflows/compile-smoke.yml \
       -e .github/act/workflow-dispatch-compile.json \
-      -j compile \
+      -j compile-pipeline \
       "${ARCH_ARGS[@]}" \
       "${SOCKET_ARGS[@]}"
     ;;

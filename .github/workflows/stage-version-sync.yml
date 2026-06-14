@@ -1,31 +1,34 @@
-name: Sync version
+name: Version sync
+
+# Callable stage only. Invoked by tag-release.generated.yml via tag-release.yml.
+# Do not add push, tag, or workflow_dispatch triggers here.
 
 on:
   workflow_call:
     outputs:
       version:
         description: Semver without v prefix
-        value: ${{ jobs.sync.outputs.version }}
+        value: ${{ jobs.version-sync.outputs.version }}
       skip_publish:
         description: True when master and tag already had synced version files
-        value: ${{ jobs.sync.outputs.skip_publish }}
+        value: ${{ jobs.version-sync.outputs.skip_publish }}
 
 permissions:
   contents: write
   actions: write
 
 concurrency:
-  group: sync-version-${{ github.ref }}
+  group: stage-version-sync-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  sync:
-    name: Align version files
+  version-sync:
+    name: Sync version files from tag
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
       version: ${{ steps.tag.outputs.version }}
-      skip_publish: ${{ steps.git_state.outputs.skip_publish }}
+      skip_publish: ${{ steps.git-state.outputs.skip_publish }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -52,7 +55,7 @@ jobs:
         run: bash scripts/ci/sync-versions-from-tag.sh "${{ steps.tag.outputs.version }}"
 
       - name: Detect git release state
-        id: git_state
+        id: git-state
         env:
           VERSION: ${{ steps.tag.outputs.version }}
         run: |
@@ -68,7 +71,7 @@ jobs:
           fi
 
       - name: Publish version sync to master
-        if: steps.git_state.outputs.skip_publish != 'true'
+        if: steps.git-state.outputs.skip_publish != 'true'
         id: publish
         env:
           VERSION: ${{ steps.tag.outputs.version }}

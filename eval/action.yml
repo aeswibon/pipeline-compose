@@ -1,5 +1,5 @@
 name: Evaluate pipeline expression
-description: Evaluate a when: expression against github and context JSON
+description: "Evaluate a when: expression against github and context JSON"
 inputs:
   expression:
     description: Expression to evaluate

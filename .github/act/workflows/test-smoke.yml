@@ -1,11 +1,12 @@
-# Local-only smoke test (act). Not triggered on push/PR — see scripts/act-test.sh
+# Local-only smoke test (act). Not triggered on push/PR. See scripts/act-test.sh.
 name: Act — test smoke
 
 on:
   workflow_dispatch:
 
 jobs:
-  test:
+  unit-tests:
+    name: Unit tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

@@ -13,7 +13,9 @@
     "test:watch": "vitest",
     "compile": "tsx bin/pipeline-compose.ts compile",
     "act:ci": "bash scripts/act-test.sh ci",
-    "act:compile": "bash scripts/act-test.sh compile"
+    "act:compile": "bash scripts/act-test.sh compile",
+    "verify:bundles": "bash scripts/verify-bundles.sh",
+    "lint:workflows": "bash scripts/lint-workflows.sh"
   },
   "packageManager": "pnpm@10.12.1",
   "dependencies": {

@@ -1,5 +1,4 @@
-# Local-only compile smoke (act). Uses committed action bundles — no ncc rebuild.
-# Not triggered on push/PR — see scripts/act-test.sh
+# Local-only compile smoke (act). Uses committed bundles. See scripts/act-test.sh.
 name: Act — compile smoke
 
 on:
@@ -8,14 +7,15 @@ on:
       pipeline_file:
         description: Pipeline YAML path
         required: true
-        default: examples/pipeline-release.yml
+        default: .github/pipelines/tag-release.yml
       pipeline_inline:
         description: Optional inline YAML override
         required: false
         default: ''
 
 jobs:
-  compile:
+  compile-pipeline:
+    name: Compile pipeline
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -27,7 +27,7 @@ jobs:
         with:
           pipeline_file: ${{ inputs.pipeline_file }}
           pipeline_inline: ${{ inputs.pipeline_inline }}
-          output: examples/act-output.generated.yml
+          output: /tmp/act-compile-out.yml
 
       - name: Assert generated workflow shape
-        run: grep -q 'workflow_call' examples/act-output.generated.yml
+        run: grep -q 'workflow_call' /tmp/act-compile-out.yml

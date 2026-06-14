@@ -1,11 +1,13 @@
 name: CI
+
 on:
   push:
     branches: [master]
   pull_request:
 
 jobs:
-  test:
+  unit-tests:
+    name: Unit tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -18,9 +20,10 @@ jobs:
       - run: pnpm test
       - run: pnpm run bundle
 
-  compile-check:
+  compile-action-parity:
+    name: Compile action parity
     runs-on: ubuntu-latest
-    needs: test
+    needs: unit-tests
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
@@ -30,17 +33,21 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run bundle
-      - run: pnpm exec tsx bin/pipeline-compose.ts compile examples/pipeline-release.yml -o /tmp/out.yml
-      - run: grep -q 'workflow_call' /tmp/out.yml
+      - run: >-
+          pnpm exec tsx bin/pipeline-compose.ts compile
+          .github/pipelines/tag-release.yml
+          -o /tmp/cli-out.yml
+      - run: grep -q 'workflow_call' /tmp/cli-out.yml
       - uses: ./compile
         with:
-          pipeline_file: examples/pipeline-release.yml
+          pipeline_file: .github/pipelines/tag-release.yml
           output: /tmp/action-out.yml
-      - run: diff /tmp/out.yml /tmp/action-out.yml
+      - run: diff /tmp/cli-out.yml /tmp/action-out.yml
 
-  compile-stale-check:
+  compile-tag-release-freshness:
+    name: Tag-release pipeline freshness
     runs-on: ubuntu-latest
-    needs: test
+    needs: unit-tests
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
@@ -50,9 +57,21 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run bundle
-      - run: pnpm exec tsx bin/pipeline-compose.ts compile examples/pipeline-release.yml -o examples/release.generated.yml
       - uses: ./compile
         with:
-          pipeline_file: examples/pipeline-release.yml
-          output: examples/release.generated.yml
+          pipeline_file: .github/pipelines/tag-release.yml
+          output: .github/workflows/tag-release.generated.yml
           check: 'true'
+
+  workflow-lint:
+    name: Workflow lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install actionlint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash \
+            | bash
+          sudo mv actionlint /usr/local/bin/
+      - run: pip install yamllint
+      - run: bash scripts/lint-workflows.sh

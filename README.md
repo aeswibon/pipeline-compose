@@ -1,167 +1,147 @@
 # pipeline-compose
 
-Compile declarative pipeline YAML into ordered GitHub Actions reusable-workflow graphs — with shared context and less `workflow_run` glue.
+**Compile declarative pipeline YAML into ordered GitHub Actions workflows** — explicit `needs:` graphs, shared context between stages, and no `workflow_run` chains.
 
-## Why
+Define stages once in `.github/pipelines/*.yml`. pipeline-compose emits a static reusable workflow you commit and call from an entry workflow.
 
-Multi-workflow release pipelines (sync → build → deploy) usually need:
+## The problem
 
-- `workflow_run` chains and API re-checks
-- Duplicated `if` guards in every workflow
+Release pipelines split across multiple workflow files usually accumulate glue:
+
+- `workflow_run` + API polling to detect completion
+- Repeated `if` guards in every workflow
 - Manual `gh workflow run` after retags
+- Re-fetching outputs the previous workflow already had
 
-**pipeline-compose** turns a single pipeline file into a **static generated workflow** with explicit `needs:` edges and compiled input wiring.
+Inside a **single** workflow file, GitHub gives you `needs:` and job outputs. pipeline-compose brings that ergonomics to **multi-workflow** pipelines.
+
+## How it works
+
+```text
+.github/pipelines/tag-release.yml     ← you edit this (stages + wiring)
+           │
+           ▼  compile (CLI or action)
+.github/workflows/tag-release.generated.yml   ← commit this (needs: graph)
+           │
+           ▼  called by entry workflow on tag push
+stage-version-sync  →  stage-release-publish
+```
+
+| Layer | File | Triggers |
+|-------|------|----------|
+| Pipeline source | `.github/pipelines/*.yml` | — |
+| Generated graph | `*.generated.yml` | `workflow_call` only |
+| Entry workflow | e.g. `tag-release.yml` | tag push, dispatch, … |
+| Stage workflows | e.g. `stage-*.yml` | `workflow_call` only |
+
+Stage workflows should **not** listen for tags or pushes directly. The entry workflow is the only front door; stages run when the compiled graph calls them.
 
 ## Quick start
 
-### 1. Define a pipeline (canonical)
+### 1. Define a pipeline
 
 ```yaml
-# .github/pipelines/release.yml
-name: release
+# .github/pipelines/tag-release.yml
+name: tag-release
 version: 1
 stages:
-  - id: sync
-    workflow: .github/workflows/sync-version.yml
-    when: startsWith(github.ref, 'refs/tags/v')
-  - id: build
-    workflow: .github/workflows/test-and-build.yml
-    needs: [sync]
+  - id: version-sync
+    workflow: .github/workflows/stage-version-sync.yml
+    outputs: [version, skip_publish]
+
+  - id: release-publish
+    workflow: .github/workflows/stage-release-publish.yml
+    needs: [version-sync]
     inputs:
-      release: "true"
-  - id: deploy
-    workflow: .github/workflows/deploy.yml
-    needs: [build]
-    environment: production
-    inputs:
-      image_tag: ${{ context.build.image_tag }}
+      version: ${{ context.version-sync.version }}
+      skip_publish: ${{ context.version-sync.skip_publish }}
 ```
+
+`context.<stage>.<output>` compiles to `${{ needs.<stage>.outputs.<output> }}`.
 
 ### 2. Compile
 
 ```bash
-pnpm install
-pnpm exec tsx bin/pipeline-compose.ts compile .github/pipelines/release.yml \
-  -o .github/workflows/release.generated.yml
+pnpm exec tsx bin/pipeline-compose.ts compile .github/pipelines/tag-release.yml \
+  -o .github/workflows/tag-release.generated.yml
 ```
 
-Or use the action:
+Or in CI / a workflow step:
 
 ```yaml
 - uses: aeswibon/pipeline-compose/compile@v1
   with:
-    pipeline_file: .github/pipelines/release.yml
-    output: .github/workflows/release.generated.yml
+    pipeline_file: .github/pipelines/tag-release.yml
+    output: .github/workflows/tag-release.generated.yml
+    check: "true"   # fail if generated file is stale
 ```
 
-### 3. Entry workflow
+### 3. Wire an entry workflow
 
 ```yaml
-name: Release
+# .github/workflows/tag-release.yml
+name: Tag release
 on:
   push:
-    tags: ['v*']
+    tags: ["v*"]
 jobs:
-  release:
-    uses: ./.github/workflows/release.generated.yml
+  run-tag-release-pipeline:
+    uses: ./.github/workflows/tag-release.generated.yml
     secrets: inherit
 ```
 
-### Inline override (experiments)
+More examples — multi-stage deploy pipelines, stage contracts, inline overrides, troubleshooting — are in **[docs/examples.md](docs/examples.md)**.
 
-```yaml
-- uses: aeswibon/pipeline-compose/compile@v1
-  with:
-    pipeline_file: .github/pipelines/release.yml
-    pipeline_inline: |
-      stages:
-        - id: deploy
-          workflow: .github/workflows/deploy.yml
+## This repository
+
+pipeline-compose dogfoods its own compile action for releases:
+
+```bash
+git tag v0.2.0 && git push origin v0.2.0
 ```
 
-Inline **replaces** the file `stages` list when present. Top-level `context` keys shallow-merge.
+| What runs | Purpose |
+|-----------|---------|
+| `tag-release.yml` | Compiles pipeline, then runs generated graph on tag push |
+| `version-sync` stage | Sync `package.json`, commit to `master`, move tag |
+| `release-publish` stage | Create GitHub Release; dispatch CI if already synced |
 
-### CI freshness check
+## Actions & packages
 
-```yaml
-- uses: aeswibon/pipeline-compose/compile@v1
-  with:
-    pipeline_file: .github/pipelines/release.yml
-    output: .github/workflows/release.generated.yml
-    check: 'true'
-```
+| Path | Description |
+|------|-------------|
+| [`compile/`](compile/action.yml) | Validate pipeline YAML, emit generated workflow |
+| [`eval/`](eval/action.yml) | Evaluate `when:` expressions (subset) |
+| [`context/merge/`](context/merge/action.yml) | Merge stage outputs into a context JSON file |
 
-## Stage contract
+Pipeline schema: [`schema/pipeline-v1.schema.json`](schema/pipeline-v1.schema.json)
 
-Each stage workflow must expose `workflow_call`:
-
-```yaml
-on:
-  workflow_call:
-    inputs:
-      image_tag:
-        type: string
-    outputs:
-      image_tag:
-        value: ${{ jobs.main.outputs.image_tag }}
-    secrets: inherit
-```
-
-## Components
-
-| Path | Role |
-|------|------|
-| `compile/` | Node action — validate pipeline, emit generated workflow |
-| `eval/` | Evaluate `when:` expressions (subset) |
-| `context/merge/` | Merge stage outputs into context JSON |
-| `.github/workflows/run-pipeline.yml` | Callable compile wrapper |
-| `.github/workflows/sync-version.yml` | Callable — sync `package.json` from tag |
-| `.github/workflows/release-on-tag.yml` | Tag push — sync, retag, GitHub Release |
-
-## Development (pnpm)
+## Development
 
 ```bash
 pnpm install
 pnpm test
-pnpm run build
-pnpm exec tsx bin/pipeline-compose.ts compile examples/pipeline-release.yml -o /tmp/out.yml
+pnpm run build          # bundle compile/ and eval/ actions
+pnpm run lint:workflows # actionlint + yamllint
 ```
 
-## Local testing with act
-
-Requires [Docker](https://docs.docker.com/get-docker/) and [act](https://github.com/nektos/act).
-
-act runs **dedicated smoke workflows** under `.github/act/workflows/` — not production CI. This keeps GitHub workflows free of `ACT` conditionals.
+**Local act smoke** (optional — requires [Docker](https://docs.docker.com/get-docker/) and [act](https://github.com/nektos/act)):
 
 ```bash
-export ACT_DOCKER_SOCKET="${HOME}/.orbstack/run/docker.sock"  # or Colima socket
-pnpm run build          # once, before compile smoke
-pnpm run act:ci         # unit tests only
-pnpm run act:compile    # compile action smoke (uses committed bundles)
+export ACT_DOCKER_SOCKET="${HOME}/.orbstack/run/docker.sock"
+pnpm run act:ci
+pnpm run act:compile
 ```
 
-See [.github/act/README.md](.github/act/README.md) for fixtures and guardrails.
-
-## Releasing
-
-Push an annotated semver tag (`vX.Y.Z`). **Release on tag** (`.github/workflows/release-on-tag.yml`) will:
-
-1. Update `package.json` to match the tag (via `scripts/ci/sync-versions-from-tag.sh`)
-2. Commit the sync to `master` and move the tag to that commit
-3. Create a GitHub Release with generated notes
-
-```bash
-git tag v0.2.0
-git push origin v0.2.0
-```
-
-The callable **Sync version** workflow (`.github/workflows/sync-version.yml`) is the same sync step used in pipeline examples and can be composed into generated release pipelines.
+Details: [.github/act/README.md](.github/act/README.md)
 
 ## Roadmap
 
-- **v1** — same-repo compile + context (this release)
-- **v2** — cross-repo dispatch + wait
-- **v3** — org catalog (`catalog://template@version`)
+| Version | Scope |
+|---------|--------|
+| **v1** | Same-repo compile, context wiring, static codegen |
+| **v2** | Cross-repo dispatch + wait |
+| **v3** | Org catalog (`catalog://template@version`) |
 
 ## License
 

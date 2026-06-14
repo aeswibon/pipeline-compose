@@ -1,0 +1,15 @@
+name: tag-release
+version: 1
+stages:
+  - id: version-sync
+    workflow: .github/workflows/stage-version-sync.yml
+    outputs:
+      - version
+      - skip_publish
+  - id: release-publish
+    workflow: .github/workflows/stage-release-publish.yml
+    needs:
+      - version-sync
+    inputs:
+      version: ${{ context.version-sync.version }}
+      skip_publish: ${{ context.version-sync.skip_publish }}
