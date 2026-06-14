@@ -33,9 +33,15 @@ if [[ "$(uname -m)" == "arm64" ]]; then
   ARCH_ARGS=(--container-architecture linux/amd64)
 fi
 
-TARGET="${1:-ci}"
+TARGET="${1:-full}"
 
 case "$TARGET" in
+  full|all)
+    act workflow_dispatch \
+      -W .github/act/workflows/full-smoke.yml \
+      "${ARCH_ARGS[@]}" \
+      "${SOCKET_ARGS[@]}"
+    ;;
   ci)
     act workflow_dispatch \
       -W .github/act/workflows/test-smoke.yml \
@@ -52,7 +58,7 @@ case "$TARGET" in
       "${SOCKET_ARGS[@]}"
     ;;
   *)
-    echo "Usage: $0 [ci|compile]" >&2
+    echo "Usage: $0 [full|ci|compile]" >&2
     exit 1
     ;;
 esac

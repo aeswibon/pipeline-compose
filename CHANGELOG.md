@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`companion_workflows`** on v1 pipelines for intentional non-stage workflows (e.g. native `release.yml`).
 - **CI** — pipeline validate (strict) on meta + example; coverage baseline in unit tests.
+- **Local act smoke** — `pnpm run act:full` runs full-smoke workflow (tests, validate, eval, compile parity, bundle).
 - **Group path convention** — workflow basename may match stage `id`.
 
 ### Changed

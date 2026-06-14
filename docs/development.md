@@ -44,7 +44,8 @@ pnpm install
 | `pnpm run bundle:actions` | Bundle Node actions with `@vercel/ncc` into `packages/action-*/dist` |
 | `pnpm run publish:actions [tag]` | Bundle and push action packages locally (CI does this on tag push) |
 | `pnpm run lint:workflows` | actionlint + yamllint |
-| `pnpm run act:ci` / `act:compile` | Local [act](https://github.com/nektos/act) smoke tests |
+| `pnpm run act:full` | Full local smoke via [act](https://github.com/nektos/act) — tests, validate, eval, compile parity, bundles |
+| `pnpm run act:ci` / `act:compile` | Quick act smoke tests |
 
 ## Pipeline groups
 

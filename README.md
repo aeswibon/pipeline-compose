@@ -13,6 +13,29 @@ This repository is the **development monorepo** (core library, CLI, docs, releas
 
 **Usage, inputs, and examples** live in those action repositories (same pattern as [actions/checkout](https://github.com/actions/checkout)).
 
+## CLI (local)
+
+```bash
+pnpm run validate .github/pipelines/pipeline.yml --workflows --strict
+pnpm run compile .github/pipelines/pipeline.yml -o .github/workflows/pipeline-generated.yml
+pnpm run eval -- --expression "startsWith(github.ref, 'refs/tags/v')" --github '{"ref":"refs/tags/v1.0.0"}'
+pnpm run sync:workflows .github/pipelines/pipeline.yml --check
+```
+
+Pipelines support **groups** (root `group:` inherited by stages), **v2 multi-pipeline** files, and **multi-file** directories merged by pipeline-level `needs`. See [docs/development.md](docs/development.md).
+
+## Local testing with act
+
+Run the full smoke suite locally (tests, validate, eval, compile parity, action bundles):
+
+```bash
+pnpm run act:full    # all jobs — mirrors most of CI
+pnpm run act:ci      # quick: unit tests + build
+pnpm run act:compile # compile CLI only
+```
+
+Requires [Docker](https://docs.docker.com/get-docker/) and [act](https://github.com/nektos/act). See [.github/act/README.md](.github/act/README.md).
+
 ## Documentation
 
 | Topic | Location |
@@ -25,7 +48,6 @@ This repository is the **development monorepo** (core library, CLI, docs, releas
 | Publishing actions | [docs/action-repos.md](docs/action-repos.md) |
 | Pipeline schema (v1) | [packages/core/schema/pipeline-v1.schema.json](packages/core/schema/pipeline-v1.schema.json) |
 | Pipeline schema (v2, multi-pipeline) | [packages/core/schema/pipeline-v2.schema.json](packages/core/schema/pipeline-v2.schema.json) |
-| CLI validate / sync | `pnpm run validate` · `pnpm run sync:workflows` (see [docs/development.md](docs/development.md)) |
 
 ## License
 

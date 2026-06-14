@@ -1,0 +1,109 @@
+# Local full smoke (act). Mirrors CI jobs that run without GitHub-only secrets.
+# Invoke via: pnpm run act:full
+name: Act — full smoke
+
+on:
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm run build
+      - run: pnpm run test:coverage
+
+  pipeline-validate:
+    name: Pipeline validate
+    runs-on: ubuntu-latest
+    # Sequential chain: parallel `pnpm run build` on the same bind mount can hang under act on macOS.
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - run: pnpm run validate .github/pipelines/pipeline.yml --workflows --strict
+      - run: >-
+          pnpm run validate
+          examples/run-tag-release/.github/pipelines/pipeline.yml
+          --repo-root examples/run-tag-release
+          --workflows
+          --strict
+
+  cli-eval:
+    name: CLI eval
+    runs-on: ubuntu-latest
+    needs: pipeline-validate
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - run: >-
+          pnpm run eval
+          --expression "startsWith(github.ref, 'refs/tags/v')"
+          --github '{"ref":"refs/tags/v1.0.0"}'
+      - run: pnpm run eval --expression "true" | grep -qx true
+
+  compile-parity:
+    name: Compile action parity
+    runs-on: ubuntu-latest
+    needs: cli-eval
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - run: pnpm --filter @aeswibon/pipeline-compose-action-compile run bundle
+      - run: >-
+          pnpm exec tsx packages/cli/src/main.ts compile
+          .github/pipelines/pipeline.yml
+          -o /tmp/act-cli-out.yml
+          --workflow-output .github/workflows/release.yml
+          --compile-action ./packages/action-compile
+      - uses: ./packages/action-compile
+        with:
+          pipeline_file: .github/pipelines/pipeline.yml
+          output: /tmp/act-action-out.yml
+          workflow_output: .github/workflows/release.yml
+          compile_action: ./packages/action-compile
+      - run: diff /tmp/act-cli-out.yml /tmp/act-action-out.yml
+
+  bundle-actions:
+    name: Bundle Node actions
+    runs-on: ubuntu-latest
+    needs: compile-parity
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - run: pnpm run bundle:actions
+      - run: test -f packages/action-run/dist/index.js
+      - run: test -f packages/action-compile/dist/index.js
+      - run: test -f packages/action-eval/dist/index.js

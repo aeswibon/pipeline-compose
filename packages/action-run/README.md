@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose-run@v0.3.1
+      - uses: aeswibon/pipeline-compose-run@v0.3.2
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           github_token: ${{ github.token }}
@@ -36,6 +36,12 @@ jobs:
 ```yaml
 name: pipeline
 version: 1
+group: release
+companion_workflows:
+  - .github/workflows/release.yml   # native entry workflow (not a stage)
+groups:
+  release:
+    description: Tag release chain
 stages:
   - id: ci
     workflow: .github/workflows/ci.yml
@@ -61,23 +67,52 @@ Full walkthrough: [examples/run-tag-release](https://github.com/aeswibon/pipelin
 
 <!-- start usage -->
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v0.3.1
+- uses: aeswibon/pipeline-compose-run@v0.3.2
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}
 ```
 <!-- end usage -->
 
+## Multi-pipeline setups
+
+**Multiple files** — one v1 pipeline per file under `.github/pipelines/`, merged by pipeline-level `needs`:
+
+```yaml
+# .github/pipelines/deploy.yml
+name: deploy
+version: 1
+group: deploy
+needs: [release]
+stages:
+  - id: gate
+    workflow: .github/workflows/deploy-gate.yml
+```
+
+```yaml
+- uses: aeswibon/pipeline-compose-run@v0.3.2
+  with:
+    pipeline_dir: .github/pipelines
+    github_token: ${{ github.token }}
+```
+
+**Single file v2** — `pipelines:` map with cross-pipeline `needs`. Schema: [pipeline-v2.schema.json](https://github.com/aeswibon/pipeline-compose/blob/master/packages/core/schema/pipeline-v2.schema.json).
+
+Order between pipelines comes from pipeline-level **`needs`**, not from the group label. Within a pipeline, stage order comes from stage **`needs`**.
+
 ## Pipeline file reference
 
 | Field | Description |
 |-------|-------------|
+| `group` | Default group label inherited by all stages |
+| `companion_workflows` | Workflow paths not driven by stages (e.g. native `release.yml`) |
+| `needs` | Other pipeline `name`s — run this pipeline after those (multi-file / v2) |
 | `id` | Stage identifier (used in `needs` and `context.<id>.*`) |
 | `workflow` | Path to a workflow file in **your** repo |
-| `needs` | Prior stage ids (topological order) |
+| `needs` (stage) | Prior stage ids within the same pipeline |
 | `inputs` | Passed to `workflow_dispatch` (supports `${{ context.<stage>.<key> }}`) |
 | `outputs` | Keys collected from the stage for downstream `context` |
-| `when` | Optional expression; false skips dispatch |
+| `when` | Optional expression; false skips dispatch and transitive dependents |
 
 Schema: [pipeline-v1.schema.json](https://github.com/aeswibon/pipeline-compose/blob/master/packages/core/schema/pipeline-v1.schema.json) · [pipeline-v2.schema.json](https://github.com/aeswibon/pipeline-compose/blob/master/packages/core/schema/pipeline-v2.schema.json)
 
@@ -90,7 +125,9 @@ The run action evaluates `when:` locally before dispatch. Supported forms:
 - `context.<stage>.<output> == 'value'`
 - `true` / `false`
 
-If a stage is skipped, downstream stages that `needs:` it are skipped too.
+If a stage is skipped, downstream stages that `needs:` it are skipped too (recorded in `results_json` with `"skipped": true`).
+
+Validate locally in the monorepo: `pnpm run validate .github/pipelines/pipeline.yml --workflows --strict`
 
 ## Inputs
 
@@ -105,7 +142,7 @@ If a stage is skipped, downstream stages that `needs:` it are skipped too.
 
 | Output | Description |
 |--------|-------------|
-| `results_json` | JSON array of `{ stageId, runId, outputs }` per completed stage |
+| `results_json` | JSON array of `{ stageId, runId, outputs, skipped? }` per stage |
 
 ## Permissions
 

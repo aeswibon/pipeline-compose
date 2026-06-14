@@ -15,6 +15,7 @@
     "sync:workflows": "pnpm exec tsx packages/cli/src/main.ts sync",
     "act:ci": "bash scripts/act-test.sh ci",
     "act:compile": "bash scripts/act-test.sh compile",
+    "act:full": "bash scripts/act-test.sh full",
     "lint:workflows": "bash scripts/lint-workflows.sh",
     "publish:actions": "pnpm run bundle:actions && bash scripts/publish-action-packages.sh"
   },
