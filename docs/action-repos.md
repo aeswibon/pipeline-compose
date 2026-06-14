@@ -5,10 +5,10 @@ Each GitHub Action is published from its **own repository** with `action.yml` at
 | GitHub repository | Monorepo package | Role |
 |-------------------|------------------|------|
 | [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) | `packages/action-run` | Primary runtime orchestrator |
-| [pipeline-compose-export](https://github.com/aeswibon/pipeline-compose-export) | `packages/action-export` | Stage output artifact upload (composite) |
+| [pipeline-compose-export](https://github.com/aeswibon/pipeline-compose-export) | `packages/action-export` | Stage output artifact upload (Node 24) |
 | [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile) | `packages/action-compile` | Optional static workflow codegen |
 | [pipeline-compose-eval](https://github.com/aeswibon/pipeline-compose-eval) | `packages/action-eval` | `when:` expression evaluation |
-| [pipeline-compose-context-merge](https://github.com/aeswibon/pipeline-compose-context-merge) | `packages/action-context-merge` | Composite context merge helper |
+| [pipeline-compose-context-merge](https://github.com/aeswibon/pipeline-compose-context-merge) | `packages/action-context-merge` | Context merge helper (Node 24) |
 
 This repo (**pipeline-compose**) is the single development surface: shared core, CLI, action sources, schema, docs, and release workflows.
 

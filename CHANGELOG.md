@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-14
+
 ### Added
 
 - **Glossary** — [docs/glossary.md](docs/glossary.md) for pipeline fields, export contract, and action selection.
@@ -14,9 +16,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **pipeline-compose-export** and **pipeline-compose-context-merge** — Node 24 actions with bundled `index.ts` (replacing inline composite steps); included in `bundle:actions`.
 - **Action READMEs** — per-action **Glossary** sections (self-contained; no monorepo visit required).
-- **Meta-repo** — v2 `pipeline.yml` + `release.yml` dogfoods `./packages/action-run`.
+- **Meta-repo** — v2 `pipeline.yml` + `release.yml` orchestrated via `./packages/action-run`.
 - **Action publish** — append-only `master` on action repos, immutable semver tags (no force push / no tag retag); publish commits record monorepo SHA.
+
+### pipeline-compose-export
+
+- Node 24 action using `@actions/artifact`; same artifact contract (`pipeline-compose-<stage_id>` / `outputs.json`).
+
+### pipeline-compose-context-merge
+
+- Node 24 action; merges stage outputs into a local context JSON file (unchanged behavior).
 
 ## [0.4.0] - 2026-06-14
 

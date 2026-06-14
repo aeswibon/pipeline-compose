@@ -8,7 +8,7 @@
     "build": "pnpm -r run build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "bundle:actions": "pnpm --filter '@aeswibon/pipeline-compose-action-run' --filter '@aeswibon/pipeline-compose-action-compile' --filter '@aeswibon/pipeline-compose-action-eval' run bundle",
+    "bundle:actions": "pnpm --filter '@aeswibon/pipeline-compose-action-run' --filter '@aeswibon/pipeline-compose-action-compile' --filter '@aeswibon/pipeline-compose-action-eval' --filter '@aeswibon/pipeline-compose-action-export' --filter '@aeswibon/pipeline-compose-action-context-merge' run bundle",
     "compile": "pnpm exec tsx packages/cli/src/main.ts compile",
     "eval": "pnpm exec tsx packages/cli/src/main.ts eval",
     "validate": "pnpm exec tsx packages/cli/src/main.ts validate",

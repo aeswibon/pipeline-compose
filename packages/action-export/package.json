@@ -2,5 +2,20 @@
   "name": "@aeswibon/pipeline-compose-action-export",
   "version": "0.4.0",
   "private": true,
-  "description": "Upload pipeline-compose stage outputs artifact"
+  "type": "module",
+  "description": "Upload pipeline-compose stage outputs artifact",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "bundle": "ncc build src/index.ts -o dist -s"
+  },
+  "dependencies": {
+    "@actions/artifact": "^5.0.0",
+    "@actions/core": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@vercel/ncc": "^0.38.3",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
 }

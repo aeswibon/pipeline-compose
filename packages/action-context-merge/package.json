@@ -1,5 +1,19 @@
 {
   "name": "@aeswibon/pipeline-compose-action-context-merge",
   "version": "0.4.0",
-  "private": true
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "bundle": "ncc build src/index.ts -o dist -s"
+  },
+  "dependencies": {
+    "@actions/core": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@vercel/ncc": "^0.38.3",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
 }
