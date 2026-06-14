@@ -63,6 +63,7 @@ jobs:
       - name: Dispatch CI on master
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          gh workflow run ci.yml --ref master
+          gh workflow run ci.yml --repo "$GH_REPO" --ref master
           echo "Dispatched CI on master (tag already aligned; CI not triggered by master push)."
