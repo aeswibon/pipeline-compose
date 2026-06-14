@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-06-14
+
 ### Added
 
 - **`repo_tokens_json`** on run action — map `owner/repo` slugs to PATs for cross-repo `repo:` stages; fail-fast when a slug is missing.
@@ -23,6 +25,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Workflow sync preview lists `create`, `update`, `up-to-date`, and `missing-source` actions without writing files.
+- **act:full** — includes workflow-lint job.
+
+### Fixed
+
+- **Dependabot** — pin transitive `esbuild` to `>=0.28.1` via pnpm overrides (vite dev dependency).
+
+### pipeline-compose-run
+
+- **`repo_tokens_json`** input for cross-repo stage dispatch.
+
+### pipeline-compose-compile
+
+- No changes in this release.
+
+### pipeline-compose-eval
+
+- No changes in this release.
+
+### pipeline-compose-context-merge
+
+- No changes in this release.
 
 ## [0.3.2] - 2026-06-14
 
