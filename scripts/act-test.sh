@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Run act against local-only workflows under .github/act/workflows/.
+# Production workflows in .github/workflows/ are never invoked by act.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -35,15 +37,16 @@ TARGET="${1:-ci}"
 
 case "$TARGET" in
   ci)
-    ACT=true act push \
-      -W .github/workflows/ci.yml \
+    act workflow_dispatch \
+      -W .github/act/workflows/test-smoke.yml \
       -j test \
       "${ARCH_ARGS[@]}" \
       "${SOCKET_ARGS[@]}"
     ;;
   compile)
-    ACT=true act workflow_dispatch \
-      -W .github/workflows/compile-example.yml \
+    bash scripts/verify-bundles.sh
+    act workflow_dispatch \
+      -W .github/act/workflows/compile-smoke.yml \
       -e .github/act/workflow-dispatch-compile.json \
       -j compile \
       "${ARCH_ARGS[@]}" \

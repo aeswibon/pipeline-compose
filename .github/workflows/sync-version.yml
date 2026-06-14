@@ -1,0 +1,76 @@
+name: Sync version
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: Semver without v prefix
+        value: ${{ jobs.sync.outputs.version }}
+      skip_publish:
+        description: True when main and tag already had synced version files
+        value: ${{ jobs.sync.outputs.skip_publish }}
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: sync-version-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Align version files
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+      skip_publish: ${{ steps.git_state.outputs.skip_publish }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Resolve tag version
+        id: tag
+        run: |
+          ref="${GITHUB_REF}"
+          if ! [[ "$ref" =~ ^refs/tags/v(.+)$ ]]; then
+            echo "Expected refs/tags/vX.Y.Z, got $ref"
+            exit 1
+          fi
+          version="${BASH_REMATCH[1]}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid semver tag: v${version}"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Tag version: $version"
+
+      - name: Sync version files
+        run: bash scripts/ci/sync-versions-from-tag.sh "${{ steps.tag.outputs.version }}"
+
+      - name: Detect git release state
+        id: git_state
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          git fetch origin main "refs/tags/v${VERSION}"
+          main_sha=$(git rev-parse origin/main)
+          tag_sha=$(git rev-parse "refs/tags/v${VERSION}^{commit}" 2>/dev/null || echo "")
+          if [ -z "$(git status --porcelain)" ] && [ -n "$tag_sha" ] && [ "$tag_sha" = "$main_sha" ]; then
+            echo "Git release aligned: tag v${VERSION} at main with synced files."
+            echo "skip_publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Git release needs publish (version commit and/or retag)."
+            echo "skip_publish=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish version sync to main
+        if: steps.git_state.outputs.skip_publish != 'true'
+        id: publish
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+          DEFAULT_BRANCH: main
+        run: bash scripts/ci/publish-version-sync.sh "${VERSION}"

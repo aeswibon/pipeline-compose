@@ -115,6 +115,8 @@ on:
 | `eval/` | Evaluate `when:` expressions (subset) |
 | `context/merge/` | Merge stage outputs into context JSON |
 | `.github/workflows/run-pipeline.yml` | Callable compile wrapper |
+| `.github/workflows/sync-version.yml` | Callable — sync `package.json` from tag |
+| `.github/workflows/release-on-tag.yml` | Tag push — sync, retag, GitHub Release |
 
 ## Development (pnpm)
 
@@ -129,13 +131,31 @@ pnpm exec tsx bin/pipeline-compose.ts compile examples/pipeline-release.yml -o /
 
 Requires [Docker](https://docs.docker.com/get-docker/) and [act](https://github.com/nektos/act).
 
+act runs **dedicated smoke workflows** under `.github/act/workflows/` — not production CI. This keeps GitHub workflows free of `ACT` conditionals.
+
 ```bash
 export ACT_DOCKER_SOCKET="${HOME}/.orbstack/run/docker.sock"  # or Colima socket
-pnpm run act:ci       # CI test job
-pnpm run act:compile  # compile-example workflow via workflow_dispatch
+pnpm run build          # once, before compile smoke
+pnpm run act:ci         # unit tests only
+pnpm run act:compile    # compile action smoke (uses committed bundles)
 ```
 
-See `.github/act/README.md` for fixtures and flags.
+See [.github/act/README.md](.github/act/README.md) for fixtures and guardrails.
+
+## Releasing
+
+Push an annotated semver tag (`vX.Y.Z`). **Release on tag** (`.github/workflows/release-on-tag.yml`) will:
+
+1. Update `package.json` to match the tag (via `scripts/ci/sync-versions-from-tag.sh`)
+2. Commit the sync to `main` and move the tag to that commit
+3. Create a GitHub Release with generated notes
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+The callable **Sync version** workflow (`.github/workflows/sync-version.yml`) is the same sync step used in pipeline examples and can be composed into generated release pipelines.
 
 ## Roadmap
 

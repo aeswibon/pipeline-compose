@@ -1,4 +1,7 @@
-name: Compile example (act)
+# Local-only compile smoke (act). Uses committed action bundles — no ncc rebuild.
+# Not triggered on push/PR — see scripts/act-test.sh
+name: Act — compile smoke
+
 on:
   workflow_dispatch:
     inputs:
@@ -15,20 +18,16 @@ jobs:
   compile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run bundle
-        if: env.ACT != 'true'
+      - uses: actions/checkout@v6
+
+      - name: Verify bundled actions are present
+        run: bash scripts/verify-bundles.sh
+
       - uses: ./compile
-        id: compile
         with:
           pipeline_file: ${{ inputs.pipeline_file }}
           pipeline_inline: ${{ inputs.pipeline_inline }}
           output: examples/act-output.generated.yml
-      - name: Show generated workflow
-        run: cat examples/act-output.generated.yml
+
+      - name: Assert generated workflow shape
+        run: grep -q 'workflow_call' examples/act-output.generated.yml
