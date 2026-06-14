@@ -37,6 +37,26 @@ flowchart TD
 
 Solid arrows (`-->`) come from explicit `needs:` in `.github/pipelines/pipeline.yml`. When a stage has no `needs:`, the renderer falls back to file order with dotted arrows (`-.->`).
 
+When validate finds issues, the diagram annotates nodes:
+
+| Style | Meaning |
+|-------|---------|
+| **Red node** (`❌ …`) | Validation error on that stage (e.g. missing workflow file) |
+| **Amber node** (`⚠ blocked upstream`) | Stage depends on a broken upstream stage via `needs:` |
+
+Example (same shape as [PR #6](https://github.com/aeswibon/pipeline-compose/pull/6)):
+
+```mermaid
+flowchart TD
+  ci["ci (release)"]
+  broken_gate["broken-gate (release)<br/>❌ missing workflow file"]:::error
+  version_sync["version-sync (release)<br/>⚠ blocked upstream"]:::blocked
+  ci --> broken_gate
+  broken_gate --> version_sync
+  classDef error fill:#ffebe9,stroke:#cf222e,stroke-width:2px,color:#1f2328
+  classDef blocked fill:#fff8c5,stroke:#9a6700,stroke-width:2px,color:#1f2328
+```
+
 ### Smaller example
 
 ```bash
@@ -72,7 +92,7 @@ These closed PRs were used to smoke-test the bot on this repo:
 | PR | Scenario | What to look for |
 |----|----------|------------------|
 | [#5 — Test pipeline mermaid PR comment](https://github.com/aeswibon/pipeline-compose/pull/5) | Valid pipeline change | **Status: OK**, four-stage topology, _No issues._ |
-| [#6 — Test mermaid PR comment on validation failure](https://github.com/aeswibon/pipeline-compose/pull/6) | Intentional break (`broken-gate` → missing workflow) | **Status: Failed**, diagram includes `broken-gate` in the chain, issues list shows missing workflow (and related strict errors) |
+| [#6 — Test mermaid PR comment on validation failure](https://github.com/aeswibon/pipeline-compose/pull/6) | Intentional break (`broken-gate` → missing workflow) | **Status: Failed**; `broken-gate` node shows **❌ missing workflow file**; downstream stages show **⚠ blocked upstream** |
 
 PR #6 also shows that **`Pipeline validate` CI can fail** while the PR comment job still completes and posts the diagram.
 

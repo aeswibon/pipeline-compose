@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Mermaid guide** — [docs/mermaid-demo.md](docs/mermaid-demo.md) with local `--mermaid` usage, PR bot behavior, and sample PRs [#5](https://github.com/aeswibon/pipeline-compose/pull/5) / [#6](https://github.com/aeswibon/pipeline-compose/pull/6).
+- **`validate --mermaid` error styling** — red nodes for stage errors, amber nodes for stages blocked by upstream `needs:` failures.
 
 ## [0.5.0] - 2026-06-14
 

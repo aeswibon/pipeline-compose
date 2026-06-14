@@ -232,14 +232,14 @@ function runValidate(args: string[]): void {
   });
 
   if (mermaid && json) {
-    console.log(renderPipelineMermaid(report.pipeline));
+    console.log(renderPipelineMermaid(report.pipeline, { issues: report.issues }));
     console.log('');
     console.log(serializeValidateReport(report));
     process.exit(validateReportExitCode(report));
   }
 
   if (mermaid) {
-    console.log(renderPipelineMermaid(report.pipeline));
+    console.log(renderPipelineMermaid(report.pipeline, { issues: report.issues }));
     process.exit(validateReportExitCode(report));
   }
 

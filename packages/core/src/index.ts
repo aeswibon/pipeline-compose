@@ -46,6 +46,7 @@ export {
   DEPRECATION_REMOVAL_VERSION,
 } from './compile/deprecations.js';
 export { renderPipelineMermaid } from './compile/mermaid.js';
+export type { RenderPipelineMermaidOptions } from './compile/mermaid.js';
 export {
   renderInitPipelineYaml,
   scanWorkflowsForInit,
