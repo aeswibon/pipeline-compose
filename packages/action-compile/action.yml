@@ -1,7 +1,7 @@
 name: Pipeline Compose Compile
 description: Compile pipeline-compose pipeline YAML to a static GitHub Actions workflow
 branding:
-  icon: file-code
+  icon: code
   color: gray-dark
 inputs:
   pipeline_file:
