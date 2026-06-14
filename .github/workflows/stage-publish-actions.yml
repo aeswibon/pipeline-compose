@@ -1,0 +1,55 @@
+name: Publish actions
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Semver without v prefix
+        type: string
+        required: true
+  workflow_call:
+    inputs:
+      version:
+        description: Semver without v prefix
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish-actions:
+    name: Publish action repositories
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: refs/tags/v${{ inputs.version }}
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run bundle:actions
+
+      - name: Require publish token
+        env:
+          GH_TOKEN: ${{ secrets.ACTION_PUBLISH_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "Missing repository secret ACTION_PUBLISH_TOKEN."
+            echo "Add a PAT with contents:write on pipeline-compose-run, -compile, -eval, and -context-merge."
+            exit 1
+          fi
+
+      - name: Publish action packages
+        env:
+          GH_TOKEN: ${{ secrets.ACTION_PUBLISH_TOKEN }}
+        run: bash scripts/publish-action-packages.sh "v${{ inputs.version }}"

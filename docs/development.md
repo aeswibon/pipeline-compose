@@ -39,7 +39,7 @@ pnpm install
 | `pnpm run build` | Typecheck + emit `packages/core/dist` |
 | `pnpm run compile` | CLI compile (same as `pnpm exec tsx packages/cli/src/main.ts compile …`) |
 | `pnpm run bundle:actions` | Bundle Node actions with `@vercel/ncc` into `packages/action-*/dist` |
-| `pnpm run publish:actions [tag]` | Bundle and force-push action packages to GitHub (default tag `v0.2.0`) |
+| `pnpm run publish:actions [tag]` | Bundle and push action packages locally (CI does this on tag push) |
 | `pnpm run lint:workflows` | actionlint + yamllint |
 | `pnpm run act:ci` / `act:compile` | Local [act](https://github.com/nektos/act) smoke tests |
 
@@ -47,8 +47,10 @@ pnpm install
 
 1. Edit shared logic in `packages/core/src/` or action-specific code in `packages/action-*/src/`.
 2. Run `pnpm test` and `pnpm run build`.
-3. If you changed a Node action, run `pnpm run bundle:actions`.
-4. Publish updated actions: `pnpm run publish:actions v0.3.0` (requires `gh` CLI and repo access).
+3. Add `CHANGELOG.md` section (with optional `### pipeline-compose-*` subsections).
+4. Push master, tag, and push the tag — CI publishes everything.
+
+Local-only fallback: `pnpm run publish:actions v0.3.0` (requires `gh` and push access to action repos).
 
 CI rebuilds action bundles in the compile-parity job; you do not need committed `dist/` in this repo.
 
@@ -62,9 +64,9 @@ git push origin master
 git tag v0.3.0 && git push origin v0.3.0
 ```
 
-Tag push runs `.github/workflows/release.yml`: **ci → version-sync → release-publish**.
+Tag push runs `.github/workflows/release.yml`: **ci → version-sync → release-publish → publish-actions**.
 
-After a meta release that changes action logic, publish matching action tags with `pnpm run publish:actions v0.3.0`.
+Configure repository secret `ACTION_PUBLISH_TOKEN` before the first tag release (see [docs/action-repos.md](action-repos.md)).
 
 ## CI
 

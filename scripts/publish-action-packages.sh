@@ -1,10 +1,24 @@
 #!/usr/bin/env bash
 # Publish workspace action packages to their GitHub repositories.
+# Uses GH_TOKEN (HTTPS + gh) when set; otherwise SSH remotes for local use.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TAG="${1:-v0.3.0}"
 LICENSE="$ROOT/LICENSE"
+GH_OWNER="${GH_OWNER:-aeswibon}"
+
+if [[ -n "${GH_TOKEN:-}" ]]; then
+  export GH_TOKEN
+  gh auth setup-git >/dev/null 2>&1
+elif ! gh auth status >/dev/null 2>&1; then
+  echo "Set GH_TOKEN or authenticate gh before publishing." >&2
+  exit 1
+fi
+
+git_remote_url() {
+  printf 'https://github.com/%s/%s.git' "$GH_OWNER" "$1"
+}
 
 publish() {
   local pkg_name="$1"
@@ -47,14 +61,23 @@ EOF
   fi
 
   git -C "$work" init -b master >/dev/null
+  git -C "$work" config user.name "${GIT_AUTHOR_NAME:-github-actions[bot]}"
+  git -C "$work" config user.email "${GIT_AUTHOR_EMAIL:-github-actions[bot]@users.noreply.github.com}"
   git -C "$work" add -A
   git -C "$work" commit -m "Publish ${github_repo} from pipeline-compose monorepo." >/dev/null
 
-  if gh repo view "aeswibon/${github_repo}" >/dev/null 2>&1; then
-    git -C "$work" remote add origin "git@github.com:aeswibon/${github_repo}.git"
+  local remote
+  if [[ -n "${GH_TOKEN:-}" ]]; then
+    remote="$(git_remote_url "$github_repo")"
+  else
+    remote="git@github.com:${GH_OWNER}/${github_repo}.git"
+  fi
+
+  if gh repo view "${GH_OWNER}/${github_repo}" >/dev/null 2>&1; then
+    git -C "$work" remote add origin "$remote"
     git -C "$work" push origin master --force
   else
-    gh repo create "aeswibon/${github_repo}" --public --source "$work" --remote origin --push
+    gh repo create "${GH_OWNER}/${github_repo}" --public --source "$work" --remote origin --push
   fi
 
   if git -C "$work" rev-parse "$TAG" >/dev/null 2>&1; then
@@ -64,7 +87,28 @@ EOF
     git -C "$work" push origin "$TAG"
   fi
 
-  echo "Published aeswibon/${github_repo}@${TAG}"
+  local version="${TAG#v}"
+  local notes_file
+  notes_file="$(mktemp)"
+  bash "${ROOT}/scripts/ci/render-action-release-notes.sh" \
+    "$version" "$github_repo" "$notes_file"
+
+  if gh release view "$TAG" --repo "${GH_OWNER}/${github_repo}" >/dev/null 2>&1; then
+    gh release edit "$TAG" \
+      --repo "${GH_OWNER}/${github_repo}" \
+      --notes-file "$notes_file"
+    echo "Updated release notes for ${GH_OWNER}/${github_repo}@${TAG}"
+  else
+    gh release create "$TAG" \
+      --repo "${GH_OWNER}/${github_repo}" \
+      --title "$TAG" \
+      --notes-file "$notes_file" \
+      --verify-tag
+    echo "Created release ${GH_OWNER}/${github_repo}@${TAG}"
+  fi
+  rm -f "$notes_file"
+
+  echo "Published ${GH_OWNER}/${github_repo}@${TAG}"
 }
 
 publish action-run pipeline-compose-run

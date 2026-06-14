@@ -28,3 +28,13 @@ jobs:
     with:
       version: ${{ needs.version-sync.outputs.version }}
       skip_publish: ${{ needs.version-sync.outputs.skip_publish }}
+
+  publish-actions:
+    name: Publish actions
+    needs:
+      - version-sync
+      - release-publish
+    uses: ./.github/workflows/stage-publish-actions.yml
+    secrets: inherit
+    with:
+      version: ${{ needs.version-sync.outputs.version }}

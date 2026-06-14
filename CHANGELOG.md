@@ -14,10 +14,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed legacy root `src/`, `bin/`, and `schema/`; schema now lives at `packages/core/schema/`.
 - CI compile parity uses `./packages/action-compile` (built in CI, not committed).
 - Replaced sibling-repo scaffold scripts with `scripts/publish-action-packages.sh`.
+- Tag releases publish all four action repos in CI (`publish-actions` stage; requires `ACTION_PUBLISH_TOKEN` secret).
 
 ### Developer notes
 
 See [docs/development.md](docs/development.md) and [docs/action-repos.md](docs/action-repos.md).
+
+### pipeline-compose-run
+
+- Rebuilt bundle from monorepo `@aeswibon/pipeline-compose-core` v0.3.0.
+
+### pipeline-compose-compile
+
+- Rebuilt bundle from monorepo core v0.3.0.
+
+### pipeline-compose-eval
+
+- Rebuilt bundle from monorepo core v0.3.0.
+
+### pipeline-compose-context-merge
+
+- Republished composite action from monorepo package.
 
 ## [0.2.0] - 2026-06-14
 
