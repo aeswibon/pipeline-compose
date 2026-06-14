@@ -38,6 +38,8 @@ export interface PipelineDefinition {
 export interface PipelineDocumentV2 {
   version: 2;
   groups?: Record<string, PipelineGroupMeta>;
+  /** Workflows not driven by stages (e.g. tag entry `release.yml`). */
+  companion_workflows?: string[];
   pipelines: Record<string, PipelineDefinition>;
 }
 

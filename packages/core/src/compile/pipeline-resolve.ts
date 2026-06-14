@@ -89,7 +89,13 @@ export function mergePipelines(pipelines: Pipeline[]): ResolvedPipeline {
 }
 
 export function resolvePipelineDocument(doc: PipelineDocument): ResolvedPipeline {
-  return mergePipelines(pipelineDocumentToList(doc));
+  const merged = mergePipelines(pipelineDocumentToList(doc));
+  if (isPipelineV2(doc) && doc.companion_workflows?.length) {
+    merged.companion_workflows = [
+      ...new Set([...(merged.companion_workflows ?? []), ...doc.companion_workflows]),
+    ];
+  }
+  return merged;
 }
 
 export function flattenStages(stages: PipelineStage[]): ResolvedStage[] {

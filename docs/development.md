@@ -13,12 +13,14 @@ Guide for working on the **pipeline-compose** monorepo. For using the actions in
 | `packages/action-eval/` | `@aeswibon/pipeline-compose-action-eval` | Eval action source |
 | `packages/action-context-merge/` | `@aeswibon/pipeline-compose-action-context-merge` | Composite context merge action |
 | `packages/core/schema/` | — | Pipeline YAML JSON schema |
-| `.github/pipelines/pipeline.yml` | — | Example pipeline (compile parity + docs) |
-| `.github/workflows/release.yml` | — | Tag release workflow (native reusable workflows) |
+| `.github/pipelines/pipeline.yml` | — | v2 release pipeline (dogfooded via `pipeline-compose-run` on tag push) |
+| `.github/workflows/release.yml` | — | Tag entry workflow — runs `./packages/action-run` against `pipeline.yml` |
 
 Shared logic lives in **`packages/core`**. Action packages depend on it via the pnpm workspace; bundles include core at publish time.
 
 See [docs/action-repos.md](action-repos.md) for how action packages map to GitHub repositories.
+
+See [docs/glossary.md](glossary.md) for the full combined reference (monorepo). Action READMEs include per-action glossaries for end users.
 
 ## Prerequisites
 

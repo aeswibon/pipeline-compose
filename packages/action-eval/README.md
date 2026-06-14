@@ -1,72 +1,127 @@
 # pipeline-compose-eval
 
-**Evaluate pipeline `when:` expressions against GitHub and context JSON.**
+**Test the same conditions as pipeline `when:`** — inside any workflow, without running the full pipeline.
 
-Used by [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run); also useful in custom workflows. Part of [pipeline-compose](https://github.com/aeswibon/pipeline-compose).
+Optional helper. [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) already evaluates **`when:`** on each stage automatically.
 
-## Start here — gate a job on ref or context
+Part of [pipeline-compose](https://github.com/aeswibon/pipeline-compose).
 
-Run deploy only on version tags:
+---
+
+## Do I need this?
+
+**Yes, if** you want to:
+
+- Gate a **normal job** with pipeline-style rules (e.g. “only on tags”)  
+- **Debug** a **`when:`** expression before adding it to the pipeline file  
+- Reuse the **same syntax** outside the orchestrator
+
+**No, if** all conditions live in pipeline **`when:`** fields and **run** handles everything.
+
+---
+
+## How it works
+
+```text
+expression + context + github  →  eval action  →  result: "true" | "false"
+                                                      ↓
+                                            if: steps.id.outputs.result == 'true'
+```
+
+Same expression language as stage **`when:`** in pipeline YAML.
+
+---
+
+## Quick start
+
+**Only run deploy on version tags:**
 
 ```yaml
-- id: should-deploy
+- id: gate
   uses: aeswibon/pipeline-compose-eval@v0.4.0
   with:
     expression: startsWith(github.ref, 'refs/tags/v')
     github: ${{ toJson(github) }}
 
 - name: Deploy
-  if: steps.should-deploy.outputs.result == 'true'
+  if: steps.gate.outputs.result == 'true'
   run: ./deploy.sh
 ```
 
-Gate on prior stage output:
+**Match pipeline `when:` using context:**
 
 ```yaml
-- id: should-publish
+# In pipeline.yml:
+#   when: context.ci.passed == 'true'
+
+- id: gate
   uses: aeswibon/pipeline-compose-eval@v0.4.0
   with:
     expression: context.ci.passed == 'true'
     context: '{"ci":{"passed":"true"}}'
 ```
 
-Full walkthrough: [examples/eval-conditional](https://github.com/aeswibon/pipeline-compose/tree/master/examples/eval-conditional).
+Example: [eval-conditional](https://github.com/aeswibon/pipeline-compose/tree/master/examples/eval-conditional).
 
 <!-- start usage -->
 ```yaml
 - uses: aeswibon/pipeline-compose-eval@v0.4.0
   with:
     expression: startsWith(github.ref, 'refs/tags/v')
-    context: '{"ci":{"passed":"true"}}'
 ```
 <!-- end usage -->
+
+---
+
+## Glossary
+
+| Term | Plain English |
+|------|----------------|
+| **`expression`** | The condition string (same as pipeline **`when:`**). |
+| **`when`** (pipeline) | Stage field; skipped if expression is false. Eval lets you test it elsewhere. |
+| **`context`** | JSON like run builds: `{ "stage-id": { "key": "value" } }`. Use **`context.stage-id.key`** in expressions. |
+| **`github`** | JSON with at least **`ref`** (and anything else your expression reads). |
+| **`result`** | Output: string **`true`** or **`false`** — compare in **`if:`** on next step. |
+
+**Supported (typical):** `startsWith`, `contains`, `==`, `&&`, `||`, `!`, property access.  
+**Not eval’s job:** artifacts, **`companion_workflows`**, dispatch — see **run** README.
+
+---
+
+## Common questions
+
+**Difference from GitHub `if:`?**  
+Syntax matches pipeline **`when:`**, not full GitHub Expressions. Keeps pipeline and custom jobs aligned.
+
+**Run already has `when:` — why eval?**  
+For jobs **outside** the pipeline (notifications, manual gates) or to test expressions in a PR check.
+
+**`result` is a string?**  
+Yes — use **`== 'true'`**, not boolean true.
+
+---
 
 ## Inputs
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `expression` | yes | — | Expression to evaluate |
-| `context` | no | `{}` | Pipeline context JSON |
-| `github` | no | `{}` | GitHub context JSON subset |
+| `expression` | yes | — | Condition to evaluate |
+| `context` | no | `{}` | Pipeline-style context JSON |
+| `github` | no | `{}` | GitHub context JSON |
 
 ## Outputs
 
 | Output | Description |
 |--------|-------------|
-| `result` | Boolean result as string (`true` / `false`) |
+| `result` | **`true`** or **`false`** (string) |
 
-## Supported expressions
+---
 
-Subset aligned with pipeline `when:` fields — e.g. `startsWith`, `endsWith`, `contains`, equality, `&&`, `||`, `!`, and property access on `github` and `context`.
+## Related actions
 
-## Compare approaches
-
-| Approach | Tradeoff |
-|----------|----------|
-| **Inline `if:` with bash** | Duplicates logic already in pipeline `when:` |
-| **Reusable workflow inputs** | Verbose for simple ref/context gates |
-| **pipeline-compose-run** | Evaluates `when:` per stage automatically |
-| **pipeline-compose-eval** | Same expression language; use anywhere in a workflow |
+| Action | Role |
+|--------|------|
+| [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) | Evaluates **`when:`** per stage automatically |
 
 ## License
 

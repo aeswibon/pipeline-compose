@@ -1,12 +1,62 @@
 # pipeline-compose-compile
 
-**Compile pipeline YAML into a static GitHub Actions workflow with native `needs:` edges.**
+**Generate a normal GitHub Actions workflow from pipeline YAML** — so reviewers see a standard `needs:` graph in git.
 
-Optional — most teams use [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) only (no generated file to commit). Part of [pipeline-compose](https://github.com/aeswibon/pipeline-compose).
+Optional alternative to [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run). Part of [pipeline-compose](https://github.com/aeswibon/pipeline-compose).
 
-## Start here — CI compile check
+---
 
-Keep a generated workflow in sync with your pipeline file:
+## Do I need this?
+
+**Yes, if** your team wants:
+
+- Pipeline YAML as the **source of truth**, but  
+- A **committed** `.github/workflows/*.yml` with native job **`needs:`** (familiar to everyone)
+
+**No, if** you use **pipeline-compose-run** (runtime dispatch, no generated file) — the common path for cross-repo orchestration.
+
+You typically pick **run OR compile**, not both for the same pipeline.
+
+---
+
+## How it works
+
+```text
+.github/pipelines/pipeline.yml   (you edit this — order + stages)
+              ↓
+    pipeline-compose-compile
+              ↓
+.github/workflows/pipeline-generated.yml   (generated jobs + needs:)
+              ↓
+    GitHub runs the generated file like any workflow
+```
+
+With **`check: true`**, CI fails if someone edits the generated file without recompiling — keeps YAML in sync.
+
+---
+
+## First-time setup checklist
+
+- [ ] Write **`.github/pipelines/pipeline.yml`** (same format as run)  
+- [ ] Run compile once to create **output** workflow file  
+- [ ] Commit **both** pipeline and generated workflow  
+- [ ] Add CI job with **`check: true`** to prevent drift  
+- [ ] Trigger remains on **generated** workflow (or wire triggers in pipeline / compile options)
+
+---
+
+## Quick start
+
+**One-off generate:**
+
+```yaml
+- uses: aeswibon/pipeline-compose-compile@v0.4.0
+  with:
+    pipeline_file: .github/pipelines/pipeline.yml
+    output: .github/workflows/pipeline-generated.yml
+```
+
+**CI guard (recommended):**
 
 ```yaml
 jobs:
@@ -22,9 +72,7 @@ jobs:
           check: "true"
 ```
 
-When `check: true`, the action fails if the committed workflow differs from what the pipeline compiles to.
-
-Full walkthrough: [examples/compile-check](https://github.com/aeswibon/pipeline-compose/tree/master/examples/compile-check).
+Example: [compile-check](https://github.com/aeswibon/pipeline-compose/tree/master/examples/compile-check).
 
 <!-- start usage -->
 ```yaml
@@ -35,53 +83,62 @@ Full walkthrough: [examples/compile-check](https://github.com/aeswibon/pipeline-
 ```
 <!-- end usage -->
 
-## One-off generation
+---
 
-```yaml
-- uses: aeswibon/pipeline-compose-compile@v0.4.0
-  with:
-    pipeline_file: .github/pipelines/pipeline.yml
-    output: .github/workflows/pipeline-generated.yml
-```
+## Glossary
 
-### CLI equivalent
+| Term | Plain English |
+|------|----------------|
+| **`pipeline_file`** | Input pipeline YAML (v1 or v2). |
+| **`output`** | Where to write the generated workflow. |
+| **`check`** | `true` = fail if file on disk ≠ freshly compiled (use in CI). |
+| **Stage `id` / `needs`** | Become job ids and **`needs:`** in generated YAML. |
+| **`when`** | Becomes job-level **`if:`** where supported. |
 
-```bash
-pnpm exec tsx packages/cli/src/main.ts compile .github/pipelines/pipeline.yml -o out.yml
-```
+**Not used with compile:** **`companion_workflows`**, **export artifacts**, **`repo_tokens_json`** — those belong to the **run** dispatch model.
 
-(from the [pipeline-compose](https://github.com/aeswibon/pipeline-compose) monorepo)
+---
+
+## Common questions
+
+**Run vs compile?**  
+| | **run** | **compile** |
+|---|---------|-------------|
+| Generated YAML in repo | No | Yes |
+| Cross-repo stages | Built-in | Limited |
+| Passing data between stages | Artifacts + **export** | Often same-workflow **`outputs`** |
+
+**Do I need pipeline-compose-export with compile?**  
+Usually **no** — generated workflow may use standard job outputs within one run. Export is for **run**’s cross-dispatch model.
+
+**Forgot to recompile after editing pipeline?**  
+CI with **`check: true`** catches it.
+
+---
 
 ## Inputs
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `pipeline_file` | yes | — | Path to pipeline YAML |
-| `pipeline_inline` | no | `''` | Inline YAML override |
-| `output` | no | — | Write generated workflow to this path |
-| `workflow_output` | no | same as `output` | Path embedded in compile-check job |
-| `compile_action` | no | `aeswibon/pipeline-compose-compile@master` | Action ref for compile-check job |
-| `default_branch` | no | `master` | Branch in generated `on.push.branches` |
-| `check` | no | `false` | Fail when output file differs |
+| `pipeline_file` | yes | — | Pipeline YAML path |
+| `output` | no | — | Write path |
+| `check` | no | `false` | Fail on drift |
+| `default_branch` | no | `master` | Branch in generated `on.push` |
 
 ## Outputs
 
 | Output | Description |
 |--------|-------------|
-| `workflow_path` | Path written when `output` is set |
-| `workflow_yaml` | Generated YAML when `output` is not set |
+| `workflow_path` | Path written |
+| `workflow_yaml` | YAML string if no `output` file |
 
-## Pipeline format
+---
 
-Same as the run action — see [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run#start-here--tag-release-pipeline).
+## Related actions
 
-## Compare approaches
-
-| Approach | Tradeoff |
-|----------|----------|
-| **Hand-written `needs:` graph** | Full control; drifts from your pipeline YAML |
-| **pipeline-compose-run** | No generated file; runtime orchestrator |
-| **pipeline-compose-compile** | Single source pipeline YAML → committed workflow; CI drift check |
+| Action | Role |
+|--------|------|
+| [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) | Runtime orchestrator (no codegen) |
 
 ## License
 

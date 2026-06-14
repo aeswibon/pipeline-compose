@@ -6,17 +6,15 @@ Define **in what order** workflows run across one repository or many — one pip
 
 Native Actions `needs:` stops at repo boundaries. **pipeline-compose** keeps going: dispatch stages in other repositories, wait for completion, merge outputs into context, and surface a single pipeline result.
 
-This repository is the **development monorepo** (core library, CLI, docs, release automation). Each GitHub Action is published from its own repository:
+**Usage and terminology** live in each action’s README (self-contained glossary per action). This monorepo holds core, CLI, and release automation:
 
-| Action | Repository |
-|--------|------------|
-| **Run** (start here) | [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) |
-| **Export** (stage outputs) | [pipeline-compose-export](https://github.com/aeswibon/pipeline-compose-export) |
-| Compile (optional) | [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile) |
-| Eval | [pipeline-compose-eval](https://github.com/aeswibon/pipeline-compose-eval) |
-| Context merge | [pipeline-compose-context-merge](https://github.com/aeswibon/pipeline-compose-context-merge) |
-
-**Usage, inputs, and examples** live in those action repositories (same pattern as [actions/checkout](https://github.com/actions/checkout)).
+| Action | Repository | When to use |
+|--------|------------|-------------|
+| **Run** (start here) | [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) | Orchestrate stages in order + cross-repo |
+| **Export** | [pipeline-compose-export](https://github.com/aeswibon/pipeline-compose-export) | Stage publishes `outputs.json` for run |
+| Compile | [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile) | Generate committed workflow from pipeline YAML |
+| Eval | [pipeline-compose-eval](https://github.com/aeswibon/pipeline-compose-eval) | `when:` expressions outside run |
+| Context merge | [pipeline-compose-context-merge](https://github.com/aeswibon/pipeline-compose-context-merge) | Manual context file without run |
 
 ## Quick start
 
@@ -63,6 +61,7 @@ Requires [Docker](https://docs.docker.com/get-docker/) and [act](https://github.
 | Cross-repo dispatch tutorial | [docs/tutorials/cross-repo-pipeline.md](docs/tutorials/cross-repo-pipeline.md) |
 | Extended examples | [docs/examples.md](docs/examples.md) |
 | Monorepo development | [docs/development.md](docs/development.md) |
+| **Glossary (monorepo contributors)** | [docs/glossary.md](docs/glossary.md) |
 | Publishing actions | [docs/action-repos.md](docs/action-repos.md) |
 | v0.4 activation design | [docs/specs/2026-06-14-v040-activation-design.md](docs/specs/2026-06-14-v040-activation-design.md) |
 | Pipeline schema (v1) | [packages/core/schema/pipeline-v1.schema.json](packages/core/schema/pipeline-v1.schema.json) |

@@ -73,6 +73,20 @@ describe('validatePipeline', () => {
     expect(resolved.stages[0].resolvedGroup).toBe('release');
   });
 
+  it('accepts v2 companion_workflows at document root', () => {
+    const doc: PipelineDocument = {
+      version: 2,
+      companion_workflows: ['.github/workflows/release.yml'],
+      pipelines: {
+        release: {
+          stages: [{ id: 'ci', workflow: '.github/workflows/ci.yml' }],
+        },
+      },
+    };
+    const resolved = validatePipelineDocument(doc);
+    expect(resolved.companion_workflows).toEqual(['.github/workflows/release.yml']);
+  });
+
   it('merges multiple pipeline documents', () => {
     const docs: PipelineDocument[] = [
       {

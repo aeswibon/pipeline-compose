@@ -5,7 +5,7 @@ import type {
   ResolvedPipeline,
 } from './parser.js';
 import { isPipelineV2 } from './parser.js';
-import { mergePipelines, pipelineDocumentToList } from './pipeline-resolve.js';
+import { mergePipelines, pipelineDocumentToList, resolvePipelineDocument } from './pipeline-resolve.js';
 import { sortStages } from './topo-sort.js';
 import schemaV1 from '../../schema/pipeline-v1.schema.json' with { type: 'json' };
 import schemaV2 from '../../schema/pipeline-v2.schema.json' with { type: 'json' };
@@ -55,13 +55,13 @@ export function validatePipelineDocument(doc: PipelineDocument): ResolvedPipelin
       });
       sortStages(def.stages);
     }
-    return mergePipelines(pipelineDocumentToList(doc));
+    return resolvePipelineDocument(doc);
   }
 
   assertSchema('pipeline v1', validateV1, doc);
   assertUniqueStageIds(doc);
   const sorted = sortStages(doc.stages);
-  return mergePipelines([{ ...doc, stages: sorted }]);
+  return resolvePipelineDocument({ ...doc, stages: sorted });
 }
 
 export function validatePipelineDocuments(docs: PipelineDocument[]): ResolvedPipeline {

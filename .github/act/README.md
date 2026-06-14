@@ -53,7 +53,7 @@ These use `workflow_dispatch` only — they do not run on push/PR to GitHub.
 | Compile CLI ↔ action parity | yes | yes |
 | Bundle run / compile / eval actions | yes | yes (in workflow-lint job) |
 | actionlint + yamllint | no | yes |
-| Live `pipeline-compose-run` dispatch | no | requires real repo + token |
+| Live `pipeline-compose-run` dispatch | no | yes on tag push via `release.yml` + `./packages/action-run` |
 
 The run orchestrator is covered by unit tests (`packages/action-run/src/orchestrator.test.ts`). Dispatching stage workflows still requires GitHub.
 

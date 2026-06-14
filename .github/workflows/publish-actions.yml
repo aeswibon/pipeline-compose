@@ -69,7 +69,7 @@ jobs:
         run: |
           if [ -z "$GH_TOKEN" ]; then
             echo "Missing repository secret ACTION_PUBLISH_TOKEN."
-            echo "Add a PAT with contents:write on pipeline-compose-run, -compile, -eval, and -context-merge."
+            echo "Add a PAT with contents:write on pipeline-compose-run, -export, -compile, -eval, and -context-merge."
             exit 1
           fi
 

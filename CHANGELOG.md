@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Glossary** — [docs/glossary.md](docs/glossary.md) for pipeline fields, export contract, and action selection.
+- **v2 `companion_workflows`** — optional root field on v2 pipeline documents (strict validate allowlist).
+
+### Changed
+
+- **Action READMEs** — per-action **Glossary** sections (self-contained; no monorepo visit required).
+- **Meta-repo** — v2 `pipeline.yml` + `release.yml` dogfoods `./packages/action-run`.
+
 ## [0.4.0] - 2026-06-14
 
 ### Added

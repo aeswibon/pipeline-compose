@@ -13,28 +13,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  ci:
-    uses: ./.github/workflows/ci.yml
+  run-pipeline:
+    name: Run release pipeline
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
 
-  version-sync:
-    name: Version sync
-    needs: ci
-    uses: ./.github/workflows/stage-version-sync.yml
+      - uses: pnpm/action-setup@v6
 
-  release-publish:
-    name: Release publish
-    needs: version-sync
-    uses: ./.github/workflows/stage-release-publish.yml
-    with:
-      version: ${{ needs.version-sync.outputs.version }}
-      skip_publish: ${{ needs.version-sync.outputs.skip_publish }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
 
-  publish-actions:
-    name: Publish actions
-    needs:
-      - version-sync
-      - release-publish
-    uses: ./.github/workflows/publish-actions.yml
-    secrets: inherit
-    with:
-      version: ${{ needs.version-sync.outputs.version }}
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @aeswibon/pipeline-compose-action-run run bundle
+
+      - uses: ./packages/action-run
+        with:
+          pipeline_file: .github/pipelines/pipeline.yml
+          github_token: ${{ secrets.GITHUB_TOKEN }}
