@@ -44,15 +44,21 @@ When validate finds issues, the diagram annotates nodes:
 | **Red node** (`❌ …`) | Validation error on that stage (e.g. missing workflow file) |
 | **Amber node** (`⚠ blocked upstream`) | Stage depends on a broken upstream stage via `needs:` |
 
-Example (same shape as [PR #6](https://github.com/aeswibon/pipeline-compose/pull/6)):
+When a stage has multiple errors, the label shows the highest-priority root cause (e.g. **missing workflow file** before group/path mismatch).
+
+Example (recorded from closed [PR #7](https://github.com/aeswibon/pipeline-compose/pull/7)):
 
 ```mermaid
 flowchart TD
   ci["ci (release)"]
   broken_gate["broken-gate (release)<br/>❌ missing workflow file"]:::error
   version_sync["version-sync (release)<br/>⚠ blocked upstream"]:::blocked
+  release_publish["release-publish (release)<br/>⚠ blocked upstream"]:::blocked
+  publish_actions["publish-actions (release)<br/>⚠ blocked upstream"]:::blocked
   ci --> broken_gate
   broken_gate --> version_sync
+  version_sync --> release_publish
+  release_publish --> publish_actions
   classDef error fill:#ffebe9,stroke:#cf222e,stroke-width:2px,color:#1f2328
   classDef blocked fill:#fff8c5,stroke:#9a6700,stroke-width:2px,color:#1f2328
 ```
@@ -87,14 +93,16 @@ Updating the pipeline file on the same PR refreshes the existing comment (same m
 
 ### Sample pull requests
 
-These closed PRs were used to smoke-test the bot on this repo:
+These closed PRs smoke-tested the bot on this repo:
 
 | PR | Scenario | What to look for |
 |----|----------|------------------|
 | [#5 — Test pipeline mermaid PR comment](https://github.com/aeswibon/pipeline-compose/pull/5) | Valid pipeline change | **Status: OK**, four-stage topology, _No issues._ |
-| [#6 — Test mermaid PR comment on validation failure](https://github.com/aeswibon/pipeline-compose/pull/6) | Intentional break (`broken-gate` → missing workflow) | **Status: Failed**; `broken-gate` node shows **❌ missing workflow file**; downstream stages show **⚠ blocked upstream** |
+| [#7 — Demo mermaid error styling on validation failure](https://github.com/aeswibon/pipeline-compose/pull/7) | Intentional break (`broken-gate` → missing workflow) | **Status: Failed**; red **`broken-gate`** node; amber **blocked upstream** on all downstream stages — see [bot comment](https://github.com/aeswibon/pipeline-compose/pull/7#issuecomment-4702508990) |
 
-PR #6 also shows that **`Pipeline validate` CI can fail** while the PR comment job still completes and posts the diagram.
+PR #7 also shows that **`Pipeline validate` CI can fail** while the PR comment job still completes and posts the annotated diagram.
+
+Older [PR #6](https://github.com/aeswibon/pipeline-compose/pull/6) exercised the same break before error styling existed (topology only, no red/amber nodes).
 
 **Break cases that still render Mermaid:** missing workflow files, deprecation/strict errors, group/path warnings promoted under `--strict`.
 
@@ -103,12 +111,12 @@ PR #6 also shows that **`Pipeline validate` CI can fail** while the PR comment j
 ### Try it locally before opening a PR
 
 ```bash
-git checkout -b test/mermaid-pr-bot
-# Touch .github/pipelines/pipeline.yml (comment or stage change)
+git checkout -b test/mermaid-error-styling-demo
+# Add broken-gate stage with a missing workflow (see PR #7 diff)
 pnpm run validate .github/pipelines/pipeline.yml --repo-root . --workflows --strict --mermaid
-git commit -am "test: trigger pipeline PR comment"
-git push -u origin test/mermaid-pr-bot
-gh pr create --title "Test pipeline mermaid PR comment" --body "Smoke-test PR bot."
+git commit -am "test: demo mermaid error styling"
+git push -u origin test/mermaid-error-styling-demo
+gh pr create --title "Demo mermaid error styling" --body "Do not merge."
 ```
 
 ## See also

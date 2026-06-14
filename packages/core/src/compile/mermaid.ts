@@ -19,6 +19,17 @@ const ERROR_SUMMARY_BY_CODE: Record<string, string> = {
   'pipeline.v1-deprecated': 'schema v1',
 };
 
+const ERROR_CODE_PRIORITY = [
+  'workflow.missing',
+  'stage.repo-invalid',
+  'export.missing',
+  'export.manual-upload-deprecated',
+  'group.path-prefix',
+  'uses.monorepo-subpath-deprecated',
+  'uses.master-pin-deprecated',
+  'pipeline.v1-deprecated',
+] as const;
+
 function mermaidNodeId(stageId: string): string {
   return stageId.replace(/[^a-zA-Z0-9_]/g, '_');
 }
@@ -77,7 +88,11 @@ function summarizeStageErrors(issues: ValidationIssue[]): string {
   if (errors.length === 0) {
     return '';
   }
-  const first = errors[0];
+  const priority = (code: string): number => {
+    const index = ERROR_CODE_PRIORITY.indexOf(code as (typeof ERROR_CODE_PRIORITY)[number]);
+    return index === -1 ? ERROR_CODE_PRIORITY.length : index;
+  };
+  const first = [...errors].sort((a, b) => priority(a.code) - priority(b.code))[0];
   return ERROR_SUMMARY_BY_CODE[first.code] ?? first.code;
 }
 

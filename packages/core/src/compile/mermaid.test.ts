@@ -63,15 +63,15 @@ describe('renderPipelineMermaid', () => {
     const issues: ValidationIssue[] = [
       {
         level: 'error',
-        code: 'workflow.missing',
-        message:
-          'Missing workflow file for stage "broken-gate": .github/workflows/missing.yml',
-      },
-      {
-        level: 'error',
         code: 'group.path-prefix',
         message:
           'Stage "broken-gate" group "release" does not match workflow path .github/workflows/missing.yml',
+      },
+      {
+        level: 'error',
+        code: 'workflow.missing',
+        message:
+          'Missing workflow file for stage "broken-gate": .github/workflows/missing.yml',
       },
     ];
 
