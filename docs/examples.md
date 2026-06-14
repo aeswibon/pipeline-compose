@@ -280,7 +280,8 @@ See [.github/act/README.md](../.github/act/README.md).
 
 ## Related
 
-- [README](../README.md) — Usage and scenarios (checkout-style)
+- [README](../README.md) — setup and compile action usage
+- [docs/development.md](development.md) — local development on pipeline-compose
 - [pipeline.yml](../.github/pipelines/pipeline.yml) — live dogfood example
 - [pipeline-runner template](../templates/pipeline-runner.yml)
 - [pipeline v1 schema](../schema/pipeline-v1.schema.json)
