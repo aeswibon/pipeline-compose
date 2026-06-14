@@ -33,6 +33,9 @@ EOF
       *action-context-merge*)
         echo '- uses: aeswibon/pipeline-compose-context-merge@v0.3.1' > "$TMP/$file"
         ;;
+      *action-export*)
+        echo '- uses: aeswibon/pipeline-compose-export@v0.3.1' > "$TMP/$file"
+        ;;
     esac
   done
 }

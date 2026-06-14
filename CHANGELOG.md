@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Cross-Repo Orchestrator positioning** — README and docs emphasize multi-repo orchestration as the primary value proposition.
+- **`pipeline-compose init`** — scan `.github/workflows/` for `workflow_dispatch` / `workflow_call` workflows, infer local `uses:` dependencies, write starter `.github/pipelines/pipeline.yml`.
+- **`validate --mermaid`** — emit a Mermaid flowchart of stage topology and `needs:` edges.
+- **`pipeline-compose-export`** — composite action to upload `pipeline-compose-<stage_id>` artifacts without manual `jq` wiring.
+- **PR validation bot** — posts sticky PR comments with Mermaid topology and validate results when pipeline files change.
+
+### pipeline-compose-export
+
+- Composite action: `stage_id` + JSON `outputs` → artifact `pipeline-compose-<stage_id>` / `outputs.json`.
+
 ## [0.3.3] - 2026-06-14
 
 ### Added

@@ -2,7 +2,7 @@
   "name": "pipeline-compose",
   "version": "0.3.3",
   "private": true,
-  "description": "Define workflow execution order and run stages sequentially via GitHub Actions",
+  "description": "Cross-Repo Orchestrator for GitHub Actions — define workflow execution order via pipeline YAML",
   "packageManager": "pnpm@10.12.1",
   "scripts": {
     "build": "pnpm -r run build",
@@ -12,6 +12,7 @@
     "compile": "pnpm exec tsx packages/cli/src/main.ts compile",
     "eval": "pnpm exec tsx packages/cli/src/main.ts eval",
     "validate": "pnpm exec tsx packages/cli/src/main.ts validate",
+    "init": "pnpm exec tsx packages/cli/src/main.ts init",
     "sync:workflows": "pnpm exec tsx packages/cli/src/main.ts sync",
     "act:ci": "bash scripts/act-test.sh ci",
     "act:compile": "bash scripts/act-test.sh compile",

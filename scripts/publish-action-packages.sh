@@ -111,5 +111,6 @@ publish action-run pipeline-compose-run
 publish action-compile pipeline-compose-compile
 publish action-eval pipeline-compose-eval
 publish action-context-merge pipeline-compose-context-merge
+publish action-export pipeline-compose-export
 
 echo "All action packages published."

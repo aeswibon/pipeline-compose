@@ -11,11 +11,13 @@ import {
   loadPipelineDocumentFromFile,
   loadPipelineDocumentsFromInputs,
   previewWorkflowSync,
+  renderPipelineMermaid,
   runWorkflowSync,
   serializeValidateReport,
   validatePipelineDocument,
   validatePipelineDocuments,
   validateReportExitCode,
+  writeInitPipeline,
   type ResolvedPipeline,
 } from '@aeswibon/pipeline-compose-core';
 
@@ -35,7 +37,14 @@ function evalUsage(): never {
 
 function validateUsage(): never {
   console.error(
-    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict] [--json] [--repo-tokens-file <path>]',
+    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict] [--json] [--mermaid] [--repo-tokens-file <path>]',
+  );
+  process.exit(1);
+}
+
+function initUsage(): never {
+  console.error(
+    'Usage: pipeline-compose init [--repo-root <path>] [--output <path>] [--name <pipeline-name>] [--force]',
   );
   process.exit(1);
 }
@@ -48,7 +57,7 @@ function syncUsage(): never {
 }
 
 function rootUsage(): never {
-  console.error('Usage: pipeline-compose <compile|eval|validate|sync> ...');
+  console.error('Usage: pipeline-compose <compile|eval|validate|sync|init> ...');
   process.exit(1);
 }
 
@@ -178,6 +187,7 @@ function runValidate(args: string[]): void {
   let workflows = false;
   let strict = false;
   let json = false;
+  let mermaid = false;
   let repoTokensFile = '';
   const positional: string[] = [];
 
@@ -190,6 +200,8 @@ function runValidate(args: string[]): void {
       strict = true;
     } else if (args[i] === '--json') {
       json = true;
+    } else if (args[i] === '--mermaid') {
+      mermaid = true;
     } else if (args[i] === '--repo-tokens-file') {
       repoTokensFile = args[++i] ?? '';
     } else {
@@ -219,8 +231,62 @@ function runValidate(args: string[]): void {
     repoTokenSlugs,
   });
 
+  if (mermaid && json) {
+    console.log(renderPipelineMermaid(report.pipeline));
+    console.log('');
+    console.log(serializeValidateReport(report));
+    process.exit(validateReportExitCode(report));
+  }
+
+  if (mermaid) {
+    console.log(renderPipelineMermaid(report.pipeline));
+    process.exit(validateReportExitCode(report));
+  }
+
   console.log(json ? serializeValidateReport(report) : formatValidateReport(report));
   process.exit(validateReportExitCode(report));
+}
+
+function runInit(args: string[]): void {
+  let repoRoot = '';
+  let output = '';
+  let pipelineName = 'pipeline';
+  let force = false;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--repo-root') {
+      repoRoot = args[++i] ?? '';
+    } else if (args[i] === '--output') {
+      output = args[++i] ?? '';
+    } else if (args[i] === '--name') {
+      pipelineName = args[++i] ?? 'pipeline';
+    } else if (args[i] === '--force') {
+      force = true;
+    } else {
+      initUsage();
+    }
+  }
+
+  const resolvedRoot = resolveRepoRoot(repoRoot || undefined);
+
+  try {
+    const { outputPath, result } = writeInitPipeline(resolvedRoot, {
+      outputPath: output || undefined,
+      pipelineName,
+      force,
+    });
+    console.log(`Wrote ${path.relative(resolvedRoot, outputPath)} (${result.stages.length} stage(s))`);
+    if (result.skipped.length > 0) {
+      console.log('');
+      console.log('Skipped workflows:');
+      for (const entry of result.skipped) {
+        console.log(`  - ${entry}`);
+      }
+    }
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
 }
 
 function runSync(args: string[]): void {
@@ -286,6 +352,8 @@ if (command === 'compile') {
   runValidate(rest);
 } else if (command === 'sync') {
   runSync(rest);
+} else if (command === 'init') {
+  runInit(rest);
 } else {
   rootUsage();
 }

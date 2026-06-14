@@ -7,7 +7,7 @@ Guide for working on the **pipeline-compose** monorepo. For using the actions in
 | Path | Package | Role |
 |------|---------|------|
 | `packages/core/` | `@aeswibon/pipeline-compose-core` | Parser, validator, codegen, expressions, schema |
-| `packages/cli/` | `@aeswibon/pipeline-compose-cli` | `pipeline-compose` CLI (`compile`, `eval`, `validate`, `sync`) |
+| `packages/cli/` | `@aeswibon/pipeline-compose-cli` | `pipeline-compose` CLI (`compile`, `eval`, `validate`, `sync`, `init`) |
 | `packages/action-run/` | `@aeswibon/pipeline-compose-action-run` | Run action source (published to [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run)) |
 | `packages/action-compile/` | `@aeswibon/pipeline-compose-action-compile` | Compile action source |
 | `packages/action-eval/` | `@aeswibon/pipeline-compose-action-eval` | Eval action source |
@@ -40,8 +40,10 @@ pnpm install
 | `pnpm run compile` | CLI compile (same as `pnpm exec tsx packages/cli/src/main.ts compile …`) |
 | `pnpm run eval` | CLI eval (`--expression`, `--context`, `--github`) |
 | `pnpm run validate` | Validate pipeline groups, stages, and optional workflow hygiene |
+| `pnpm run init` | Scan `.github/workflows/` and write starter `.github/pipelines/pipeline.yml` |
 | `pnpm run sync:workflows` | Sync `workflows/{group}/` sources into flat `.github/workflows/` targets |
 | `pnpm run validate … --json` | Machine-readable validate report (for CI dashboards) |
+| `pnpm run validate … --mermaid` | Mermaid flowchart of stage topology |
 | `pnpm run sync:workflows … --dry-run` | Preview create/update actions without writing files |
 | `pnpm run bundle:actions` | Bundle Node actions with `@vercel/ncc` into `packages/action-*/dist` |
 | `pnpm run publish:actions [tag]` | Bundle and push action packages locally (CI does this on tag push) |

@@ -10,6 +10,7 @@ VERSION_PACKAGE_JSONS=(
   packages/action-compile/package.json
   packages/action-eval/package.json
   packages/action-context-merge/package.json
+  packages/action-export/package.json
 )
 
 VERSION_ACTION_READMES=(
@@ -17,4 +18,5 @@ VERSION_ACTION_READMES=(
   packages/action-compile/README.md
   packages/action-eval/README.md
   packages/action-context-merge/README.md
+  packages/action-export/README.md
 )

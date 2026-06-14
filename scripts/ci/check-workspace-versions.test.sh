@@ -14,7 +14,8 @@ chmod +x "$TMP/scripts/ci/check-workspace-versions.sh"
 
 for file in package.json packages/core/package.json packages/cli/package.json \
   packages/action-run/package.json packages/action-compile/package.json \
-  packages/action-eval/package.json packages/action-context-merge/package.json; do
+  packages/action-eval/package.json packages/action-context-merge/package.json \
+  packages/action-export/package.json; do
   mkdir -p "$TMP/$(dirname "$file")"
   echo '{"name":"fixture","version": "9.9.9"}' > "$TMP/$file"
 done

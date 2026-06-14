@@ -41,6 +41,13 @@ export {
   serializeValidateReport,
   workflowMatchesGroupConvention,
 } from './compile/validate-report.js';
+export { renderPipelineMermaid } from './compile/mermaid.js';
+export {
+  renderInitPipelineYaml,
+  scanWorkflowsForInit,
+  writeInitPipeline,
+} from './compile/workflow-init.js';
+export type { WorkflowInitCandidate, WorkflowInitResult } from './compile/workflow-init.js';
 export type {
   ValidateReport,
   ValidateReportOptions,

@@ -1,0 +1,40 @@
+name: Pipeline Compose Export
+description: Upload pipeline-compose stage outputs as an artifact for the run orchestrator
+branding:
+  icon: upload
+  color: blue
+inputs:
+  stage_id:
+    description: Stage id (artifact becomes pipeline-compose-<stage_id>)
+    required: true
+  outputs:
+    description: JSON object of stage output keys and values
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        OUTPUTS: ${{ inputs.outputs }}
+      run: |
+        set -euo pipefail
+        mkdir -p pipeline-compose
+        node <<'NODE'
+        const fs = require('node:fs');
+        const raw = process.env.OUTPUTS;
+        let parsed;
+        try {
+          parsed = JSON.parse(raw);
+        } catch (error) {
+          throw new Error(`Invalid outputs JSON: ${error.message}`);
+        }
+        if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          throw new Error('outputs must be a JSON object');
+        }
+        fs.writeFileSync('pipeline-compose/outputs.json', JSON.stringify(parsed));
+        NODE
+    - uses: actions/upload-artifact@v4
+      with:
+        name: pipeline-compose-${{ inputs.stage_id }}
+        path: pipeline-compose/outputs.json
+        retention-days: 1

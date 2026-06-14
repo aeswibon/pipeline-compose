@@ -4,6 +4,7 @@ group: release
 companion_workflows:
   - .github/workflows/release.yml
   - .github/workflows/smoke-cross-repo.yml
+  - .github/workflows/pipeline-pr-comment.yml
 groups:
   release:
     description: Meta-repo tag release chain
