@@ -3,6 +3,7 @@ node_modules/
 *.log
 .DS_Store
 .pipeline-context.json
+examples/act-output.generated.yml
 .pnpm-store/
 
 # Local agent docs — not published
