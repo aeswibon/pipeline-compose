@@ -1,0 +1,8 @@
+name: cross-repo
+version: 1
+stages:
+  - id: remote-echo
+    repo: your-org/your-target-repo
+    workflow: .github/workflows/echo.yml
+    outputs:
+      - message

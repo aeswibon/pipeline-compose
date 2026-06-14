@@ -1,0 +1,20 @@
+name: Echo
+on:
+  workflow_call:
+    outputs:
+      message:
+        description: Echo message
+        value: ${{ jobs.echo.outputs.message }}
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  echo:
+    runs-on: ubuntu-latest
+    outputs:
+      message: ${{ steps.out.outputs.message }}
+    steps:
+      - id: out
+        run: echo "message=hello-from-target" >> "$GITHUB_OUTPUT"

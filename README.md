@@ -43,6 +43,7 @@ Requires [Docker](https://docs.docker.com/get-docker/) and [act](https://github.
 | Run action usage | [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) |
 | Copy-paste examples (all actions) | [examples/](examples/) |
 | Tag release tutorial (Dev.to / blog) | [docs/tutorials/tag-release-pipeline.md](docs/tutorials/tag-release-pipeline.md) |
+| Cross-repo dispatch tutorial | [docs/tutorials/cross-repo-pipeline.md](docs/tutorials/cross-repo-pipeline.md) |
 | Extended examples | [docs/examples.md](docs/examples.md) |
 | Monorepo development | [docs/development.md](docs/development.md) |
 | Publishing actions | [docs/action-repos.md](docs/action-repos.md) |

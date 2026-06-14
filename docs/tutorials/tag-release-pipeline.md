@@ -243,18 +243,4 @@ If you prefer committing a static graph with native GitHub `needs:`, see [pipeli
 
 ---
 
-## Publishing this article
-
-Post to [Dev.to](https://dev.to/new) (or your blog) with:
-
-- **Title:** Tag release pipelines without a 400-line GitHub Actions workflow
-- **Tags:** `github`, `devops`, `ci`, `actions`
-- **Canonical URL:** link back to this file in the monorepo if you mirror it
-
-Suggested intro line for social posts:
-
-> Stop chaining `workflow_run` or stuffing every release stage into one YAML file. One pipeline file + `@v0.3.0` of pipeline-compose-run on tag push.
-
----
-
 *Part of [pipeline-compose](https://github.com/aeswibon/pipeline-compose). MIT License.*

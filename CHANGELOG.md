@@ -9,11 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`repo_tokens_json`** on run action — map `owner/repo` slugs to PATs for cross-repo `repo:` stages; fail-fast when a slug is missing.
+- **Cross-repo 403 errors** — actionable messages referencing `repo_tokens_json` and target permissions.
+- **Validate** — `stage.cross-repo-token` issue; CLI `--repo-tokens-file` for local strict checks.
+- **Manual smoke** — `workflow_dispatch` workflow for cross-repo dispatch (`CROSS_REPO_SMOKE_TOKEN`).
 - **Cross-repo stages** — optional `repo: owner/repo` on stages; run action dispatches with a scoped GitHub client.
 - **Richer `when:`** — `contains()`, `&&`, and `||` on the run/eval path.
 - **CLI** — `validate --json` and `sync --dry-run` preview output.
 - **CI guard** — `check-workspace-versions.sh` ensures package.json versions match the latest release tag (sync still runs on tag push).
 - **Tests** — GitHub API client mocks; sync/validate preview coverage; coverage thresholds raised to 65% (action/CLI entry shims excluded).
+- **Docs** — cross-repo tutorial, `examples/cross-repo-dispatch/`, manga-cdc case study.
 
 ### Changed
 

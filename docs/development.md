@@ -108,6 +108,16 @@ Version sync updates all workspace `package.json` files and `@v` refs in action 
 
 Configure repository secret `ACTION_PUBLISH_TOKEN` before the first tag release (see [docs/action-repos.md](action-repos.md)).
 
+### Cross-repo smoke (manual)
+
+Before tagging releases that touch cross-repo dispatch:
+
+1. Ensure target repo `aeswibon/pipeline-compose-smoke-target` has `.github/workflows/echo.yml` (callable).
+2. Set secret `CROSS_REPO_SMOKE_TOKEN` (PAT with `actions: write` on the target).
+3. Run **Actions → Smoke — cross-repo dispatch → Run workflow**.
+
+Pipeline fixture: `.github/pipelines/smoke-cross-repo.yml`.
+
 Quick links: [Release workflow](https://github.com/aeswibon/pipeline-compose/actions/workflows/release.yml) (tag push) · [Publish actions workflow](https://github.com/aeswibon/pipeline-compose/actions/workflows/publish-actions.yml) (manual)
 
 ## CI
