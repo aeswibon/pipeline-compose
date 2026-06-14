@@ -80,12 +80,8 @@ EOF
     gh repo create "${GH_OWNER}/${github_repo}" --public --source "$work" --remote origin --push
   fi
 
-  if git -C "$work" rev-parse "$TAG" >/dev/null 2>&1; then
-    git -C "$work" push origin "$TAG" --force
-  else
-    git -C "$work" tag -a "$TAG" -m "Release ${TAG}"
-    git -C "$work" push origin "$TAG"
-  fi
+  git -C "$work" tag -fa "$TAG" -m "Release ${TAG}"
+  git -C "$work" push origin "$TAG" --force
 
   local version="${TAG#v}"
   local notes_file
