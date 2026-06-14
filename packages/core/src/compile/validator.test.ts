@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   validatePipeline,
   validatePipelineDocument,
+  validatePipelineDocumentForReport,
   validatePipelineDocuments,
   V1_UNSUPPORTED_MESSAGE,
 } from './validator.js';
@@ -89,6 +90,37 @@ describe('validatePipelineDocument', () => {
       },
     } as PipelineDocument;
     expect(() => validatePipelineDocument(doc)).toThrow(/Invalid pipeline v2/);
+  });
+
+  it('rejects unknown needs at strict validate time', () => {
+    const doc: PipelineDocument = {
+      version: 2,
+      pipelines: {
+        release: {
+          stages: [
+            { id: 'deploy', workflow: '.github/workflows/deploy.yml', needs: ['missing'] },
+          ],
+        },
+      },
+    };
+    expect(() => validatePipelineDocument(doc)).toThrow(/Unknown stage in needs: missing/);
+  });
+});
+
+describe('validatePipelineDocumentForReport', () => {
+  it('loads pipelines with unknown needs for validate reporting', () => {
+    const doc: PipelineDocument = {
+      version: 2,
+      pipelines: {
+        release: {
+          stages: [
+            { id: 'deploy', workflow: '.github/workflows/deploy.yml', needs: ['missing'] },
+          ],
+        },
+      },
+    };
+    const resolved = validatePipelineDocumentForReport(doc);
+    expect(resolved.stages.map((stage) => stage.id)).toEqual(['deploy']);
   });
 });
 

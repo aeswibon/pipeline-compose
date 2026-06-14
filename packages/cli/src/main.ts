@@ -2,9 +2,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
-  buildSyncPlan,
   buildValidateReport,
+  buildSyncPlan,
   evaluateExpression,
+  formatSimulateReport,
   formatValidateReport,
   formatWorkflowSyncPreview,
   generateWorkflow,
@@ -14,8 +15,11 @@ import {
   renderPipelineMermaid,
   runWorkflowSync,
   serializeValidateReport,
+  simulatePipeline,
   validatePipelineDocument,
+  validatePipelineDocumentForReport,
   validatePipelineDocuments,
+  validatePipelineDocumentsForReport,
   validateReportExitCode,
   writeInitPipeline,
   type ResolvedPipeline,
@@ -37,7 +41,7 @@ function evalUsage(): never {
 
 function validateUsage(): never {
   console.error(
-    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict] [--json] [--mermaid] [--repo-tokens-file <path>]',
+    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict] [--json] [--mermaid] [--simulate] [--github <json>] [--repo-tokens-file <path>]',
   );
   process.exit(1);
 }
@@ -86,6 +90,16 @@ function loadResolvedPipeline(target: string): ResolvedPipeline {
     );
   }
   return validatePipelineDocument(loadPipelineDocumentFromFile(absoluteTarget));
+}
+
+function loadResolvedPipelineForValidate(target: string): ResolvedPipeline {
+  const absoluteTarget = path.resolve(target);
+  if (fs.statSync(absoluteTarget).isDirectory()) {
+    return validatePipelineDocumentsForReport(
+      loadPipelineDocumentsFromInputs({ pipelineDir: absoluteTarget }),
+    );
+  }
+  return validatePipelineDocumentForReport(loadPipelineDocumentFromFile(absoluteTarget));
 }
 
 function compileSourceLabel(target: string): string {
@@ -188,6 +202,8 @@ function runValidate(args: string[]): void {
   let strict = false;
   let json = false;
   let mermaid = false;
+  let simulate = false;
+  let githubJson = '';
   let repoTokensFile = '';
   const positional: string[] = [];
 
@@ -202,6 +218,10 @@ function runValidate(args: string[]): void {
       json = true;
     } else if (args[i] === '--mermaid') {
       mermaid = true;
+    } else if (args[i] === '--simulate') {
+      simulate = true;
+    } else if (args[i] === '--github') {
+      githubJson = args[++i] ?? '';
     } else if (args[i] === '--repo-tokens-file') {
       repoTokensFile = args[++i] ?? '';
     } else {
@@ -215,7 +235,7 @@ function runValidate(args: string[]): void {
   }
 
   const resolvedRoot = resolveRepoRoot(repoRoot || undefined);
-  const pipeline = loadResolvedPipeline(target);
+  const pipeline = loadResolvedPipelineForValidate(target);
   let repoTokenSlugs: Set<string> | undefined;
   if (repoTokensFile) {
     const raw = fs.readFileSync(path.resolve(repoTokensFile), 'utf8');
@@ -231,10 +251,16 @@ function runValidate(args: string[]): void {
     repoTokenSlugs,
   });
 
+  const simulation = simulate
+    ? simulatePipeline(report.pipeline, {
+        github: githubJson ? parseJsonObject('github', githubJson) : undefined,
+      })
+    : undefined;
+
   if (mermaid && json) {
     console.log(renderPipelineMermaid(report.pipeline, { issues: report.issues }));
     console.log('');
-    console.log(serializeValidateReport(report));
+    console.log(serializeValidateReport(report, simulation));
     process.exit(validateReportExitCode(report));
   }
 
@@ -243,7 +269,19 @@ function runValidate(args: string[]): void {
     process.exit(validateReportExitCode(report));
   }
 
-  console.log(json ? serializeValidateReport(report) : formatValidateReport(report));
+  if (json) {
+    console.log(serializeValidateReport(report, simulation));
+    process.exit(validateReportExitCode(report));
+  }
+
+  const text = formatValidateReport(report);
+  if (simulation) {
+    console.log(text);
+    console.log('');
+    console.log(formatSimulateReport(simulation));
+  } else {
+    console.log(text);
+  }
   process.exit(validateReportExitCode(report));
 }
 

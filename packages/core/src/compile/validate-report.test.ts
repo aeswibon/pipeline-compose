@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { afterEach, describe, it, expect } from 'vitest';
 import {
   buildValidateReport,
+  collectNeedsIssues,
   findOrphanWorkflows,
   formatPipelineTree,
   formatValidateReport,
@@ -137,6 +138,17 @@ describe('buildValidateReport', () => {
   });
 });
 
+describe('collectNeedsIssues', () => {
+  it('reports unknown needs targets', () => {
+    const issues = collectNeedsIssues([
+      { id: 'deploy', workflow: '.github/workflows/deploy.yml', needs: ['missing'] },
+    ]);
+    expect(issues).toEqual([
+      expect.objectContaining({ code: 'needs.unknown', level: 'error' }),
+    ]);
+  });
+});
+
 describe('serializeValidateReport', () => {
   it('returns machine-readable JSON with pipeline summary', () => {
     const report = buildValidateReport(samplePipeline);
@@ -149,6 +161,16 @@ describe('serializeValidateReport', () => {
     expect(json.pipeline.name).toBe('release');
     expect(json.pipeline.stageCount).toBe(2);
     expect(Array.isArray(json.issues)).toBe(true);
+  });
+
+  it('includes simulation results when provided', () => {
+    const report = buildValidateReport(samplePipeline);
+    const json = JSON.parse(
+      serializeValidateReport(report, [
+        { id: 'ci', status: 'run', workflow: '.github/workflows/ci.yml' },
+      ]),
+    ) as { simulation: unknown[] };
+    expect(json.simulation).toHaveLength(1);
   });
 });
 

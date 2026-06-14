@@ -130,6 +130,25 @@ export function collectPipelineIssues(
   return issues;
 }
 
+export function collectNeedsIssues(stages: ResolvedPipeline['stages']): ValidationIssue[] {
+  const ids = new Set(stages.map((stage) => stage.id));
+  const issues: ValidationIssue[] = [];
+
+  for (const stage of stages) {
+    for (const dep of stage.needs ?? []) {
+      if (!ids.has(dep)) {
+        issues.push({
+          level: 'error',
+          code: 'needs.unknown',
+          message: `Stage "${stage.id}" needs unknown stage "${dep}"`,
+        });
+      }
+    }
+  }
+
+  return issues;
+}
+
 export function findOrphanWorkflows(
   repoRoot: string,
   pipeline: ResolvedPipeline,
@@ -173,6 +192,7 @@ export function buildValidateReport(
   options: ValidateReportOptions = {},
 ): ValidateReport {
   const issues = collectPipelineIssues(pipeline, options);
+  issues.push(...collectNeedsIssues(pipeline.stages));
 
   if (options.repoRoot) {
     issues.push(...collectDeprecationIssues(pipeline, options.repoRoot));
@@ -265,7 +285,10 @@ export function validateReportExitCode(report: ValidateReport): number {
   return report.issues.some((issue) => issue.level === 'error') ? 1 : 0;
 }
 
-export function serializeValidateReport(report: ValidateReport): string {
+export function serializeValidateReport(
+  report: ValidateReport,
+  simulation?: import('./simulate.js').SimulateStageResult[],
+): string {
   return JSON.stringify(
     {
       ok: validateReportExitCode(report) === 0,
@@ -281,6 +304,7 @@ export function serializeValidateReport(report: ValidateReport): string {
           pipelineKey: stage.pipelineKey,
         })),
       },
+      ...(simulation ? { simulation } : {}),
       issues: report.issues,
     },
     null,

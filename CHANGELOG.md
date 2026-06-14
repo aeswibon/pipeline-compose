@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-14
+
+### Added
+
+- **`validate --simulate`** — dry-run stage table using `when:`, upstream skips, and missing context (mirrors run orchestrator skip logic).
+- **`validate --github <json>`** — GitHub context for simulation (PR bot passes workflow `github` object).
+- **`needs.unknown` validation** — unknown `needs:` targets reported as errors; mermaid marks affected stages.
+- **`docs/specs/1.0-contracts.md`** — frozen 1.0 public contracts (schema, CLI, issue codes, CI guarantees).
+- **`scripts/ci/validate-examples.sh`** — strict `--workflows` validate for meta repo + all pipeline examples.
+
+### Changed
+
+- **Validate load path** — unknown `needs:` no longer throws at parse time; surfaced in the validate report instead.
+- **PR bot** — includes simulation dry-run table alongside topology mermaid and issues.
+- **cross-repo-dispatch example** — validate stub `cross-repo-echo.yml` with export step for workflow checks.
+
 ## [1.0.0] - 2026-06-14
 
 ### Added

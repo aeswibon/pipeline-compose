@@ -40,19 +40,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
-      - run: pnpm run validate .github/pipelines/pipeline.yml --repo-root . --workflows --strict
-      - run: >-
-          pnpm run validate
-          examples/run-tag-release/.github/pipelines/pipeline.yml
-          --repo-root examples/run-tag-release
-          --workflows
-          --strict
-      - run: >-
-          pnpm run validate
-          examples/compile-check/.github/pipelines/pipeline.yml
-          --repo-root examples/compile-check
-          --workflows
-          --strict
+      - run: bash scripts/ci/validate-examples.sh
 
   compile-action-parity:
     name: Compile action parity

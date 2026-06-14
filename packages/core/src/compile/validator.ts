@@ -7,7 +7,7 @@ import type {
   ResolvedPipeline,
 } from './parser.js';
 import { isPipelineV2 } from './parser.js';
-import { mergePipelines, pipelineDocumentToList, resolvePipelineDocument } from './pipeline-resolve.js';
+import { mergePipelines, pipelineDocumentToList, resolvePipelineDocument, resolvePipelineDocumentForReport } from './pipeline-resolve.js';
 import { sortStages } from './topo-sort.js';
 import schemaV1 from '../../schema/pipeline-v1.schema.json' with { type: 'json' };
 import schemaV2 from '../../schema/pipeline-v2.schema.json' with { type: 'json' };
@@ -67,6 +67,31 @@ export function validatePipelineDocument(doc: PipelineDocument): ResolvedPipelin
   assertV2Document(doc);
   validateV2Document(doc);
   return resolvePipelineDocument(doc);
+}
+
+/** Load pipeline for validate/simulate without failing early on unknown needs (reported as issues instead). */
+export function validatePipelineDocumentForReport(doc: PipelineDocument): ResolvedPipeline {
+  assertV2Document(doc);
+  assertSchema('pipeline v2', validateV2, doc);
+  for (const def of Object.values(doc.pipelines)) {
+    assertUniqueStageIds(def.stages);
+  }
+  return resolvePipelineDocumentForReport(doc);
+}
+
+export function validatePipelineDocumentsForReport(docs: PipelineDocument[]): ResolvedPipeline {
+  const pipelines = [];
+  for (const doc of docs) {
+    assertV2Document(doc);
+    assertSchema('pipeline v2', validateV2, doc);
+    for (const def of Object.values(doc.pipelines)) {
+      assertUniqueStageIds(def.stages);
+    }
+    pipelines.push(...pipelineDocumentToList(doc));
+  }
+  const merged = mergePipelines(pipelines, { lenientNeeds: true });
+  merged.schemaVersion = 2;
+  return merged;
 }
 
 export function validatePipelineDocuments(docs: PipelineDocument[]): ResolvedPipeline {

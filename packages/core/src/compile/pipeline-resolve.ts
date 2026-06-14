@@ -14,16 +14,26 @@ import { sortStages } from './topo-sort.js';
 function withResolvedStages(
   pipeline: Pipeline,
   pipelineKey?: string,
+  lenientNeeds = false,
 ): Pipeline & { stages: ResolvedStage[] } {
   const defaultGroup = pipeline.group ?? pipelineKey;
+  const ordered = lenientNeeds ? sortStagesLenient(pipeline.stages) : sortStages(pipeline.stages);
   return {
     ...pipeline,
-    stages: sortStages(pipeline.stages).map((stage) => ({
+    stages: ordered.map((stage) => ({
       ...stage,
       resolvedGroup: resolveStageGroup(stage, defaultGroup, pipelineKey),
       pipelineKey,
     })),
   };
+}
+
+function sortStagesLenient(stages: PipelineStage[]): PipelineStage[] {
+  try {
+    return sortStages(stages);
+  } catch {
+    return stages;
+  }
 }
 
 export function pipelineDocumentToList(doc: PipelineDocument): Pipeline[] {
@@ -62,14 +72,14 @@ export function assertUniqueStageIds(pipelines: Pipeline[]): void {
   }
 }
 
-export function mergePipelines(pipelines: Pipeline[]): ResolvedPipeline {
+export function mergePipelines(pipelines: Pipeline[], options: { lenientNeeds?: boolean } = {}): ResolvedPipeline {
   const ordered = sortPipelineDocuments(pipelines);
   assertUniqueStageIds(ordered);
 
   const stages: ResolvedStage[] = [];
   const multi = ordered.length > 1;
   for (const pipeline of ordered) {
-    const resolved = withResolvedStages(pipeline, multi ? pipeline.name : undefined);
+    const resolved = withResolvedStages(pipeline, multi ? pipeline.name : undefined, options.lenientNeeds);
     stages.push(...resolved.stages);
   }
 
@@ -86,6 +96,17 @@ export function mergePipelines(pipelines: Pipeline[]): ResolvedPipeline {
     companion_workflows: companion.length > 0 ? companion : undefined,
     stages,
   };
+}
+
+export function resolvePipelineDocumentForReport(doc: PipelineDocument): ResolvedPipeline {
+  const merged = mergePipelines(pipelineDocumentToList(doc), { lenientNeeds: true });
+  merged.schemaVersion = isPipelineV2(doc) ? 2 : 1;
+  if (isPipelineV2(doc) && doc.companion_workflows?.length) {
+    merged.companion_workflows = [
+      ...new Set([...(merged.companion_workflows ?? []), ...doc.companion_workflows]),
+    ];
+  }
+  return merged;
 }
 
 export function resolvePipelineDocument(doc: PipelineDocument): ResolvedPipeline {

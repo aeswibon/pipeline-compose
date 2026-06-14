@@ -26,13 +26,16 @@ jobs:
       - name: Validate pipeline
         id: validate
         continue-on-error: true
+        env:
+          SIMULATE_GITHUB: ${{ toJson(github) }}
         run: |
           set +e
           pnpm exec tsx packages/cli/src/main.ts validate .github/pipelines/pipeline.yml \
             --workflows --strict --mermaid > /tmp/pipeline-mermaid.txt
           echo "mermaid_exit=$?" >> "$GITHUB_OUTPUT"
           pnpm exec tsx packages/cli/src/main.ts validate .github/pipelines/pipeline.yml \
-            --workflows --strict --json > /tmp/pipeline-report.json
+            --workflows --strict --json --simulate --github "$SIMULATE_GITHUB" \
+            > /tmp/pipeline-report.json
           echo "report_exit=$?" >> "$GITHUB_OUTPUT"
       - name: Post PR comment
         uses: actions/github-script@v7
@@ -46,6 +49,13 @@ jobs:
             const issues = (report.issues ?? [])
               .map((issue) => `- **${issue.level}**: ${issue.message}`)
               .join('\n');
+            const simulation = report.simulation ?? [];
+            const simRows = simulation
+              .map(
+                (stage) =>
+                  `| \`${stage.id}\` | ${stage.status} | ${stage.reason ?? '—'} |`,
+              )
+              .join('\n');
             const body = [
               marker,
               '## Pipeline Compose validation',
@@ -57,6 +67,12 @@ jobs:
               '```mermaid',
               mermaid,
               '```',
+              '',
+              '### Simulation (dry-run)',
+              '',
+              simulation.length
+                ? ['| Stage | Status | Reason |', '| --- | --- | --- |', simRows].join('\n')
+                : '_No stages._',
               '',
               '### Issues',
               '',

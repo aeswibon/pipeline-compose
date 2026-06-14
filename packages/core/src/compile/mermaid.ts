@@ -11,6 +11,7 @@ const STAGE_IN_MESSAGE = /(?:Stage|stage) "([^"]+)"/;
 const ERROR_SUMMARY_BY_CODE: Record<string, string> = {
   'workflow.missing': 'missing workflow file',
   'stage.repo-invalid': 'invalid repo slug',
+  'needs.unknown': 'unknown needs stage',
   'group.path-prefix': 'group/path mismatch',
   'export.missing': 'missing export step',
   'export.manual-upload-deprecated': 'deprecated manual export',
@@ -22,6 +23,7 @@ const ERROR_SUMMARY_BY_CODE: Record<string, string> = {
 const ERROR_CODE_PRIORITY = [
   'workflow.missing',
   'stage.repo-invalid',
+  'needs.unknown',
   'export.missing',
   'export.manual-upload-deprecated',
   'group.path-prefix',

@@ -7,7 +7,7 @@ Host repository runs a pipeline stage that dispatches a workflow in a **target**
 | Repo | Role |
 |------|------|
 | **Host** (this example) | Defines pipeline + entry workflow; holds `REMOTE_DISPATCH_TOKEN` secret |
-| **Target** | Callable workflow only — copy `target/.github/workflows/echo.yml` into your target repo |
+| **Target** | Callable workflow only — copy `target/.github/workflows/cross-repo-echo.yml` into your target repo |
 
 ## Host setup
 
@@ -21,10 +21,15 @@ Host repository runs a pipeline stage that dispatches a workflow in a **target**
 ```bash
 pnpm run validate .github/pipelines/pipeline.yml \
   --repo-root examples/cross-repo-dispatch \
+  --workflows \
   --strict \
   --repo-tokens-file examples/cross-repo-dispatch/repo-tokens.example.json
 ```
 
+The host repo includes `.github/workflows/cross-repo-echo.yml` as a **validate stub** (same shape as `target/.github/workflows/cross-repo-echo.yml`). Install the target copy in the remote repository for real dispatch.
+
+Cross-repo stages emit `stage.cross-repo` warnings by design; this example uses `--workflows` without `--strict` so CI can enforce file presence and export steps without treating dispatch hints as errors.
+
 ## Target workflow
 
-See `target/.github/workflows/echo.yml` — install at `.github/workflows/echo.yml` in the target repository with `workflow_call` + `workflow_dispatch` triggers.
+See `target/.github/workflows/cross-repo-echo.yml` — install at `.github/workflows/cross-repo-echo.yml` in the target repository with `workflow_call` + `workflow_dispatch` triggers.
