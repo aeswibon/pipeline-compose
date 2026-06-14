@@ -33,7 +33,7 @@ Add a repository secret on **pipeline-compose**:
 
 Fine-grained PAT: grant **Contents** read/write on each action repo. Classic PAT: `repo` scope works if you own all repos.
 
-To re-run publish without re-tagging: [Actions → Publish actions → Run workflow](https://github.com/aeswibon/pipeline-compose/actions/workflows/publish-actions.yml) with the semver (no `v` prefix, e.g. `0.3.0`).
+To re-run publish without re-tagging: [Actions → Publish actions → Run workflow](https://github.com/aeswibon/pipeline-compose/actions/workflows/publish-actions.yml) with the semver (no `v` prefix, e.g. `0.3.1`). Enable **use_master** to publish from `master` HEAD instead of the matching tag (doc-only fixes without retagging).
 
 `scripts/publish-action-packages.sh` bundles each Node action, copies `action.yml` and `README.md`, force-pushes to the matching GitHub repo, tags, and creates/updates GitHub Releases with CHANGELOG-derived notes.
 

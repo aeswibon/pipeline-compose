@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose-run@v0.3.0
+      - uses: aeswibon/pipeline-compose-run@v0.3.1
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           github_token: ${{ github.token }}
@@ -61,7 +61,7 @@ Full walkthrough: [examples/run-tag-release](https://github.com/aeswibon/pipelin
 
 <!-- start usage -->
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v0.3.0
+- uses: aeswibon/pipeline-compose-run@v0.3.1
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}

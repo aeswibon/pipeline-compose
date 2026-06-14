@@ -14,5 +14,5 @@ if ! command -v yamllint >/dev/null 2>&1; then
   exit 1
 fi
 
-actionlint .github/workflows/*.yml .github/act/workflows/*.yml
-yamllint -c .yamllint.yml .github/workflows/ .github/act/workflows/ .github/pipelines/
+actionlint .github/workflows/*.yml .github/act/workflows/*.yml examples/**/.github/workflows/*.yml
+yamllint -c .yamllint.yml .github/workflows/ .github/act/workflows/ .github/pipelines/ examples/**/.github/

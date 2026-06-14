@@ -10,7 +10,7 @@ Run deploy only on version tags:
 
 ```yaml
 - id: should-deploy
-  uses: aeswibon/pipeline-compose-eval@v0.3.0
+  uses: aeswibon/pipeline-compose-eval@v0.3.1
   with:
     expression: startsWith(github.ref, 'refs/tags/v')
     github: ${{ toJson(github) }}
@@ -24,7 +24,7 @@ Gate on prior stage output:
 
 ```yaml
 - id: should-publish
-  uses: aeswibon/pipeline-compose-eval@v0.3.0
+  uses: aeswibon/pipeline-compose-eval@v0.3.1
   with:
     expression: context.ci.passed == 'true'
     context: '{"ci":{"passed":"true"}}'
@@ -34,7 +34,7 @@ Full walkthrough: [examples/eval-conditional](https://github.com/aeswibon/pipeli
 
 <!-- start usage -->
 ```yaml
-- uses: aeswibon/pipeline-compose-eval@v0.3.0
+- uses: aeswibon/pipeline-compose-eval@v0.3.1
   with:
     expression: startsWith(github.ref, 'refs/tags/v')
     context: '{"ci":{"passed":"true"}}'

@@ -38,6 +38,7 @@ pnpm install
 | `pnpm test` | Unit tests (vitest across workspace packages) |
 | `pnpm run build` | Typecheck + emit `packages/core/dist` |
 | `pnpm run compile` | CLI compile (same as `pnpm exec tsx packages/cli/src/main.ts compile …`) |
+| `pnpm run eval` | CLI eval (`--expression`, `--context`, `--github`) |
 | `pnpm run bundle:actions` | Bundle Node actions with `@vercel/ncc` into `packages/action-*/dist` |
 | `pnpm run publish:actions [tag]` | Bundle and push action packages locally (CI does this on tag push) |
 | `pnpm run lint:workflows` | actionlint + yamllint |
@@ -50,7 +51,7 @@ pnpm install
 3. Add `CHANGELOG.md` section (with optional `### pipeline-compose-*` subsections).
 4. Push master, tag, and push the tag — CI publishes everything.
 
-Local-only fallback: `pnpm run publish:actions v0.3.0` (requires `gh` and push access to action repos).
+Local-only fallback: `pnpm run publish:actions v0.3.1` (requires `gh` and push access to action repos).
 
 CI rebuilds action bundles in the compile-parity job; you do not need committed `dist/` in this repo.
 
@@ -59,9 +60,9 @@ CI rebuilds action bundles in the compile-parity job; you do not need committed 
 Add a `## [X.Y.Z]` section to `CHANGELOG.md` on master before tagging (the release workflow fails without it):
 
 ```bash
-bash scripts/ci/require-changelog-section.sh 0.3.0   # optional local check
+bash scripts/ci/require-changelog-section.sh 0.3.1   # optional local check
 git push origin master
-git tag v0.3.0 && git push origin v0.3.0
+git tag v0.3.1 && git push origin v0.3.1
 ```
 
 Tag push runs `.github/workflows/release.yml`: **ci → version-sync → release-publish → publish-actions**.

@@ -4,15 +4,25 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Semver without v prefix (e.g. 0.3.0)
+        description: Semver without v prefix (e.g. 0.3.1)
         type: string
         required: true
+      use_master:
+        description: Publish from master HEAD instead of the release tag
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       version:
         description: Semver without v prefix
         type: string
         required: true
+      use_master:
+        description: Publish from master HEAD instead of the release tag
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -27,14 +37,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout release tag when present
+      - name: Checkout source ref
+        env:
+          VERSION: ${{ inputs.version }}
+          USE_MASTER: ${{ inputs.use_master }}
         run: |
-          version="${{ inputs.version }}"
-          if git rev-parse "refs/tags/v${version}^{commit}" >/dev/null 2>&1; then
-            git checkout "refs/tags/v${version}"
-            echo "Using tag v${version}"
+          if [ "$USE_MASTER" = "true" ]; then
+            git checkout master
+            echo "Publishing from master HEAD"
+          elif git rev-parse "refs/tags/v${VERSION}^{commit}" >/dev/null 2>&1; then
+            git checkout "refs/tags/v${VERSION}"
+            echo "Using tag v${VERSION}"
           else
-            echo "::warning::Tag v${version} not found; publishing from $(git rev-parse --abbrev-ref HEAD)."
+            echo "::warning::Tag v${VERSION} not found; publishing from $(git rev-parse --abbrev-ref HEAD)."
           fi
 
       - uses: pnpm/action-setup@v6

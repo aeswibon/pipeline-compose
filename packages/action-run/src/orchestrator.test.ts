@@ -44,6 +44,12 @@ function mockClient(handlers: {
       head_branch: 'v1.0.0',
     })),
     listRunJobs: vi.fn(async (runId) => jobsByRun.get(runId) ?? []),
+    waitForStageArtifact: vi.fn(async (_runId, stageId) => {
+      if (stageId === 'artifact-stage') {
+        return { version: '2.0.0' };
+      }
+      throw new Error(`unexpected artifact stage ${stageId}`);
+    }),
   } as unknown as GitHubActionsClient;
 }
 
@@ -114,5 +120,61 @@ describe('runPipeline', () => {
     });
     expect(results).toHaveLength(0);
     expect(client.dispatchWorkflow).not.toHaveBeenCalled();
+  });
+
+  it('collects outputs from stage artifacts when job outputs are missing', async () => {
+    const pipelineWithArtifact: Pipeline = {
+      name: 'pipeline',
+      version: 1,
+      stages: [
+        {
+          id: 'artifact-stage',
+          workflow: '.github/workflows/artifact.yml',
+          outputs: ['version'],
+        },
+      ],
+    };
+    const client = mockClient({
+      workflows: { '.github/workflows/artifact.yml': 10 },
+    });
+
+    const results = await runPipeline(pipelineWithArtifact, client, {
+      ref: 'refs/tags/v2.0.0',
+      github: { ref: 'refs/tags/v2.0.0' },
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0].outputs).toEqual({ version: '2.0.0' });
+    expect(client.waitForStageArtifact).toHaveBeenCalledWith(
+      expect.any(Number),
+      'artifact-stage',
+      expect.any(Number),
+      expect.any(Number),
+    );
+  });
+
+  it('throws when a stage completes with a non-success conclusion', async () => {
+    const client = mockClient({
+      workflows: { '.github/workflows/ci.yml': 1 },
+    });
+    vi.mocked(client.waitForRunCompletion).mockResolvedValueOnce({
+      id: 100,
+      status: 'completed',
+      conclusion: 'failure',
+      created_at: new Date().toISOString(),
+      head_branch: 'v1.0.0',
+    });
+
+    await expect(
+      runPipeline(
+        {
+          name: 'pipeline',
+          version: 1,
+          stages: [{ id: 'ci', workflow: '.github/workflows/ci.yml' }],
+        },
+        client,
+        { ref: 'refs/tags/v1.0.0', github: { ref: 'refs/tags/v1.0.0' } },
+      ),
+    ).rejects.toThrow(/Stage "ci" failed/);
   });
 });

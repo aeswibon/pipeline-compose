@@ -5,6 +5,37 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-06-14
+
+### Added
+
+- **`pipeline-compose eval` CLI** — evaluate `when:` expressions locally (`--expression`, `--context`, `--github`).
+- **Examples** — copy-paste templates for all four actions under `examples/`.
+- **Publish from master** — `publish-actions` workflow `use_master` input for doc-only republishes without retagging.
+- **Tests** — validator coverage; orchestrator artifact fallback and failure paths.
+
+### Changed
+
+- CI lints workflow YAML in `examples/`.
+- Dependency updates (vitest, `@actions/core`, transitive tooling); Dependabot for npm and GitHub Actions.
+- Action READMEs and discoverability metadata.
+
+### pipeline-compose-run
+
+- Examples, compare table, and tutorial links.
+
+### pipeline-compose-compile
+
+- Compile-check example and compare table.
+
+### pipeline-compose-eval
+
+- Conditional gate example; `help-circle` Marketplace icon.
+
+### pipeline-compose-context-merge
+
+- Manual context example and compare table.
+
 ## [0.3.0] - 2026-06-14
 
 ### Changed

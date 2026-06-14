@@ -1,6 +1,6 @@
 {
   "name": "pipeline-compose",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Define workflow execution order and run stages sequentially via GitHub Actions",
   "packageManager": "pnpm@10.12.1",
@@ -9,15 +9,16 @@
     "test": "vitest run",
     "bundle:actions": "pnpm --filter '@aeswibon/pipeline-compose-action-run' --filter '@aeswibon/pipeline-compose-action-compile' --filter '@aeswibon/pipeline-compose-action-eval' run bundle",
     "compile": "pnpm exec tsx packages/cli/src/main.ts compile",
+    "eval": "pnpm exec tsx packages/cli/src/main.ts eval",
     "act:ci": "bash scripts/act-test.sh ci",
     "act:compile": "bash scripts/act-test.sh compile",
     "lint:workflows": "bash scripts/lint-workflows.sh",
     "publish:actions": "pnpm run bundle:actions && bash scripts/publish-action-packages.sh"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
+    "@types/node": "^25.9.3",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
   }
 }
