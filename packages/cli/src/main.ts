@@ -2,10 +2,18 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
+  buildSyncPlan,
+  buildValidateReport,
   evaluateExpression,
+  formatValidateReport,
   generateWorkflow,
   loadPipeline,
+  loadPipelineDocumentsFromInputs,
+  runWorkflowSync,
   validatePipeline,
+  validatePipelineDocument,
+  validatePipelineDocuments,
+  validateReportExitCode,
 } from '@aeswibon/pipeline-compose-core';
 
 function compileUsage(): never {
@@ -22,8 +30,22 @@ function evalUsage(): never {
   process.exit(1);
 }
 
+function validateUsage(): never {
+  console.error(
+    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict]',
+  );
+  process.exit(1);
+}
+
+function syncUsage(): never {
+  console.error(
+    'Usage: pipeline-compose sync <pipeline.yml|pipeline-dir> [--repo-root <path>] [--check]',
+  );
+  process.exit(1);
+}
+
 function rootUsage(): never {
-  console.error('Usage: pipeline-compose <compile|eval> ...');
+  console.error('Usage: pipeline-compose <compile|eval|validate|sync> ...');
   process.exit(1);
 }
 
@@ -38,6 +60,22 @@ function parseJsonObject(label: string, raw: string): Record<string, unknown> {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`Invalid ${label} JSON: ${message}`);
   }
+}
+
+function resolveRepoRoot(explicit: string | undefined): string {
+  return path.resolve(explicit ?? process.cwd());
+}
+
+function loadResolvedPipeline(target: string) {
+  const absoluteTarget = path.resolve(target);
+  if (fs.statSync(absoluteTarget).isDirectory()) {
+    return validatePipelineDocuments(
+      loadPipelineDocumentsFromInputs({ pipelineDir: absoluteTarget }),
+    );
+  }
+  return validatePipelineDocument(
+    loadPipelineDocumentsFromInputs({ pipelineFile: absoluteTarget })[0],
+  );
 }
 
 function runCompile(args: string[]): void {
@@ -127,12 +165,96 @@ function runEval(args: string[]): void {
   console.log(String(result));
 }
 
+function runValidate(args: string[]): void {
+  let repoRoot = '';
+  let workflows = false;
+  let strict = false;
+  const positional: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--repo-root') {
+      repoRoot = args[++i] ?? '';
+    } else if (args[i] === '--workflows') {
+      workflows = true;
+    } else if (args[i] === '--strict') {
+      strict = true;
+    } else {
+      positional.push(args[i]);
+    }
+  }
+
+  const target = positional[0];
+  if (!target) {
+    validateUsage();
+  }
+
+  const resolvedRoot = resolveRepoRoot(repoRoot || undefined);
+  const pipeline = loadResolvedPipeline(target);
+  const report = buildValidateReport(pipeline, {
+    repoRoot: resolvedRoot,
+    workflows,
+    strict,
+  });
+
+  console.log(formatValidateReport(report));
+  process.exit(validateReportExitCode(report));
+}
+
+function runSync(args: string[]): void {
+  let repoRoot = '';
+  let check = false;
+  const positional: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--repo-root') {
+      repoRoot = args[++i] ?? '';
+    } else if (args[i] === '--check') {
+      check = true;
+    } else {
+      positional.push(args[i]);
+    }
+  }
+
+  const target = positional[0];
+  if (!target) {
+    syncUsage();
+  }
+
+  const resolvedRoot = resolveRepoRoot(repoRoot || undefined);
+  const pipeline = loadResolvedPipeline(target);
+  const plan = buildSyncPlan(pipeline, resolvedRoot);
+
+  try {
+    const result = runWorkflowSync(plan, resolvedRoot, check);
+    if (check) {
+      console.log('OK');
+      return;
+    }
+    for (const copied of result.copied) {
+      console.log(`Synced ${copied}`);
+    }
+    for (const skipped of result.skipped) {
+      console.log(`Up to date ${skipped}`);
+    }
+    for (const missing of result.missingSources) {
+      console.log(`Missing source ${missing}`);
+    }
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
 const [command, ...rest] = process.argv.slice(2);
 
 if (command === 'compile') {
   runCompile(rest);
 } else if (command === 'eval') {
   runEval(rest);
+} else if (command === 'validate') {
+  runValidate(rest);
+} else if (command === 'sync') {
+  runSync(rest);
 } else {
   rootUsage();
 }

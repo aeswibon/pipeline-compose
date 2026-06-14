@@ -1,7 +1,15 @@
 import AjvImport from 'ajv';
-import type { Pipeline } from './parser.js';
+import type {
+  Pipeline,
+  PipelineDocument,
+  PipelineDocumentV2,
+  ResolvedPipeline,
+} from './parser.js';
+import { isPipelineV2 } from './parser.js';
+import { mergePipelines, pipelineDocumentToList } from './pipeline-resolve.js';
 import { sortStages } from './topo-sort.js';
-import schema from '../../schema/pipeline-v1.schema.json' with { type: 'json' };
+import schemaV1 from '../../schema/pipeline-v1.schema.json' with { type: 'json' };
+import schemaV2 from '../../schema/pipeline-v2.schema.json' with { type: 'json' };
 
 type AjvValidator = {
   compile: (schema: object) => ((data: unknown) => boolean) & { errors?: object[] | null };
@@ -13,18 +21,79 @@ type AjvConstructor = new (options?: object) => AjvValidator;
 const Ajv = AjvImport as unknown as AjvConstructor;
 
 const ajv = new Ajv({ allErrors: true, strict: false });
-const validateSchema = ajv.compile(schema as object);
+type SchemaValidate = ((data: unknown) => boolean) & { errors?: object[] | null };
+const validateV1 = ajv.compile(schemaV1 as object) as SchemaValidate;
+const validateV2 = ajv.compile(schemaV2 as object) as SchemaValidate;
+
+function assertSchema(
+  label: string,
+  validate: ((data: unknown) => boolean) & { errors?: object[] | null },
+  data: unknown,
+): void {
+  if (!validate(data)) {
+    throw new Error(`Invalid ${label}: ${ajv.errorsText(validate.errors)}`);
+  }
+}
+
+function assertUniqueStageIds(pipeline: Pipeline): void {
+  const ids = new Set<string>();
+  for (const stage of pipeline.stages) {
+    if (ids.has(stage.id)) {
+      throw new Error(`Duplicate stage id: ${stage.id}`);
+    }
+    ids.add(stage.id);
+  }
+}
+
+export function validatePipelineDocument(doc: PipelineDocument): ResolvedPipeline {
+  if (isPipelineV2(doc)) {
+    assertSchema('pipeline v2', validateV2, doc);
+    for (const [key, def] of Object.entries(doc.pipelines)) {
+      assertUniqueStageIds({
+        name: key,
+        version: 1,
+        stages: def.stages,
+      });
+      sortStages(def.stages);
+    }
+    return mergePipelines(pipelineDocumentToList(doc));
+  }
+
+  assertSchema('pipeline v1', validateV1, doc);
+  assertUniqueStageIds(doc);
+  const sorted = sortStages(doc.stages);
+  return mergePipelines([{ ...doc, stages: sorted }]);
+}
+
+export function validatePipelineDocuments(docs: PipelineDocument[]): ResolvedPipeline {
+  const pipelines = docs.flatMap((doc) => {
+    if (isPipelineV2(doc)) {
+      assertSchema('pipeline v2', validateV2, doc);
+      for (const [key, def] of Object.entries(doc.pipelines)) {
+        assertUniqueStageIds({
+          name: key,
+          version: 1,
+          stages: def.stages,
+        });
+        sortStages(def.stages);
+      }
+    } else {
+      assertSchema('pipeline v1', validateV1, doc);
+      assertUniqueStageIds(doc);
+      sortStages(doc.stages);
+    }
+    return pipelineDocumentToList(doc);
+  });
+  return mergePipelines(pipelines);
+}
 
 export function validatePipeline(pipeline: Pipeline): Pipeline {
-  if (!validateSchema(pipeline)) {
-    throw new Error(`Invalid pipeline: ${ajv.errorsText(validateSchema.errors)}`);
-  }
-  const ids = new Set<string>();
-  for (const s of pipeline.stages) {
-    if (ids.has(s.id)) {
-      throw new Error(`Duplicate stage id: ${s.id}`);
-    }
-    ids.add(s.id);
-  }
+  assertSchema('pipeline v1', validateV1, pipeline);
+  assertUniqueStageIds(pipeline);
   return { ...pipeline, stages: sortStages(pipeline.stages) };
+}
+
+export function validatePipelineV2(doc: PipelineDocumentV2): PipelineDocumentV2 {
+  assertSchema('pipeline v2', validateV2, doc);
+  return doc;
 }

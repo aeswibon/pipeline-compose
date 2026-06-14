@@ -10,6 +10,8 @@
     "bundle:actions": "pnpm --filter '@aeswibon/pipeline-compose-action-run' --filter '@aeswibon/pipeline-compose-action-compile' --filter '@aeswibon/pipeline-compose-action-eval' run bundle",
     "compile": "pnpm exec tsx packages/cli/src/main.ts compile",
     "eval": "pnpm exec tsx packages/cli/src/main.ts eval",
+    "validate": "pnpm exec tsx packages/cli/src/main.ts validate",
+    "sync:workflows": "pnpm exec tsx packages/cli/src/main.ts sync",
     "act:ci": "bash scripts/act-test.sh ci",
     "act:compile": "bash scripts/act-test.sh compile",
     "lint:workflows": "bash scripts/lint-workflows.sh",

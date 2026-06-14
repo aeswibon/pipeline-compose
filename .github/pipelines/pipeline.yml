@@ -1,5 +1,9 @@
 name: pipeline
 version: 1
+group: release
+groups:
+  release:
+    description: Meta-repo tag release chain
 stages:
   - id: ci
     workflow: .github/workflows/ci.yml

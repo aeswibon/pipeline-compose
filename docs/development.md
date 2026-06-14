@@ -7,7 +7,7 @@ Guide for working on the **pipeline-compose** monorepo. For using the actions in
 | Path | Package | Role |
 |------|---------|------|
 | `packages/core/` | `@aeswibon/pipeline-compose-core` | Parser, validator, codegen, expressions, schema |
-| `packages/cli/` | `@aeswibon/pipeline-compose-cli` | `pipeline-compose` CLI (`compile`, `eval`) |
+| `packages/cli/` | `@aeswibon/pipeline-compose-cli` | `pipeline-compose` CLI (`compile`, `eval`, `validate`, `sync`) |
 | `packages/action-run/` | `@aeswibon/pipeline-compose-action-run` | Run action source (published to [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run)) |
 | `packages/action-compile/` | `@aeswibon/pipeline-compose-action-compile` | Compile action source |
 | `packages/action-eval/` | `@aeswibon/pipeline-compose-action-eval` | Eval action source |
@@ -39,10 +39,29 @@ pnpm install
 | `pnpm run build` | Typecheck + emit `packages/core/dist` |
 | `pnpm run compile` | CLI compile (same as `pnpm exec tsx packages/cli/src/main.ts compile …`) |
 | `pnpm run eval` | CLI eval (`--expression`, `--context`, `--github`) |
+| `pnpm run validate` | Validate pipeline groups, stages, and optional workflow hygiene |
+| `pnpm run sync:workflows` | Sync `workflows/{group}/` sources into flat `.github/workflows/` targets |
 | `pnpm run bundle:actions` | Bundle Node actions with `@vercel/ncc` into `packages/action-*/dist` |
 | `pnpm run publish:actions [tag]` | Bundle and push action packages locally (CI does this on tag push) |
 | `pnpm run lint:workflows` | actionlint + yamllint |
 | `pnpm run act:ci` / `act:compile` | Local [act](https://github.com/nektos/act) smoke tests |
+
+## Pipeline groups
+
+Pipelines support optional **groups** for organization and ordering:
+
+- **v1** — single pipeline file with root `group:` (inherited by all stages), optional `needs:` (other pipeline `name`s when using multiple files), and `groups:` descriptions.
+- **v2** — one file with a `pipelines:` map; each entry has its own `stages` and optional `needs:` referencing other pipeline keys.
+- **Multi-file** — put one v1 pipeline per file under `.github/pipelines/`; merge with `pipeline_dir` on the run action or `pipeline-compose validate .github/pipelines`.
+
+Order between pipelines comes from pipeline-level **`needs`**, not from the group label. Within a pipeline, stage order still comes from stage **`needs`**.
+
+```bash
+pnpm run validate .github/pipelines/pipeline.yml --workflows
+pnpm run sync:workflows .github/pipelines/pipeline.yml --check
+```
+
+Sources for sync live at `workflows/{group}/{stage-id}.yml` by convention (override with `workflows/sync.yml`).
 
 ## Typical workflow
 

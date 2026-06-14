@@ -1,7 +1,58 @@
-export type { Pipeline, PipelineStage } from './compile/parser.js';
-export { loadPipeline } from './compile/parser.js';
-export { validatePipeline } from './compile/validator.js';
+export type {
+  Pipeline,
+  PipelineDefinition,
+  PipelineDocument,
+  PipelineDocumentV2,
+  PipelineGroupMeta,
+  PipelineStage,
+  ResolvedPipeline,
+  ResolvedStage,
+} from './compile/parser.js';
+export {
+  isPipelineV2,
+  loadPipeline,
+  parsePipelineDocument,
+  resolveStageGroup,
+} from './compile/parser.js';
+export {
+  loadPipelineDocumentFromFile,
+  loadPipelineDocumentsFromDirectory,
+  loadPipelineDocumentsFromInputs,
+  loadPipelineFromFile,
+} from './compile/pipeline-load.js';
+export {
+  assertUniqueStageIds,
+  mergePipelines,
+  pipelineDocumentToList,
+  resolvePipelineDocument,
+} from './compile/pipeline-resolve.js';
+export { sortPipelineDocuments } from './compile/pipeline-sort.js';
+export { validatePipeline, validatePipelineDocument, validatePipelineDocuments } from './compile/validator.js';
 export { sortStages } from './compile/topo-sort.js';
 export { generateWorkflow } from './compile/codegen.js';
 export type { GenerateOptions } from './compile/codegen.js';
+export {
+  buildValidateReport,
+  collectPipelineIssues,
+  findOrphanWorkflows,
+  formatPipelineTree,
+  formatValidateReport,
+  validateReportExitCode,
+  workflowMatchesGroupConvention,
+} from './compile/validate-report.js';
+export type {
+  ValidateReport,
+  ValidateReportOptions,
+  ValidationIssue,
+} from './compile/validate-report.js';
+export {
+  buildSyncPlan,
+  loadSyncConfig,
+  runWorkflowSync,
+} from './compile/sync-workflows.js';
+export type {
+  WorkflowSyncMapping,
+  WorkflowSyncPlan,
+  WorkflowSyncResult,
+} from './compile/sync-workflows.js';
 export { evaluateExpression, mergeContext } from './lib/expressions.js';

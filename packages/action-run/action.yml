@@ -6,7 +6,10 @@ branding:
 inputs:
   pipeline_file:
     description: Path to pipeline YAML (stage order and wiring)
-    required: true
+    required: false
+  pipeline_dir:
+    description: Directory of pipeline YAML files (merged by pipeline needs)
+    required: false
   ref:
     description: Git ref to dispatch stage workflows on (default GITHUB_REF)
     required: false
