@@ -118,7 +118,7 @@ Because GitHub does not return job outputs for `workflow_dispatch` runs, upload 
   run: |
     mkdir -p pipeline-compose
     jq -n --arg version "$VERSION" '{version: $version}' > pipeline-compose/outputs.json
-- uses: actions/upload-artifact@v4
+- uses: actions/upload-artifact@v7
   with:
     name: pipeline-compose-my-stage
     path: pipeline-compose/outputs.json

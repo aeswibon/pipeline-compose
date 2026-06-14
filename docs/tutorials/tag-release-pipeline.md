@@ -153,7 +153,7 @@ jobs:
           mkdir -p pipeline-compose
           jq -n --arg version "$VERSION" '{version: $version}' > pipeline-compose/outputs.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: success()
         with:
           name: pipeline-compose-version-sync

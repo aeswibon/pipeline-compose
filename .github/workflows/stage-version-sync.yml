@@ -91,7 +91,7 @@ jobs:
             --arg skip_publish "$SKIP_PUBLISH" \
             '{version: $version, skip_publish: $skip_publish}' > pipeline-compose/outputs.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: success()
         with:
           name: pipeline-compose-version-sync

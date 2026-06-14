@@ -36,7 +36,7 @@ jobs:
       - name: Show accumulated context
         run: cat .pipeline-context.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: pipeline-context
           path: .pipeline-context.json
@@ -47,7 +47,7 @@ jobs:
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: pipeline-context
 
