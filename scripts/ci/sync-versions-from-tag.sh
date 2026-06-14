@@ -47,7 +47,7 @@ if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
   exit 1
 fi
 
-ROOT="$(git rev-parse --show-toplevel)"
+ROOT="${SYNC_ROOT:-$(git rev-parse --show-toplevel)}"
 cd "$ROOT"
 
 echo "Syncing version files to $VERSION"
@@ -68,7 +68,9 @@ for file in "${VERSION_ACTION_READMES[@]}"; do
   sync_action_readme_refs "$file" "$VERSION"
 done
 
-if git diff --quiet -- "${VERSION_PACKAGE_JSONS[@]}" "${VERSION_ACTION_READMES[@]}"; then
+if [[ -n "${SYNC_ROOT:-}" ]]; then
+  echo "Synced version files under ${SYNC_ROOT} to $VERSION"
+elif git diff --quiet -- "${VERSION_PACKAGE_JSONS[@]}" "${VERSION_ACTION_READMES[@]}"; then
   echo "Version files already at $VERSION"
 else
   echo "Updated version files:"

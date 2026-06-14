@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke test for sync-versions-from-tag.sh (temp git repo; no push).
+# Smoke test for sync-versions-from-tag.sh (isolated temp dir; no git).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -40,33 +40,41 @@ EOF
 assert_version() {
   local file="$1"
   local expected="$2"
-  if ! grep -Fq "\"version\": \"${expected}\"" "$file"; then
+  if ! grep -Fq "\"version\": \"${expected}\"" "$TMP/$file"; then
     echo "Expected $file to contain version $expected" >&2
-    cat "$file" >&2
+    cat "$TMP/$file" >&2
     exit 1
   fi
 }
 
-copy_fixture
-cd "$TMP"
-git init -q
-git add -A
-git commit -q -m "fixture"
+snapshot_tree() {
+  find "$TMP" -type f -print0 | sort -z | xargs -0 shasum -a 256
+}
 
-"$SYNC" 0.3.2
+copy_fixture
+
+before="$(snapshot_tree)"
+SYNC_ROOT="$TMP" "$SYNC" 0.3.2
+after_first="$(snapshot_tree)"
 
 for file in "${VERSION_PACKAGE_JSONS[@]}"; do
   assert_version "$file" 0.3.2
 done
 
-grep -Fq 'aeswibon/pipeline-compose-run@v0.3.2' packages/action-run/README.md
-grep -Fq 'aeswibon/pipeline-compose-run@v0.3.0' packages/action-run/README.md
-grep -Fq 'aeswibon/pipeline-compose-compile@v0.3.2' packages/action-compile/README.md
+grep -Fq 'aeswibon/pipeline-compose-run@v0.3.2' "$TMP/packages/action-run/README.md"
+grep -Fq 'aeswibon/pipeline-compose-compile@v0.3.2' "$TMP/packages/action-compile/README.md"
 
-"$SYNC" 0.3.2
-if ! git diff --quiet; then
+SYNC_ROOT="$TMP" "$SYNC" 0.3.2
+after_second="$(snapshot_tree)"
+
+if [[ "$after_first" != "$after_second" ]]; then
   echo "Second sync should be idempotent" >&2
-  git diff >&2
+  diff <(echo "$after_first") <(echo "$after_second") >&2 || true
+  exit 1
+fi
+
+if [[ "$before" == "$after_first" ]]; then
+  echo "First sync should change fixture files" >&2
   exit 1
 fi
 
