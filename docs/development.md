@@ -68,6 +68,8 @@ Tag push runs `.github/workflows/release.yml`: **ci → version-sync → release
 
 Configure repository secret `ACTION_PUBLISH_TOKEN` before the first tag release (see [docs/action-repos.md](action-repos.md)).
 
+Quick links: [Release workflow](https://github.com/aeswibon/pipeline-compose/actions/workflows/release.yml) (tag push) · [Publish actions workflow](https://github.com/aeswibon/pipeline-compose/actions/workflows/publish-actions.yml) (manual)
+
 ## CI
 
 | Job | Checks |

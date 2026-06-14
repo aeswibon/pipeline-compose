@@ -18,7 +18,7 @@ stages:
       version: ${{ context.version-sync.version }}
       skip_publish: ${{ context.version-sync.skip_publish }}
   - id: publish-actions
-    workflow: .github/workflows/stage-publish-actions.yml
+    workflow: .github/workflows/publish-actions.yml
     needs:
       - release-publish
     inputs:

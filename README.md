@@ -154,6 +154,45 @@ permissions:
 | `@v0.1.0` | Previous monorepo layout with embedded actions |
 | `@master` | Latest on the default branch |
 
+# Publishing (maintainers)
+
+Actions are **not** published from this repo’s Releases page. Each action lives in its own GitHub repo and is pushed from this monorepo.
+
+## Automatic (recommended)
+
+1. Add a `## [X.Y.Z]` section to [CHANGELOG.md](CHANGELOG.md) (optional `### pipeline-compose-run` subsections per action).
+2. Push `master`, then tag and push:
+
+```bash
+git tag v0.3.0 && git push origin v0.3.0
+```
+
+3. The [Release](https://github.com/aeswibon/pipeline-compose/actions/workflows/release.yml) workflow runs:
+
+**ci → version-sync → release-publish → publish-actions**
+
+The last step bundles and pushes all four action repos and creates their GitHub Releases.
+
+Requires repository secret **`ACTION_PUBLISH_TOKEN`** (PAT with `contents: write` on each action repo).
+
+## Manual re-run
+
+[Actions → Publish actions → Run workflow](https://github.com/aeswibon/pipeline-compose/actions/workflows/publish-actions.yml)
+
+Enter the semver **without** `v` (e.g. `0.3.0`). Uses the matching tag when it exists, otherwise `master`.
+
+## Local fallback
+
+```bash
+pnpm run publish:actions v0.3.0
+```
+
+## GitHub Marketplace
+
+CI creates **GitHub Releases** on each action repo. Listing on the Marketplace is a separate one-time step per repo: open the release on e.g. [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run/releases) and check **Publish this Action to the GitHub Marketplace**.
+
+See [docs/action-repos.md](docs/action-repos.md) for details.
+
 # Development
 
 See [docs/development.md](docs/development.md) for the monorepo layout and [docs/action-repos.md](docs/action-repos.md) for publishing actions to GitHub.

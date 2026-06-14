@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Semver without v prefix
+        description: Semver without v prefix (e.g. 0.3.0)
         type: string
         required: true
   workflow_call:
@@ -26,7 +26,16 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: refs/tags/v${{ inputs.version }}
+
+      - name: Checkout release tag when present
+        run: |
+          version="${{ inputs.version }}"
+          if git rev-parse "refs/tags/v${version}^{commit}" >/dev/null 2>&1; then
+            git checkout "refs/tags/v${version}"
+            echo "Using tag v${version}"
+          else
+            echo "::warning::Tag v${version} not found; publishing from $(git rev-parse --abbrev-ref HEAD)."
+          fi
 
       - uses: pnpm/action-setup@v6
 

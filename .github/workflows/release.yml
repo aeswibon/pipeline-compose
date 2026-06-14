@@ -34,7 +34,7 @@ jobs:
     needs:
       - version-sync
       - release-publish
-    uses: ./.github/workflows/stage-publish-actions.yml
+    uses: ./.github/workflows/publish-actions.yml
     secrets: inherit
     with:
       version: ${{ needs.version-sync.outputs.version }}
