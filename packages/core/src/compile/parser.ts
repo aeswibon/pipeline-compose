@@ -52,6 +52,8 @@ export interface ResolvedStage extends PipelineStage {
 
 export interface ResolvedPipeline extends Pipeline {
   stages: ResolvedStage[];
+  /** Source YAML schema version (set by resolvePipelineDocument). */
+  schemaVersion?: 1 | 2;
 }
 
 export function isPipelineV2(doc: PipelineDocument): doc is PipelineDocumentV2 {

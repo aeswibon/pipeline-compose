@@ -63,6 +63,7 @@ Requires [Docker](https://docs.docker.com/get-docker/) and [act](https://github.
 | Monorepo development | [docs/development.md](docs/development.md) |
 | **Glossary (monorepo contributors)** | [docs/glossary.md](docs/glossary.md) |
 | Publishing actions | [docs/action-repos.md](docs/action-repos.md) |
+| **Migrating to 1.0 (v0.5 deprecations)** | [docs/migration/v0.5.md](docs/migration/v0.5.md) |
 | v0.4 activation design | [docs/specs/2026-06-14-v040-activation-design.md](docs/specs/2026-06-14-v040-activation-design.md) |
 | Pipeline schema (v1) | [packages/core/schema/pipeline-v1.schema.json](packages/core/schema/pipeline-v1.schema.json) |
 | Pipeline schema (v2, multi-pipeline) | [packages/core/schema/pipeline-v2.schema.json](packages/core/schema/pipeline-v2.schema.json) |

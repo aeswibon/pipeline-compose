@@ -41,6 +41,10 @@ export {
   serializeValidateReport,
   workflowMatchesGroupConvention,
 } from './compile/validate-report.js';
+export {
+  collectDeprecationIssues,
+  DEPRECATION_REMOVAL_VERSION,
+} from './compile/deprecations.js';
 export { renderPipelineMermaid } from './compile/mermaid.js';
 export {
   renderInitPipelineYaml,

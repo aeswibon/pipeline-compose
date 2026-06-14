@@ -59,7 +59,7 @@ jobs:
       actions: write
     steps:
       - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose-run@master
+      - uses: aeswibon/pipeline-compose-run@v0.4.3
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           github_token: ${{ github.token }}

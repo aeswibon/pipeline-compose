@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Migration guide** — [docs/migration/v0.5.md](docs/migration/v0.5.md) for deprecations removed in 1.0.0.
+- **`validate` deprecations** — warns on manual export upload, monorepo action paths, `@master` pins, and pipeline schema v1 (`--repo-root`; `--strict` promotes to errors).
+
 ## [0.4.3] - 2026-06-14
 
 ### Fixed

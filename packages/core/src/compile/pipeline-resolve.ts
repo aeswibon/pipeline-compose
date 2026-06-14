@@ -90,6 +90,7 @@ export function mergePipelines(pipelines: Pipeline[]): ResolvedPipeline {
 
 export function resolvePipelineDocument(doc: PipelineDocument): ResolvedPipeline {
   const merged = mergePipelines(pipelineDocumentToList(doc));
+  merged.schemaVersion = isPipelineV2(doc) ? 2 : 1;
   if (isPipelineV2(doc) && doc.companion_workflows?.length) {
     merged.companion_workflows = [
       ...new Set([...(merged.companion_workflows ?? []), ...doc.companion_workflows]),

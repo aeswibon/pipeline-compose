@@ -83,7 +83,9 @@ export function validatePipelineDocuments(docs: PipelineDocument[]): ResolvedPip
     }
     return pipelineDocumentToList(doc);
   });
-  return mergePipelines(pipelines);
+  const merged = mergePipelines(pipelines);
+  merged.schemaVersion = docs.some((doc) => isPipelineV2(doc)) ? 2 : 1;
+  return merged;
 }
 
 export function validatePipeline(pipeline: Pipeline): Pipeline {

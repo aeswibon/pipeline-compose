@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import type { ResolvedPipeline, ResolvedStage } from './parser.js';
 import { resolveStageGroup } from './parser.js';
 import { parseRepoSlug } from '../lib/expressions.js';
+import { collectDeprecationIssues } from './deprecations.js';
 
 export type ValidationIssueLevel = 'warn' | 'error';
 
@@ -171,6 +172,10 @@ export function buildValidateReport(
   options: ValidateReportOptions = {},
 ): ValidateReport {
   const issues = collectPipelineIssues(pipeline, options);
+
+  if (options.repoRoot) {
+    issues.push(...collectDeprecationIssues(pipeline, options.repoRoot));
+  }
 
   if (options.workflows && options.repoRoot) {
     for (const orphan of findOrphanWorkflows(options.repoRoot, pipeline)) {
