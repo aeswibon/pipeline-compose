@@ -1,3 +1,4 @@
+# INTENTIONAL BREAK — mermaid error styling demo (do not merge)
 version: 2
 groups:
   release:
@@ -12,10 +13,14 @@ pipelines:
     stages:
       - id: ci
         workflow: .github/workflows/ci.yml
+      - id: broken-gate
+        workflow: .github/workflows/intentionally-missing.yml
+        needs:
+          - ci
       - id: version-sync
         workflow: .github/workflows/stage-version-sync.yml
         needs:
-          - ci
+          - broken-gate
         outputs:
           - version
           - skip_publish
