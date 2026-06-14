@@ -29,4 +29,8 @@ git tag -a v9.9.9 -m "Release v9.9.9"
 
 bash scripts/ci/check-workspace-versions.sh
 
+# Release cut: newer tag than package.json, workspace matches previous tag.
+git tag -a v9.9.10 -m "Release v9.9.10"
+bash scripts/ci/check-workspace-versions.sh
+
 echo "check-workspace-versions.test.sh: ok"

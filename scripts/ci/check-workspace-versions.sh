@@ -29,16 +29,23 @@ fi
 
 echo "Latest release tag: $latest_tag (expect package.json version $expected)"
 
+read_package_version() {
+  perl -ne 'print $1 if /"version"\s*:\s*"([^"]+)"/' "$1"
+}
+
 failed=0
+workspace_version=""
 for file in "${VERSION_PACKAGE_JSONS[@]}"; do
   if [[ ! -f "$file" ]]; then
     echo "Missing $file" >&2
     failed=1
     continue
   fi
-  actual="$(perl -ne 'print $1 if /"version"\s*:\s*"([^"]+)"/' "$file")"
-  if [[ "$actual" != "$expected" ]]; then
-    echo "Version mismatch in $file: expected $expected (from $latest_tag), got ${actual:-<missing>}" >&2
+  actual="$(read_package_version "$file")"
+  if [[ -z "$workspace_version" ]]; then
+    workspace_version="$actual"
+  elif [[ "$actual" != "$workspace_version" ]]; then
+    echo "Inconsistent version in $file: expected $workspace_version, got ${actual:-<missing>}" >&2
     failed=1
   fi
 done
@@ -47,4 +54,23 @@ if [[ "$failed" -ne 0 ]]; then
   exit 1
 fi
 
-echo "All workspace package.json files match release tag $latest_tag"
+if [[ "$workspace_version" == "$expected" ]]; then
+  echo "All workspace package.json files match release tag $latest_tag"
+  exit 0
+fi
+
+# Release cut: tag vX.Y.Z on master before version-sync bumps package.json from the prior tag.
+previous_tag="$(git tag -l 'v*' --sort=-v:refname | sed -n '2p' || true)"
+if [[ -n "$previous_tag" ]]; then
+  previous="${previous_tag#v}"
+  if [[ "$workspace_version" == "$previous" ]]; then
+    echo "Workspace at $previous_tag; newer tag $latest_tag pending version-sync — ok"
+    exit 0
+  fi
+fi
+
+for file in "${VERSION_PACKAGE_JSONS[@]}"; do
+  actual="$(read_package_version "$file")"
+  echo "Version mismatch in $file: expected $expected (from $latest_tag), got ${actual:-<missing>}" >&2
+done
+exit 1
