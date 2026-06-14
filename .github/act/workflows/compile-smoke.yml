@@ -22,7 +22,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: >-
-          pnpm exec tsx bin/pipeline-compose.ts compile
+          pnpm exec tsx packages/cli/src/main.ts compile
           ${{ inputs.pipeline_file }}
           -o /tmp/act-compile-out.yml
       - name: Assert generated workflow shape

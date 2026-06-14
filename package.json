@@ -1,31 +1,23 @@
 {
-  "name": "@aeswibon/pipeline-compose",
-  "version": "0.2.0",
-  "private": false,
-  "type": "module",
+  "name": "pipeline-compose",
+  "version": "0.3.0",
+  "private": true,
   "description": "Define workflow execution order and run stages sequentially via GitHub Actions",
-  "scripts": {
-    "build": "tsc",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "compile": "tsx bin/pipeline-compose.ts compile",
-    "act:ci": "bash scripts/act-test.sh ci",
-    "lint:workflows": "bash scripts/lint-workflows.sh",
-    "create-action-repos": "bash scripts/create-action-repos.sh",
-    "publish-action-repos": "bash scripts/publish-action-repos.sh"
-  },
   "packageManager": "pnpm@10.12.1",
-  "dependencies": {
-    "ajv": "^8.17.1",
-    "yaml": "^2.8.0"
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "vitest run",
+    "bundle:actions": "pnpm --filter '@aeswibon/pipeline-compose-action-run' --filter '@aeswibon/pipeline-compose-action-compile' --filter '@aeswibon/pipeline-compose-action-eval' run bundle",
+    "compile": "pnpm exec tsx packages/cli/src/main.ts compile",
+    "act:ci": "bash scripts/act-test.sh ci",
+    "act:compile": "bash scripts/act-test.sh compile",
+    "lint:workflows": "bash scripts/lint-workflows.sh",
+    "publish:actions": "pnpm run bundle:actions && bash scripts/publish-action-packages.sh"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
-  },
-  "bin": {
-    "pipeline-compose": "./bin/pipeline-compose.ts"
   }
 }

@@ -1,9 +1,7 @@
 import AjvImport from 'ajv';
-import { existsSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 import type { Pipeline } from './parser.js';
 import { sortStages } from './topo-sort.js';
+import schema from '../../schema/pipeline-v1.schema.json' with { type: 'json' };
 
 type AjvValidator = {
   compile: (schema: object) => ((data: unknown) => boolean) & { errors?: object[] | null };
@@ -14,23 +12,8 @@ type AjvConstructor = new (options?: object) => AjvValidator;
 
 const Ajv = AjvImport as unknown as AjvConstructor;
 
-function loadSchema(): object {
-  const candidates = [
-    join(process.cwd(), 'schema/pipeline-v1.schema.json'),
-    join(dirname(fileURLToPath(import.meta.url)), '../../schema/pipeline-v1.schema.json'),
-  ];
-  for (const path of candidates) {
-    if (existsSync(path)) {
-      return JSON.parse(readFileSync(path, 'utf8')) as object;
-    }
-  }
-  throw new Error(`Pipeline schema not found. Tried: ${candidates.join(', ')}`);
-}
-
-const schema = loadSchema();
-
 const ajv = new Ajv({ allErrors: true, strict: false });
-const validateSchema = ajv.compile(schema);
+const validateSchema = ajv.compile(schema as object);
 
 export function validatePipeline(pipeline: Pipeline): Pipeline {
   if (!validateSchema(pipeline)) {

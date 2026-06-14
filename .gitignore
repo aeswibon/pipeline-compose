@@ -1,5 +1,7 @@
 node_modules/
 /dist/
+packages/core/dist/
+packages/action-*/dist/
 *.log
 .DS_Store
 .pipeline-context.json

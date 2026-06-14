@@ -225,4 +225,4 @@ templates/
 
 - [README](../README.md)
 - [docs/development.md](development.md)
-- [schema/pipeline-v1.schema.json](../schema/pipeline-v1.schema.json)
+- [packages/core/schema/pipeline-v1.schema.json](../packages/core/schema/pipeline-v1.schema.json)

@@ -1,0 +1,23 @@
+name: Pipeline Compose Eval
+description: "Evaluate a when: expression against github and context JSON"
+branding:
+  icon: question
+  color: purple
+inputs:
+  expression:
+    description: Expression to evaluate
+    required: true
+  context:
+    description: Pipeline context JSON
+    required: false
+    default: '{}'
+  github:
+    description: GitHub context JSON subset
+    required: false
+    default: '{}'
+outputs:
+  result:
+    description: Boolean result as string
+runs:
+  using: node24
+  main: dist/index.js

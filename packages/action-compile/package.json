@@ -1,0 +1,19 @@
+{
+  "name": "@aeswibon/pipeline-compose-action-compile",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "bundle": "pnpm --filter @aeswibon/pipeline-compose-core run build && ncc build src/index.ts -o dist -s"
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@aeswibon/pipeline-compose-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@vercel/ncc": "^0.38.3",
+    "typescript": "^5.7.0"
+  }
+}

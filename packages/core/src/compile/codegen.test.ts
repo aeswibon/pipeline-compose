@@ -36,7 +36,7 @@ describe('generateWorkflow', () => {
     expect(yaml).not.toContain('workflow_call');
   });
 
-  it('adds verify-bundles step for local compile action', () => {
+  it('adds bundle check step for local compile action', () => {
     const pipeline: Pipeline = {
       name: 'pipeline',
       version: 1,
@@ -44,10 +44,10 @@ describe('generateWorkflow', () => {
     };
     const yaml = generateWorkflow(pipeline, {
       pipelineFile: '.github/pipelines/pipeline.yml',
-      compileAction: './compile',
+      compileAction: './packages/action-compile',
     });
-    expect(yaml).toContain('verify-bundles.sh');
-    expect(yaml).toContain('uses: ./compile');
+    expect(yaml).toContain('packages/action-compile/dist/index.js');
+    expect(yaml).toContain('uses: ./packages/action-compile');
   });
 
   it('combines tag gate with stage when expression', () => {

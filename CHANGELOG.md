@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-06-14
+
+### Changed
+
+- **Monorepo refactor** — pnpm workspace with shared `@aeswibon/pipeline-compose-core` and packages for CLI and all four actions (`packages/core`, `packages/cli`, `packages/action-*`).
+- Single development surface: edit core once, test with `pnpm test`, bundle with `pnpm run bundle:actions`, publish with `pnpm run publish:actions`.
+- Removed legacy root `src/`, `bin/`, and `schema/`; schema now lives at `packages/core/schema/`.
+- CI compile parity uses `./packages/action-compile` (built in CI, not committed).
+- Replaced sibling-repo scaffold scripts with `scripts/publish-action-packages.sh`.
+
+### Developer notes
+
+See [docs/development.md](docs/development.md) and [docs/action-repos.md](docs/action-repos.md).
+
 ## [0.2.0] - 2026-06-14
 
 ### Changed

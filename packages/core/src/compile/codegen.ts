@@ -67,7 +67,7 @@ function compileCheckSteps(
   if (isLocalCompileAction(compileAction)) {
     steps.push({
       name: 'Verify bundled compile action',
-      run: 'bash scripts/verify-bundles.sh',
+      run: 'test -f packages/action-compile/dist/index.js',
     });
   }
 

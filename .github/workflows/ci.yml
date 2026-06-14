@@ -28,30 +28,26 @@ jobs:
     needs: unit-tests
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/checkout@v6
-        with:
-          repository: aeswibon/pipeline-compose-compile
-          path: pipeline-compose-compile
-          ref: master
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @aeswibon/pipeline-compose-action-compile run bundle
       - run: >-
-          pnpm exec tsx bin/pipeline-compose.ts compile
+          pnpm exec tsx packages/cli/src/main.ts compile
           .github/pipelines/pipeline.yml
           -o /tmp/cli-out.yml
-          --workflow-output .github/workflows/pipeline.yml
-          --compile-action aeswibon/pipeline-compose-compile@master
+          --workflow-output .github/workflows/release.yml
+          --compile-action ./packages/action-compile
       - run: grep -q 'compile-check' /tmp/cli-out.yml
-      - uses: ./pipeline-compose-compile
+      - uses: ./packages/action-compile
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           output: /tmp/action-out.yml
-          workflow_output: .github/workflows/pipeline.yml
-          compile_action: aeswibon/pipeline-compose-compile@master
+          workflow_output: .github/workflows/release.yml
+          compile_action: ./packages/action-compile
       - run: diff /tmp/cli-out.yml /tmp/action-out.yml
 
   workflow-lint:

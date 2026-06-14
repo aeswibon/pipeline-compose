@@ -1,9 +1,7 @@
 #!/usr/bin/env tsx
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { loadPipeline } from '../src/compile/parser.js';
-import { validatePipeline } from '../src/compile/validator.js';
-import { generateWorkflow } from '../src/compile/codegen.js';
+import { loadPipeline, validatePipeline, generateWorkflow } from '@aeswibon/pipeline-compose-core';
 
 function usage(): never {
   console.error(

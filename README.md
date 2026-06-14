@@ -2,7 +2,7 @@
 
 Define **in what order** your GitHub Actions workflows run. Add one pipeline file and one `run` step — no compile step and no generated workflow to commit.
 
-This repository holds the **CLI**, **schema**, and **docs**. Each GitHub Action lives in its own repository (Marketplace-ready).
+This repository is a **pnpm workspace monorepo**: shared core, CLI, action sources, schema, docs, and release workflows. Each GitHub Action is published to its own repository (Marketplace-ready).
 
 # Actions
 
@@ -149,13 +149,14 @@ permissions:
 
 | Ref | When to use |
 |-----|-------------|
-| `@v0.2.0` | Current release |
-| `@v0.1.0` | Previous monorepo layout |
+| `@v0.3.0` | Monorepo layout (current) |
+| `@v0.2.0` | Split action repos, meta repo CLI-only |
+| `@v0.1.0` | Previous monorepo layout with embedded actions |
 | `@master` | Latest on the default branch |
 
 # Development
 
-See [docs/development.md](docs/development.md) for this repo and [docs/action-repos.md](docs/action-repos.md) for the split action repositories.
+See [docs/development.md](docs/development.md) for the monorepo layout and [docs/action-repos.md](docs/action-repos.md) for publishing actions to GitHub.
 
 # License
 
