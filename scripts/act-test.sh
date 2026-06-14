@@ -26,6 +26,11 @@ if [[ -n "${ACT_DOCKER_SOCKET:-}" ]]; then
   SOCKET_ARGS=(--container-daemon-socket "unix://${ACT_DOCKER_SOCKET}")
 fi
 
+ARCH_ARGS=()
+if [[ "$(uname -m)" == "arm64" ]]; then
+  ARCH_ARGS=(--container-architecture linux/amd64)
+fi
+
 TARGET="${1:-ci}"
 
 case "$TARGET" in
@@ -33,15 +38,15 @@ case "$TARGET" in
     ACT=true act push \
       -W .github/workflows/ci.yml \
       -j test \
+      "${ARCH_ARGS[@]}" \
       "${SOCKET_ARGS[@]}"
     ;;
   compile)
-    pnpm install --frozen-lockfile
-    pnpm run bundle
     ACT=true act workflow_dispatch \
       -W .github/workflows/compile-example.yml \
       -e .github/act/workflow-dispatch-compile.json \
       -j compile \
+      "${ARCH_ARGS[@]}" \
       "${SOCKET_ARGS[@]}"
     ;;
   *)

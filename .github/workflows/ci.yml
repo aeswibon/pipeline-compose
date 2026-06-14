@@ -10,8 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -19,6 +17,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
       - run: pnpm run bundle
+        if: env.ACT != 'true'
 
   compile-check:
     runs-on: ubuntu-latest
@@ -26,14 +25,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run bundle
+        if: env.ACT != 'true'
       - run: pnpm exec tsx bin/pipeline-compose.ts compile examples/pipeline-release.yml -o /tmp/out.yml
       - run: grep -q 'workflow_call' /tmp/out.yml
       - uses: ./compile
@@ -48,14 +46,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run bundle
+        if: env.ACT != 'true'
       - run: pnpm exec tsx bin/pipeline-compose.ts compile examples/pipeline-release.yml -o examples/release.generated.yml
       - uses: ./compile
         with:
