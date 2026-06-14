@@ -145,23 +145,14 @@ jobs:
             exit 1
           fi
 
-      - name: Export outputs for pipeline-compose
-        if: success()
-        env:
-          VERSION: ${{ steps.version.outputs.value }}
-        run: |
-          mkdir -p pipeline-compose
-          jq -n --arg version "$VERSION" '{version: $version}' > pipeline-compose/outputs.json
-
-      - uses: actions/upload-artifact@v7
+      - uses: aeswibon/pipeline-compose-export@v0.4.1
         if: success()
         with:
-          name: pipeline-compose-version-sync
-          path: pipeline-compose/outputs.json
-          retention-days: 1
+          stage_id: version-sync
+          outputs: '{"version":"${{ steps.version.outputs.value }}"}'
 ```
 
-Note the artifact name matches the stage id: `pipeline-compose-version-sync`.
+Artifact name is set by the action: `pipeline-compose-version-sync` (matches stage `id`).
 
 ### Release publish — consume version input
 

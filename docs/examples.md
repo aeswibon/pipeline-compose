@@ -150,17 +150,14 @@ GitHub's REST API does not return job outputs for dispatched workflows. Upload:
 - **File:** `outputs.json` with your output keys
 
 ```yaml
-- name: Export outputs for pipeline-compose
+- uses: aeswibon/pipeline-compose-export@v0.4.1
   if: success()
-  run: |
-    mkdir -p pipeline-compose
-    jq -n --arg version "$VERSION" '{version: $version}' > pipeline-compose/outputs.json
-- uses: actions/upload-artifact@v7
   with:
-    name: pipeline-compose-my-stage
-    path: pipeline-compose/outputs.json
-    retention-days: 1
+    stage_id: my-stage
+    outputs: '{"version":"${{ steps.meta.outputs.version }}"}'
 ```
+
+Manual upload with `jq` and `actions/upload-artifact` is equivalent if the artifact name is `pipeline-compose-<stage-id>` and the file is `outputs.json`.
 
 ---
 
