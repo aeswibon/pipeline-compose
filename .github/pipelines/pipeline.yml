@@ -1,4 +1,4 @@
-name: tag-release
+name: pipeline
 version: 1
 stages:
   - id: version-sync

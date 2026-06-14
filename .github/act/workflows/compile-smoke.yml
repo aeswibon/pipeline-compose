@@ -7,7 +7,7 @@ on:
       pipeline_file:
         description: Pipeline YAML path
         required: true
-        default: .github/pipelines/tag-release.yml
+        default: .github/pipelines/pipeline.yml
       pipeline_inline:
         description: Optional inline YAML override
         required: false

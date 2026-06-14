@@ -1,6 +1,6 @@
 {
   "inputs": {
-    "pipeline_file": ".github/pipelines/tag-release.yml",
+    "pipeline_file": ".github/pipelines/pipeline.yml",
     "pipeline_inline": ""
   }
 }

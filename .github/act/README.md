@@ -39,7 +39,7 @@ bash scripts/verify-bundles.sh   # optional; act-test.sh runs this automatically
 | Workflow | Purpose |
 |----------|---------|
 | `.github/act/workflows/test-smoke.yml` | Unit tests via pnpm |
-| `.github/act/workflows/compile-smoke.yml` | Compile action against tag-release pipeline |
+| `.github/act/workflows/compile-smoke.yml` | Compile action against pipeline.yml |
 
 These use `workflow_dispatch` only — they do not run on push/PR to GitHub.
 
