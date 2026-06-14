@@ -35,6 +35,7 @@ jobs:
           node-version: '24'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
       - run: pnpm run validate .github/pipelines/pipeline.yml --workflows --strict
       - run: >-
           pnpm run validate

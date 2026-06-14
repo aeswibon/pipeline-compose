@@ -78,9 +78,10 @@ function loadResolvedPipeline(target: string): ResolvedPipeline {
 
 function compileSourceLabel(target: string): string {
   const absoluteTarget = path.resolve(target);
-  return fs.statSync(absoluteTarget).isDirectory()
-    ? `${absoluteTarget}/`
-    : absoluteTarget;
+  if (fs.statSync(absoluteTarget).isDirectory()) {
+    return `${target.replace(/\/$/, '')}/`;
+  }
+  return target;
 }
 
 function runCompile(args: string[]): void {
