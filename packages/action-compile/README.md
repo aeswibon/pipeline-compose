@@ -1,23 +1,16 @@
 # pipeline-compose-compile
 
-Compile a [pipeline-compose](https://github.com/aeswibon/pipeline-compose) pipeline YAML file into a **static GitHub Actions workflow** with native `needs:` edges.
+**Compile pipeline YAML into a static GitHub Actions workflow with native `needs:` edges.**
 
-Optional — most teams use [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) only (no generated file to commit).
+Optional — most teams use [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) only (no generated file to commit). Part of [pipeline-compose](https://github.com/aeswibon/pipeline-compose).
 
-<!-- start usage -->
-```yaml
-- uses: aeswibon/pipeline-compose-compile@v0.3.0
-  with:
-    pipeline_file: .github/pipelines/pipeline.yml
-    output: .github/workflows/pipeline-generated.yml
-```
-<!-- end usage -->
+## Start here — CI compile check
 
-## Usage
+Keep a generated workflow in sync with your pipeline file:
 
 ```yaml
 jobs:
-  compile:
+  compile-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -29,15 +22,33 @@ jobs:
           check: "true"
 ```
 
-When `check: true`, the action fails if `output` exists and differs from the compiled result (useful in CI).
+When `check: true`, the action fails if the committed workflow differs from what the pipeline compiles to.
+
+<!-- start usage -->
+```yaml
+- uses: aeswibon/pipeline-compose-compile@v0.3.0
+  with:
+    pipeline_file: .github/pipelines/pipeline.yml
+    output: .github/workflows/pipeline-generated.yml
+```
+<!-- end usage -->
+
+## One-off generation
+
+```yaml
+- uses: aeswibon/pipeline-compose-compile@v0.3.0
+  with:
+    pipeline_file: .github/pipelines/pipeline.yml
+    output: .github/workflows/pipeline-generated.yml
+```
 
 ### CLI equivalent
-
-From the [pipeline-compose](https://github.com/aeswibon/pipeline-compose) monorepo:
 
 ```bash
 pnpm exec tsx packages/cli/src/main.ts compile .github/pipelines/pipeline.yml -o out.yml
 ```
+
+(from the [pipeline-compose](https://github.com/aeswibon/pipeline-compose) monorepo)
 
 ## Inputs
 
@@ -60,7 +71,7 @@ pnpm exec tsx packages/cli/src/main.ts compile .github/pipelines/pipeline.yml -o
 
 ## Pipeline format
 
-Same as the run action — see [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run#pipeline-file).
+Same as the run action — see [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run#start-here--tag-release-pipeline).
 
 ## License
 

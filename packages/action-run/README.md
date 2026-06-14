@@ -1,21 +1,14 @@
 # pipeline-compose-run
 
-Run GitHub Actions workflows **in order** from a pipeline YAML file. Dispatches each stage via `workflow_dispatch`, waits for completion, and passes outputs to later stages.
+**Run GitHub Actions workflows in order — one pipeline file, no generated YAML.**
 
-Part of [pipeline-compose](https://github.com/aeswibon/pipeline-compose).
+Dispatches each stage via `workflow_dispatch`, waits for completion, and passes outputs to later stages. Part of [pipeline-compose](https://github.com/aeswibon/pipeline-compose).
 
-<!-- start usage -->
-```yaml
-- uses: aeswibon/pipeline-compose-run@v0.3.0
-  with:
-    pipeline_file: .github/pipelines/pipeline.yml
-    github_token: ${{ github.token }}
-```
-<!-- end usage -->
+## Start here — tag release pipeline
 
-## Usage
+The most common setup: on tag push, run **ci → version sync → publish** in order.
 
-### Tag / release pipeline
+**`.github/workflows/release.yml`**
 
 ```yaml
 name: Release
@@ -38,11 +31,7 @@ jobs:
           github_token: ${{ github.token }}
 ```
 
-Entry template: [pipeline-compose templates/pipeline-run.yml](https://github.com/aeswibon/pipeline-compose/blob/master/templates/pipeline-run.yml)
-
-### Pipeline file
-
-Create `.github/pipelines/pipeline.yml`:
+**`.github/pipelines/pipeline.yml`**
 
 ```yaml
 name: pipeline
@@ -51,14 +40,35 @@ stages:
   - id: ci
     workflow: .github/workflows/ci.yml
 
-  - id: deploy
-    workflow: .github/workflows/deploy.yml
+  - id: version-sync
+    workflow: .github/workflows/stage-version-sync.yml
     needs:
       - ci
+    outputs:
+      - version
+      - skip_publish
+
+  - id: release-publish
+    workflow: .github/workflows/stage-release-publish.yml
+    needs:
+      - version-sync
     inputs:
-      version: ${{ context.ci.version }}
-    when: startsWith(github.ref, 'refs/tags/v')
+      version: ${{ context.version-sync.version }}
+      skip_publish: ${{ context.version-sync.skip_publish }}
 ```
+
+Full template: [pipeline-compose/templates/pipeline-run.yml](https://github.com/aeswibon/pipeline-compose/blob/master/templates/pipeline-run.yml)
+
+<!-- start usage -->
+```yaml
+- uses: aeswibon/pipeline-compose-run@v0.3.0
+  with:
+    pipeline_file: .github/pipelines/pipeline.yml
+    github_token: ${{ github.token }}
+```
+<!-- end usage -->
+
+## Pipeline file reference
 
 | Field | Description |
 |-------|-------------|
@@ -86,8 +96,6 @@ Schema: [pipeline-v1.schema.json](https://github.com/aeswibon/pipeline-compose/b
 | `results_json` | JSON array of `{ stageId, runId, outputs }` per completed stage |
 
 ## Permissions
-
-When dispatching workflows in the same repository:
 
 ```yaml
 permissions:

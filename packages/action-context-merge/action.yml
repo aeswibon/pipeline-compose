@@ -1,5 +1,5 @@
 name: Pipeline Compose Context Merge
-description: Merge a stage outputs object into the pipeline context JSON file
+description: Merge stage outputs into pipeline context JSON for composite workflows
 branding:
   icon: git-merge
   color: green

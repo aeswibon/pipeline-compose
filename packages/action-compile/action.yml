@@ -1,5 +1,5 @@
 name: Pipeline Compose Compile
-description: Compile pipeline-compose pipeline YAML to a static GitHub Actions workflow
+description: Compile pipeline YAML into a static GitHub Actions workflow with native needs
 branding:
   icon: code
   color: gray-dark

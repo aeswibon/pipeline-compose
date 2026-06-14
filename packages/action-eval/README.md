@@ -1,8 +1,34 @@
 # pipeline-compose-eval
 
-Evaluate a pipeline-compose **`when:`** expression against GitHub and pipeline context JSON.
+**Evaluate pipeline `when:` expressions against GitHub and context JSON.**
 
-Used internally by [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run); exposed for custom workflows and testing.
+Used by [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run); also useful in custom workflows. Part of [pipeline-compose](https://github.com/aeswibon/pipeline-compose).
+
+## Start here — gate a job on ref or context
+
+Run deploy only on version tags:
+
+```yaml
+- id: should-deploy
+  uses: aeswibon/pipeline-compose-eval@v0.3.0
+  with:
+    expression: startsWith(github.ref, 'refs/tags/v')
+    github: ${{ toJson(github) }}
+
+- name: Deploy
+  if: steps.should-deploy.outputs.result == 'true'
+  run: ./deploy.sh
+```
+
+Gate on prior stage output:
+
+```yaml
+- id: should-publish
+  uses: aeswibon/pipeline-compose-eval@v0.3.0
+  with:
+    expression: context.ci.passed == 'true'
+    context: '{"ci":{"passed":"true"}}'
+```
 
 <!-- start usage -->
 ```yaml
@@ -12,21 +38,6 @@ Used internally by [pipeline-compose-run](https://github.com/aeswibon/pipeline-c
     context: '{"ci":{"passed":"true"}}'
 ```
 <!-- end usage -->
-
-## Usage
-
-```yaml
-- id: eval
-  uses: aeswibon/pipeline-compose-eval@v0.3.0
-  with:
-    expression: ${{ github.event_name == 'push' }}
-    github: ${{ toJson(github) }}
-    context: ${{ steps.load-context.outputs.json }}
-
-- name: Deploy
-  if: steps.eval.outputs.result == 'true'
-  run: ./deploy.sh
-```
 
 ## Inputs
 

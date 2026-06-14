@@ -1,5 +1,5 @@
 name: Pipeline Compose Run
-description: Run GitHub Actions workflows in order from a pipeline YAML file
+description: Run GitHub Actions workflows in order — one pipeline file, no generated YAML
 branding:
   icon: play
   color: blue

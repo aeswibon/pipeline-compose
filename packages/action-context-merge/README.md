@@ -1,8 +1,32 @@
 # pipeline-compose-context-merge
 
-Composite action: merge a stage’s outputs into a pipeline context JSON file on disk.
+**Merge stage outputs into pipeline context JSON for composite workflows.**
 
-Helper for advanced workflows; [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) manages context automatically when orchestrating stages.
+Helper for advanced setups; [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) manages context automatically when orchestrating stages. Part of [pipeline-compose](https://github.com/aeswibon/pipeline-compose).
+
+## Start here — accumulate context across jobs
+
+After a job finishes, merge its outputs into a shared context file for later steps or jobs:
+
+```yaml
+- name: Run tests
+  id: ci
+  run: echo "passed=true" >> "$GITHUB_OUTPUT"
+
+- uses: aeswibon/pipeline-compose-context-merge@v0.3.0
+  with:
+    context_file: .pipeline-context.json
+    stage_id: ci
+    outputs: ${{ toJson(steps.ci.outputs) }}
+
+- uses: aeswibon/pipeline-compose-context-merge@v0.3.0
+  with:
+    context_file: .pipeline-context.json
+    stage_id: version-sync
+    outputs: '{"version":"1.2.3"}'
+```
+
+The file is created if missing. Existing keys under other stage ids are preserved.
 
 <!-- start usage -->
 ```yaml
@@ -13,18 +37,6 @@ Helper for advanced workflows; [pipeline-compose-run](https://github.com/aeswibo
     outputs: '{"version":"1.2.3"}'
 ```
 <!-- end usage -->
-
-## Usage
-
-```yaml
-- uses: aeswibon/pipeline-compose-context-merge@v0.3.0
-  with:
-    context_file: .pipeline-context.json
-    stage_id: version-sync
-    outputs: ${{ toJson(steps.sync.outputs) }}
-```
-
-The file is created if missing. Existing keys under other stage ids are preserved.
 
 ## Inputs
 
