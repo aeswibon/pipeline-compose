@@ -149,7 +149,8 @@ permissions:
 
 | Ref | When to use |
 |-----|-------------|
-| `@v0.1.0` | Released tag |
+| `@v0.2.0` | Current release |
+| `@v0.1.0` | Previous monorepo layout |
 | `@master` | Latest on the default branch |
 
 # Development
