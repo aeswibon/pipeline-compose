@@ -241,4 +241,92 @@ describe('runPipeline', () => {
     expect(remoteClient.dispatchWorkflow).toHaveBeenCalled();
     expect(client.dispatchWorkflow).not.toHaveBeenCalled();
   });
+
+  it('throws when required context from a skipped stage is missing', async () => {
+    const client = mockClient({
+      workflows: { '.github/workflows/publish.yml': 3 },
+    });
+    await expect(
+      runPipeline(
+        {
+          name: 'pipeline',
+          version: 1,
+          stages: [
+            {
+              id: 'version-sync',
+              workflow: '.github/workflows/stage-version-sync.yml',
+              when: 'false',
+            },
+            {
+              id: 'publish',
+              workflow: '.github/workflows/publish.yml',
+              inputs: {
+                version: '${{ context.version-sync.version }}',
+              },
+            },
+          ],
+        },
+        client,
+        runOptions,
+      ),
+    ).rejects.toThrow(/requires context\.version-sync\.version/);
+  });
+
+  it('throws when declared outputs cannot be collected', async () => {
+    const client = mockClient({
+      workflows: { '.github/workflows/broken.yml': 5 },
+    });
+    vi.mocked(client.waitForStageArtifact).mockResolvedValueOnce({ other: 'value' });
+
+    await expect(
+      runPipeline(
+        {
+          name: 'pipeline',
+          version: 1,
+          stages: [
+            {
+              id: 'broken',
+              workflow: '.github/workflows/broken.yml',
+              outputs: ['version'],
+            },
+          ],
+        },
+        client,
+        runOptions,
+      ),
+    ).rejects.toThrow(/Could not find outputs for stage "broken"/);
+  });
+
+  it('reuses cached cross-repo clients for repeated repo slugs', async () => {
+    const remoteClient = mockClient({
+      workflows: { '.github/workflows/remote-a.yml': 1, '.github/workflows/remote-b.yml': 2 },
+    });
+    const client = mockClient({
+      workflows: { '.github/workflows/remote-a.yml': 1, '.github/workflows/remote-b.yml': 2 },
+    });
+    vi.mocked(client.withRepo).mockReturnValue(remoteClient);
+
+    await runPipeline(
+      {
+        name: 'pipeline',
+        version: 1,
+        stages: [
+          {
+            id: 'a',
+            workflow: '.github/workflows/remote-a.yml',
+            repo: 'other-org/other-repo',
+          },
+          {
+            id: 'b',
+            workflow: '.github/workflows/remote-b.yml',
+            repo: 'other-org/other-repo',
+          },
+        ],
+      },
+      client,
+      runOptions,
+    );
+
+    expect(client.withRepo).toHaveBeenCalledTimes(1);
+  });
 });

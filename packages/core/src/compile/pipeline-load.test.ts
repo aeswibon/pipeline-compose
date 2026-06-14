@@ -6,6 +6,7 @@ import {
   loadPipelineDocumentFromFile,
   loadPipelineDocumentsFromDirectory,
   loadPipelineDocumentsFromInputs,
+  loadPipelineFromFile,
 } from './pipeline-load.js';
 
 const tempDirs: string[] = [];
@@ -72,5 +73,48 @@ stages:
         pipelineDir: 'pipelines',
       }),
     ).toThrow(/not both/);
+  });
+
+  it('loads a single file via pipeline_file input', () => {
+    const root = makeDir({
+      'pipeline.yml': `
+name: release
+version: 1
+stages:
+  - id: ci
+    workflow: .github/workflows/ci.yml
+`,
+    });
+    const docs = loadPipelineDocumentsFromInputs({
+      pipelineFile: path.join(root, 'pipeline.yml'),
+    });
+    expect(docs).toHaveLength(1);
+  });
+
+  it('requires pipeline_file or pipeline_dir', () => {
+    expect(() => loadPipelineDocumentsFromInputs({})).toThrow(/required/);
+  });
+
+  it('rejects empty pipeline directories', () => {
+    const root = makeDir({});
+    const emptyDir = path.join(root, 'empty');
+    fs.mkdirSync(emptyDir);
+    expect(() => loadPipelineDocumentsFromDirectory(emptyDir)).toThrow(
+      /No pipeline YAML files/,
+    );
+  });
+
+  it('loads legacy pipeline files', () => {
+    const root = makeDir({
+      'pipeline.yml': `
+name: release
+version: 1
+stages:
+  - id: ci
+    workflow: .github/workflows/ci.yml
+`,
+    });
+    const pipeline = loadPipelineFromFile(path.join(root, 'pipeline.yml'));
+    expect(pipeline.stages.map((stage) => stage.id)).toEqual(['ci']);
   });
 });

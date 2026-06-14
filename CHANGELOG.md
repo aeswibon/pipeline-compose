@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Richer `when:`** — `contains()`, `&&`, and `||` on the run/eval path.
 - **CLI** — `validate --json` and `sync --dry-run` preview output.
 - **CI guard** — `check-workspace-versions.sh` ensures package.json versions match the latest release tag (sync still runs on tag push).
-- **Tests** — GitHub API client mocks; sync/validate preview coverage; coverage thresholds raised to 55%.
+- **Tests** — GitHub API client mocks; sync/validate preview coverage; coverage thresholds raised to 65% (action/CLI entry shims excluded).
 
 ### Changed
 

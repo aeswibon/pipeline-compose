@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { evaluateExpression, mergeContext } from './expressions.js';
+import { evaluateExpression, mergeContext, parseRepoSlug } from './expressions.js';
 
 describe('evaluateExpression', () => {
   it('evaluates startsWith on github.ref', () => {
@@ -34,6 +34,17 @@ describe('evaluateExpression', () => {
     expect(result).toBe(true);
   });
 
+  it('evaluates literal true and false', () => {
+    expect(evaluateExpression('true', { github: {}, context: {} })).toBe(true);
+    expect(evaluateExpression('false', { github: {}, context: {} })).toBe(false);
+  });
+
+  it('rejects unsupported expressions', () => {
+    expect(() =>
+      evaluateExpression('github.event_name == push', { github: {}, context: {} }),
+    ).toThrow(/Unsupported expression/);
+  });
+
   it('evaluates && and || combinations', () => {
     expect(
       evaluateExpression("true && false || true", {
@@ -47,6 +58,19 @@ describe('evaluateExpression', () => {
         context: { ci: { passed: 'true' } },
       }),
     ).toBe(true);
+  });
+});
+
+describe('parseRepoSlug', () => {
+  it('parses owner/repo slugs', () => {
+    expect(parseRepoSlug('my-org/my-repo')).toEqual({
+      owner: 'my-org',
+      repo: 'my-repo',
+    });
+  });
+
+  it('rejects invalid slugs', () => {
+    expect(() => parseRepoSlug('not-a-slug')).toThrow(/Invalid repo slug/);
   });
 });
 

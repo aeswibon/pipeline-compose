@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { validatePipeline, validatePipelineDocument } from './validator.js';
-import type { Pipeline } from './parser.js';
+import {
+  validatePipeline,
+  validatePipelineDocument,
+  validatePipelineDocuments,
+} from './validator.js';
+import type { Pipeline, PipelineDocument } from './parser.js';
 
 const validPipeline: Pipeline = {
   name: 'release',
@@ -67,5 +71,27 @@ describe('validatePipeline', () => {
     const resolved = validatePipelineDocument(doc);
     expect(resolved.stages.map((stage) => stage.id)).toEqual(['ci']);
     expect(resolved.stages[0].resolvedGroup).toBe('release');
+  });
+
+  it('merges multiple pipeline documents', () => {
+    const docs: PipelineDocument[] = [
+      {
+        name: 'release',
+        version: 1,
+        stages: [{ id: 'ci', workflow: '.github/workflows/ci.yml' }],
+      },
+      {
+        version: 2,
+        pipelines: {
+          deploy: {
+            needs: ['release'],
+            stages: [{ id: 'gate', workflow: '.github/workflows/gate.yml' }],
+          },
+        },
+      },
+    ];
+
+    const resolved = validatePipelineDocuments(docs);
+    expect(resolved.stages.map((stage) => stage.id)).toEqual(['ci', 'gate']);
   });
 });

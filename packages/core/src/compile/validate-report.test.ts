@@ -1,8 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { afterEach, describe, it, expect } from 'vitest';
 import {
   buildValidateReport,
+  findOrphanWorkflows,
   formatPipelineTree,
+  formatValidateReport,
   serializeValidateReport,
+  validateReportExitCode,
   workflowMatchesGroupConvention,
 } from './validate-report.js';
 import type { ResolvedPipeline } from './parser.js';
@@ -95,5 +101,82 @@ describe('serializeValidateReport', () => {
     expect(json.pipeline.name).toBe('release');
     expect(json.pipeline.stageCount).toBe(2);
     expect(Array.isArray(json.issues)).toBe(true);
+  });
+});
+
+const tempDirs: string[] = [];
+
+afterEach(() => {
+  for (const dir of tempDirs.splice(0)) {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+function makeRepo(layout: Record<string, string>): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pc-validate-'));
+  tempDirs.push(root);
+  for (const [relative, content] of Object.entries(layout)) {
+    const fullPath = path.join(root, relative);
+    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+    fs.writeFileSync(fullPath, content);
+  }
+  return root;
+}
+
+describe('findOrphanWorkflows', () => {
+  it('lists workflow files not referenced by stages or companions', () => {
+    const repoRoot = makeRepo({
+      '.github/workflows/ci.yml': 'name: ci\n',
+      '.github/workflows/orphan.yml': 'name: orphan\n',
+    });
+
+    const orphans = findOrphanWorkflows(repoRoot, {
+      ...samplePipeline,
+      stages: [
+        {
+          id: 'ci',
+          workflow: '.github/workflows/ci.yml',
+        },
+      ],
+    });
+
+    expect(orphans).toEqual(['.github/workflows/orphan.yml']);
+  });
+});
+
+describe('formatValidateReport', () => {
+  it('prints grouped and ungrouped stages with issue lines', () => {
+    const report = buildValidateReport({
+      name: 'mixed',
+      version: 1,
+      stages: [
+        { id: 'grouped', workflow: '.github/workflows/release-grouped.yml', resolvedGroup: 'release' },
+        { id: 'solo', workflow: '.github/workflows/solo.yml' },
+      ],
+    });
+
+    const text = formatValidateReport(report);
+    expect(text).toContain('[ungrouped]');
+    expect(text).toContain('solo → .github/workflows/solo.yml');
+    expect(validateReportExitCode(report)).toBe(0);
+  });
+
+  it('flags missing workflow files when repoRoot is provided', () => {
+    const repoRoot = makeRepo({});
+    const report = buildValidateReport(samplePipeline, { repoRoot });
+    expect(report.issues.some((issue) => issue.code === 'workflow.missing')).toBe(true);
+    expect(validateReportExitCode(report)).toBe(1);
+  });
+
+  it('warns about orphan workflows when workflows mode is enabled', () => {
+    const repoRoot = makeRepo({
+      '.github/workflows/ci.yml': 'name: ci\n',
+      '.github/workflows/extra.yml': 'name: extra\n',
+    });
+    const report = buildValidateReport(samplePipeline, {
+      repoRoot,
+      workflows: true,
+    });
+    expect(report.issues.some((issue) => issue.code === 'workflow.orphan')).toBe(true);
   });
 });

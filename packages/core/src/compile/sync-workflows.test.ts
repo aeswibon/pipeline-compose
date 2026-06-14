@@ -76,6 +76,7 @@ describe('runWorkflowSync', () => {
 
   it('previews create and update actions without writing files', () => {
     const repoRoot = makeRepo({
+      'workflows/deploy/gate.yml': 'name: gate\n',
       'workflows/release/ci.yml': 'name: ci\n',
       '.github/workflows/release-ci.yml': 'name: old\n',
     });
@@ -101,5 +102,71 @@ describe('runWorkflowSync', () => {
     expect(preview.create).toContain('.github/workflows/deploy-gate.yml');
     expect(preview.update).toContain('.github/workflows/release-ci.yml');
     expect(formatWorkflowSyncPreview(preview)).toContain('create .github/workflows/deploy-gate.yml');
+  });
+
+  it('previews up-to-date targets and missing sources', () => {
+    const repoRoot = makeRepo({
+      'workflows/release/ci.yml': 'name: ci\n',
+      '.github/workflows/release-ci.yml': 'name: ci\n',
+    });
+
+    const pipeline: ResolvedPipeline = {
+      name: 'release',
+      version: 1,
+      stages: [
+        {
+          id: 'ci',
+          workflow: '.github/workflows/release-ci.yml',
+          resolvedGroup: 'release',
+        },
+        {
+          id: 'missing',
+          workflow: '.github/workflows/missing.yml',
+          resolvedGroup: 'release',
+        },
+      ],
+    };
+
+    const preview = previewWorkflowSync(buildSyncPlan(pipeline, repoRoot), repoRoot);
+    expect(preview.upToDate).toContain('.github/workflows/release-ci.yml');
+    expect(preview.missingSources).toContain('workflows/release/missing.yml');
+    expect(formatWorkflowSyncPreview(preview)).toContain('up-to-date');
+    expect(formatWorkflowSyncPreview(preview)).toContain('missing-source');
+  });
+
+  it('uses workflows/sync.yml overrides when present', () => {
+    const repoRoot = makeRepo({
+      'workflows/sync.yml': `
+mappings:
+  - from: workflows/custom/source.yml
+    to: .github/workflows/custom-target.yml
+`,
+      'workflows/custom/source.yml': 'name: custom\n',
+    });
+
+    const pipeline: ResolvedPipeline = {
+      name: 'release',
+      version: 1,
+      stages: [],
+    };
+
+    const plan = buildSyncPlan(pipeline, repoRoot);
+    expect(plan.mappings).toEqual([
+      {
+        from: 'workflows/custom/source.yml',
+        to: '.github/workflows/custom-target.yml',
+      },
+    ]);
+  });
+
+  it('reports no changes when preview is empty', () => {
+    expect(
+      formatWorkflowSyncPreview({
+        create: [],
+        update: [],
+        upToDate: [],
+        missingSources: [],
+      }),
+    ).toBe('No workflow sync changes.');
   });
 });
