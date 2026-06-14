@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build GitHub release notes for a semver tag.
-# Prefers the matching section in CHANGELOG.md, then appends GitHub-generated commit notes.
+# Requires a matching section in CHANGELOG.md, then appends GitHub-generated commit notes.
 set -euo pipefail
 
 usage() {
@@ -14,14 +14,16 @@ VERSION="$1"
 OUT="${2:-release-notes.md}"
 TAG="v${VERSION}"
 REPO="${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
   echo "Invalid semver: $VERSION" >&2
   exit 1
 fi
 
+bash "${ROOT}/scripts/ci/require-changelog-section.sh" "$VERSION"
+
 changelog_section() {
-  [[ -f CHANGELOG.md ]] || return 0
   awk -v ver="$VERSION" '
     BEGIN { found=0 }
     /^## \[/ {
@@ -43,20 +45,11 @@ main_section="$(changelog_section | sed '/./,$!d')"
 auto_section="$(generated_notes)"
 
 {
-  if [[ -n "$main_section" ]]; then
-    printf '%s\n' "$main_section"
-  fi
+  printf '%s\n' "$main_section"
 
   if [[ -n "$auto_section" ]]; then
-    if [[ -n "$main_section" ]]; then
-      printf '\n---\n\n'
-    fi
+    printf '\n---\n\n'
     printf '%s\n' "$auto_section"
-  fi
-
-  if [[ -z "$main_section" && -z "$auto_section" ]]; then
-    printf 'Release %s\n\n**Full Changelog**: https://github.com/%s/commits/%s\n' \
-      "$TAG" "$REPO" "$TAG"
   fi
 } > "$OUT"
 

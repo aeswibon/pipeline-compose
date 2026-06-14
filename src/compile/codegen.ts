@@ -6,7 +6,7 @@ export interface GenerateOptions {
   pipelineFile?: string;
   /** Generated workflow path (compile-check output + check target). */
   workflowOutput?: string;
-  /** compile action ref, e.g. aeswibon/pipeline-compose/compile@master or ./compile */
+  /** compile action ref, e.g. aeswibon/pipeline-compose-compile@master */
   compileAction?: string;
   defaultBranch?: string;
   /** Tag prefix for refs/tags/{tagPrefix}* (default v). */
@@ -14,7 +14,7 @@ export interface GenerateOptions {
 }
 
 const DEFAULT_WORKFLOW_OUTPUT = '.github/workflows/pipeline.yml';
-const DEFAULT_COMPILE_ACTION = 'aeswibon/pipeline-compose/compile@master';
+const DEFAULT_COMPILE_ACTION = 'aeswibon/pipeline-compose-compile@master';
 const DEFAULT_BRANCH = 'master';
 const DEFAULT_TAG_PREFIX = 'v';
 

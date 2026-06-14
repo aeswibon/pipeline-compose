@@ -5,6 +5,31 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-06-14
+
+### Changed
+
+- **Actions split into dedicated repositories** (Marketplace-ready, root `action.yml` each):
+  - [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) — `aeswibon/pipeline-compose-run@v0.1.0`
+  - [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile) — `aeswibon/pipeline-compose-compile@v0.1.0`
+  - [pipeline-compose-eval](https://github.com/aeswibon/pipeline-compose-eval) — `aeswibon/pipeline-compose-eval@v0.1.0`
+  - [pipeline-compose-context-merge](https://github.com/aeswibon/pipeline-compose-context-merge) — `aeswibon/pipeline-compose-context-merge@v0.1.0`
+- This repo is now **CLI, schema, docs, and release workflows** only (embedded actions removed).
+- Tag releases use [`.github/workflows/release.yml`](.github/workflows/release.yml) with native reusable workflows (`ci` → `version-sync` → `release-publish`).
+- Required `CHANGELOG.md` section enforced before every tag release.
+
+### Migration
+
+```yaml
+# before
+uses: aeswibon/pipeline-compose/run@v0.1.0
+
+# after
+uses: aeswibon/pipeline-compose-run@v0.1.0
+```
+
+See [docs/action-repos.md](docs/action-repos.md).
+
 ## [0.1.0] - 2026-06-14
 
 First release of **pipeline-compose** — define the order your GitHub Actions workflows run with one pipeline YAML file and one action step. No compile step and no generated workflow to commit.
@@ -68,4 +93,5 @@ The token passed to `github_token` requires **`actions: write`** to dispatch wor
 - Richer expression support
 - Reusable stage catalog patterns
 
+[0.2.0]: https://github.com/aeswibon/pipeline-compose/releases/tag/v0.2.0
 [0.1.0]: https://github.com/aeswibon/pipeline-compose/releases/tag/v0.1.0

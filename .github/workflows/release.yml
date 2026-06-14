@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  version-sync:
+    name: Version sync
+    needs: ci
+    uses: ./.github/workflows/stage-version-sync.yml
+
+  release-publish:
+    name: Release publish
+    needs: version-sync
+    uses: ./.github/workflows/stage-release-publish.yml
+    with:
+      version: ${{ needs.version-sync.outputs.version }}
+      skip_publish: ${{ needs.version-sync.outputs.skip_publish }}

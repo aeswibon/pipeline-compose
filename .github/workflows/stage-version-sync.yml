@@ -52,6 +52,9 @@ jobs:
       - name: Sync version files
         run: bash scripts/ci/sync-versions-from-tag.sh "${{ steps.tag.outputs.version }}"
 
+      - name: Require CHANGELOG section for release
+        run: bash scripts/ci/require-changelog-section.sh "${{ steps.tag.outputs.version }}"
+
       - name: Detect git release state
         id: git-state
         env:

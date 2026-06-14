@@ -1,32 +1,26 @@
 {
   "name": "@aeswibon/pipeline-compose",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "type": "module",
   "description": "Define workflow execution order and run stages sequentially via GitHub Actions",
   "scripts": {
-    "build": "tsc && pnpm run bundle",
-    "bundle": "pnpm run bundle:compile && pnpm run bundle:eval && pnpm run bundle:run",
-    "bundle:compile": "ncc build src/compile/index.ts -o compile/dist -s",
-    "bundle:eval": "ncc build src/eval/index.ts -o eval/dist -s",
-    "bundle:run": "ncc build src/run/index.ts -o run/dist -s",
+    "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "compile": "tsx bin/pipeline-compose.ts compile",
     "act:ci": "bash scripts/act-test.sh ci",
-    "act:compile": "bash scripts/act-test.sh compile",
-    "verify:bundles": "bash scripts/verify-bundles.sh",
-    "lint:workflows": "bash scripts/lint-workflows.sh"
+    "lint:workflows": "bash scripts/lint-workflows.sh",
+    "create-action-repos": "bash scripts/create-action-repos.sh",
+    "publish-action-repos": "bash scripts/publish-action-repos.sh"
   },
   "packageManager": "pnpm@10.12.1",
   "dependencies": {
-    "@actions/core": "^1.11.1",
     "ajv": "^8.17.1",
     "yaml": "^2.8.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "@vercel/ncc": "^0.38.3",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"

@@ -2,12 +2,21 @@
 
 Define **in what order** your GitHub Actions workflows run. Add one pipeline file and one `run` step — no compile step and no generated workflow to commit.
 
-The action reads your pipeline YAML, dispatches each stage workflow in order, waits for completion, and passes outputs to later stages.
+This repository holds the **CLI**, **schema**, and **docs**. Each GitHub Action lives in its own repository (Marketplace-ready).
+
+# Actions
+
+| Action | Repository | Usage |
+|--------|------------|-------|
+| **Run** (primary) | [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) | `aeswibon/pipeline-compose-run@v0.1.0` |
+| **Compile** (optional) | [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile) | `aeswibon/pipeline-compose-compile@v0.1.0` |
+| **Eval** | [pipeline-compose-eval](https://github.com/aeswibon/pipeline-compose-eval) | `aeswibon/pipeline-compose-eval@v0.1.0` |
+| **Context merge** | [pipeline-compose-context-merge](https://github.com/aeswibon/pipeline-compose-context-merge) | `aeswibon/pipeline-compose-context-merge@v0.1.0` |
 
 # Usage
 
 ```yaml
-- uses: aeswibon/pipeline-compose/run@master
+- uses: aeswibon/pipeline-compose-run@master
   with:
     # Path to pipeline YAML (stage order and wiring)
     pipeline_file: .github/pipelines/pipeline.yml
@@ -48,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose/run@master
+      - uses: aeswibon/pipeline-compose-run@master
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           github_token: ${{ github.token }}
@@ -142,6 +151,10 @@ permissions:
 |-----|-------------|
 | `@v0.1.0` | Released tag |
 | `@master` | Latest on the default branch |
+
+# Development
+
+See [docs/development.md](docs/development.md) for this repo and [docs/action-repos.md](docs/action-repos.md) for the split action repositories.
 
 # License
 

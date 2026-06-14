@@ -17,7 +17,9 @@ No generated workflow. No compile step.
 
 ---
 
-## Example 1 — Tag release (this repo)
+## Example 1 — Tag release with the run action
+
+Use this pattern in **your** repository. The [pipeline-compose](https://github.com/aeswibon/pipeline-compose) meta repo uses [`.github/workflows/release.yml`](../.github/workflows/release.yml) with native reusable workflows instead.
 
 **Pipeline** — `.github/pipelines/pipeline.yml`
 
@@ -25,8 +27,12 @@ No generated workflow. No compile step.
 name: pipeline
 version: 1
 stages:
+  - id: ci
+    workflow: .github/workflows/ci.yml
   - id: version-sync
     workflow: .github/workflows/stage-version-sync.yml
+    needs:
+      - ci
     outputs:
       - version
       - skip_publish
@@ -39,7 +45,7 @@ stages:
       skip_publish: ${{ context.version-sync.skip_publish }}
 ```
 
-**Entry** — `.github/workflows/pipeline.yml`
+**Entry** — `.github/workflows/release-pipeline.yml` (or use [templates/pipeline-run.yml](../templates/pipeline-run.yml))
 
 ```yaml
 on:
@@ -53,22 +59,39 @@ jobs:
       actions: write
     steps:
       - uses: actions/checkout@v6
-      - uses: ./run
+      - uses: aeswibon/pipeline-compose-run@master
         with:
           pipeline_file: .github/pipelines/pipeline.yml
+          github_token: ${{ github.token }}
 ```
 
-**On `git push origin v0.2.0`:** the run action dispatches `stage-version-sync.yml`, waits, then dispatches `stage-release-publish.yml` with outputs from the first stage.
+**On `git push origin v0.2.0`:** the run action dispatches `ci.yml`, then `stage-version-sync.yml`, then `stage-release-publish.yml` with outputs from version sync.
 
 ### Release notes from the pipeline
 
-`stage-release-publish.yml` does not use bare `--generate-notes`. It runs `scripts/ci/render-release-notes.sh`, which:
+Every tag release **requires** a matching section in `CHANGELOG.md` (Keep a Changelog format). The release workflow fails early if it is missing or empty.
 
-1. Extracts the `## [X.Y.Z]` section from `CHANGELOG.md` (Keep a Changelog format)
-2. Appends GitHub's auto-generated commit summary below a `---` divider
-3. Falls back to generated notes only when there is no matching changelog section
+`stage-version-sync.yml` runs `scripts/ci/require-changelog-section.sh`.  
+`stage-release-publish.yml` runs `scripts/ci/render-release-notes.sh`, which:
 
-Maintain the version section in `CHANGELOG.md` before tagging. On tag push, the release stage publishes those notes automatically.
+1. Verifies the `## [X.Y.Z]` section exists
+2. Uses that section as the release body
+3. Appends GitHub's auto-generated commit summary below a `---` divider
+
+Add the version section to `CHANGELOG.md` on master, commit, then tag and push.
+
+```markdown
+## [0.2.0] - 2026-06-15
+
+### Added
+- ...
+```
+
+Local check before tagging:
+
+```bash
+bash scripts/ci/require-changelog-section.sh 0.2.0
+```
 
 To pass custom notes through pipeline context instead, add a `release_notes` output from an earlier stage and a `release_notes` input on the publish stage, then write the input to a file and pass it to `gh release create --notes-file`.
 
@@ -194,7 +217,7 @@ templates/
 
 ## Optional: compile action
 
-[`compile/`](../../compile/action.yml) emits a static reusable workflow for advanced users who want native GitHub `needs:` graphs and are OK committing generated YAML. Not required for normal use.
+[pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile) emits a static reusable workflow for advanced users who want native GitHub `needs:` graphs and are OK committing generated YAML. Not required for normal use.
 
 ---
 

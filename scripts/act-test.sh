@@ -44,7 +44,6 @@ case "$TARGET" in
       "${SOCKET_ARGS[@]}"
     ;;
   compile)
-    bash scripts/verify-bundles.sh
     act workflow_dispatch \
       -W .github/act/workflows/compile-smoke.yml \
       -e .github/act/workflow-dispatch-compile.json \

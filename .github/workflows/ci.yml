@@ -5,6 +5,7 @@ on:
     branches: [master]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   unit-tests:
@@ -19,7 +20,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
-      - run: pnpm run bundle
+      - run: pnpm run build
 
   compile-action-parity:
     name: Compile action parity
@@ -27,26 +28,30 @@ jobs:
     needs: unit-tests
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
+        with:
+          repository: aeswibon/pipeline-compose-compile
+          path: pipeline-compose-compile
+          ref: master
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run bundle
       - run: >-
           pnpm exec tsx bin/pipeline-compose.ts compile
           .github/pipelines/pipeline.yml
           -o /tmp/cli-out.yml
           --workflow-output .github/workflows/pipeline.yml
-          --compile-action ./compile
+          --compile-action aeswibon/pipeline-compose-compile@master
       - run: grep -q 'compile-check' /tmp/cli-out.yml
-      - uses: ./compile
+      - uses: ./pipeline-compose-compile
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           output: /tmp/action-out.yml
           workflow_output: .github/workflows/pipeline.yml
-          compile_action: ./compile
+          compile_action: aeswibon/pipeline-compose-compile@master
       - run: diff /tmp/cli-out.yml /tmp/action-out.yml
 
   workflow-lint:

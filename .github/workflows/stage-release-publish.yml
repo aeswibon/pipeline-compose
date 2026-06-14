@@ -59,17 +59,3 @@ jobs:
             --notes-file release-notes.md \
             --verify-tag
           echo "Created GitHub release $tag"
-
-  dispatch-ci:
-    name: Dispatch CI when already synced
-    if: inputs.skip_publish == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Dispatch CI on master
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          gh workflow run ci.yml --repo "$GH_REPO" --ref master
-          echo "Dispatched CI on master (tag already aligned; CI not triggered by master push)."

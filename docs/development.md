@@ -6,20 +6,26 @@ Guide for working on the **pipeline-compose** repository. For using the action i
 
 | Path | Role |
 |------|------|
-| `run/` | **Primary action** — dispatch stages in order at runtime |
-| `compile/` | Optional — emit a static workflow YAML with native `needs:` |
-| `eval/` | Expression evaluation for pipeline `when:` |
-| `context/merge/` | Merge stage outputs into context JSON |
-| `.github/pipelines/pipeline.yml` | Dogfood pipeline (stage order) |
-| `.github/workflows/pipeline.yml` | Tag entry workflow using `./run` |
-| `.github/workflows/stage-*.yml` | Dispatchable stage workflows |
-| `schema/pipeline-v1.schema.json` | Pipeline YAML schema |
+| `bin/` | `pipeline-compose` CLI (`compile`, `eval`) |
+| `src/compile/` | Pipeline parser, validator, codegen (CLI + shared spec) |
+| `schema/` | Pipeline YAML JSON schema |
+| `.github/pipelines/pipeline.yml` | Example pipeline (compile parity + docs) |
+| `.github/workflows/release.yml` | Tag release workflow (native reusable workflows) |
+| `.github/workflows/stage-*.yml` | Release stage workflows |
 
-Release dogfood:
+**Actions** live in separate repos — see [docs/action-repos.md](action-repos.md).
+
+## Releases
+
+Add a `## [X.Y.Z]` section to `CHANGELOG.md` on master before tagging (the release workflow fails without it):
 
 ```bash
+bash scripts/ci/require-changelog-section.sh 0.2.0   # optional local check
+git push origin master
 git tag v0.2.0 && git push origin v0.2.0
 ```
+
+Tag push runs `.github/workflows/release.yml`: **ci → version-sync → release-publish** (native reusable workflows, not the run action).
 
 ## Prerequisites
 
@@ -32,44 +38,29 @@ git tag v0.2.0 && git push origin v0.2.0
 pnpm install
 ```
 
-If tests fail with an esbuild/rollup platform error, reinstall on your machine:
-
-```bash
-rm -rf node_modules && pnpm install
-```
-
 ## Commands
 
 | Command | Purpose |
 |---------|---------|
-| `pnpm test` | Unit tests |
-| `pnpm run build` | Typecheck + bundle all actions |
-| `pnpm run bundle:run` | Bundle `run/` action only |
+| `pnpm test` | Unit tests (CLI / compile) |
+| `pnpm run build` | Typecheck |
 | `pnpm run lint:workflows` | actionlint + yamllint |
-
-## Bundled actions
-
-GitHub Actions load committed bundles under `*/dist/`, not TypeScript source. After changing action logic:
-
-```bash
-pnpm run build
-```
-
-Commit updated `run/dist/`, `compile/dist/`, and `eval/dist/` as needed.
+| `pnpm run create-action-repos` | Scaffold sibling action repositories |
 
 ## CI
 
 | Job | Checks |
 |-----|--------|
-| `unit-tests` | vitest + bundle all actions |
-| `compile-action-parity` | Optional compile action vs CLI |
+| `unit-tests` | vitest + TypeScript |
+| `compile-action-parity` | CLI vs [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile) action |
 | `workflow-lint` | actionlint + yamllint |
 
 ## Optional compile action
 
-For advanced use cases that prefer a committed generated workflow and native GitHub `needs:` graphs, see [`compile/action.yml`](../compile/action.yml). Most consumers should use **`run`** only.
+For advanced use cases that prefer a committed generated workflow and native GitHub `needs:` graphs, see [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile). Most consumers should use **pipeline-compose-run** only.
 
 ## Related
 
 - [README](../README.md) — action usage
+- [docs/action-repos.md](action-repos.md) — split action repositories
 - [docs/examples.md](examples.md) — stage contracts, examples, troubleshooting

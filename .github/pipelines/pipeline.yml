@@ -1,8 +1,12 @@
 name: pipeline
 version: 1
 stages:
+  - id: ci
+    workflow: .github/workflows/ci.yml
   - id: version-sync
     workflow: .github/workflows/stage-version-sync.yml
+    needs:
+      - ci
     outputs:
       - version
       - skip_publish

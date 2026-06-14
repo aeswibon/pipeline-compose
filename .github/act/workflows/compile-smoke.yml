@@ -1,4 +1,4 @@
-# Local-only compile smoke (act). Uses committed bundles. See scripts/act-test.sh.
+# Local-only compile smoke (act). See scripts/act-test.sh.
 name: Act — compile smoke
 
 on:
@@ -8,26 +8,22 @@ on:
         description: Pipeline YAML path
         required: true
         default: .github/pipelines/pipeline.yml
-      pipeline_inline:
-        description: Optional inline YAML override
-        required: false
-        default: ''
 
 jobs:
   compile-pipeline:
-    name: Compile pipeline
+    name: Compile pipeline (CLI)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
-      - name: Verify bundled actions are present
-        run: bash scripts/verify-bundles.sh
-
-      - uses: ./compile
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
         with:
-          pipeline_file: ${{ inputs.pipeline_file }}
-          pipeline_inline: ${{ inputs.pipeline_inline }}
-          output: /tmp/act-compile-out.yml
-
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: >-
+          pnpm exec tsx bin/pipeline-compose.ts compile
+          ${{ inputs.pipeline_file }}
+          -o /tmp/act-compile-out.yml
       - name: Assert generated workflow shape
         run: grep -q 'compile-check' /tmp/act-compile-out.yml
