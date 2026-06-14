@@ -2,7 +2,6 @@ import AjvImport from 'ajv';
 import type {
   Pipeline,
   PipelineDocument,
-  PipelineDocumentV2,
   ResolvedPipeline,
 } from './parser.js';
 import { isPipelineV2 } from './parser.js';
@@ -91,9 +90,4 @@ export function validatePipeline(pipeline: Pipeline): Pipeline {
   assertSchema('pipeline v1', validateV1, pipeline);
   assertUniqueStageIds(pipeline);
   return { ...pipeline, stages: sortStages(pipeline.stages) };
-}
-
-export function validatePipelineV2(doc: PipelineDocumentV2): PipelineDocumentV2 {
-  assertSchema('pipeline v2', validateV2, doc);
-  return doc;
 }

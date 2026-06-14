@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-06-14
+
+### Fixed
+
+- **Run orchestrator** — skipped `when:` stages now skip transitive dependents; missing required context fails fast.
+- **`waitForRun`** — better tag-dispatch matching; extracted `matchesDispatchedRun` with tests.
+- **Expression eval** — supports `github.ref == '…'` on the run path.
+- **Compile parity** — compile CLI and compile action accept v2 and `pipeline_dir` like run/validate.
+- **action-eval** — JSON parse errors return clean action failures.
+
+### Added
+
+- **`companion_workflows`** on v1 pipelines for intentional non-stage workflows (e.g. native `release.yml`).
+- **CI** — pipeline validate (strict) on meta + example; coverage baseline in unit tests.
+- **Group path convention** — workflow basename may match stage `id`.
+
+### Changed
+
+- Job output collection prefers the last successful job in a stage run.
+- Docs updated for groups, validate/sync, `pipeline_dir`, and run-path `when:` support.
+
 ## [0.3.1] - 2026-06-14
 
 ### Added

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validatePipeline } from './validator.js';
+import { validatePipeline, validatePipelineDocument } from './validator.js';
 import type { Pipeline } from './parser.js';
 
 const validPipeline: Pipeline = {
@@ -52,5 +52,20 @@ describe('validatePipeline', () => {
       stages: [],
     };
     expect(() => validatePipeline(empty)).toThrow(/Invalid pipeline/);
+  });
+
+  it('validates v2 pipeline documents', () => {
+    const doc: PipelineDocument = {
+      version: 2,
+      pipelines: {
+        release: {
+          group: 'release',
+          stages: [{ id: 'ci', workflow: '.github/workflows/ci.yml' }],
+        },
+      },
+    };
+    const resolved = validatePipelineDocument(doc);
+    expect(resolved.stages.map((stage) => stage.id)).toEqual(['ci']);
+    expect(resolved.stages[0].resolvedGroup).toBe('release');
   });
 });

@@ -23,6 +23,11 @@
         }
       }
     },
+    "companion_workflows": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "maxItems": 10
+    },
     "context": {
       "type": "object",
       "additionalProperties": { "type": "string" }

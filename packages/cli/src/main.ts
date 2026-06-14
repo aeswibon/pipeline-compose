@@ -7,18 +7,18 @@ import {
   evaluateExpression,
   formatValidateReport,
   generateWorkflow,
-  loadPipeline,
+  loadPipelineDocumentFromFile,
   loadPipelineDocumentsFromInputs,
   runWorkflowSync,
-  validatePipeline,
   validatePipelineDocument,
   validatePipelineDocuments,
   validateReportExitCode,
+  type ResolvedPipeline,
 } from '@aeswibon/pipeline-compose-core';
 
 function compileUsage(): never {
   console.error(
-    'Usage: pipeline-compose compile <pipeline.yml> [-o <workflow.yml>] [--check] [--compile-action <ref>] [--workflow-output <path>] [--default-branch <branch>]',
+    'Usage: pipeline-compose compile <pipeline.yml|pipeline-dir> [-o <workflow.yml>] [--check] [--compile-action <ref>] [--workflow-output <path>] [--default-branch <branch>]',
   );
   process.exit(1);
 }
@@ -66,16 +66,21 @@ function resolveRepoRoot(explicit: string | undefined): string {
   return path.resolve(explicit ?? process.cwd());
 }
 
-function loadResolvedPipeline(target: string) {
+function loadResolvedPipeline(target: string): ResolvedPipeline {
   const absoluteTarget = path.resolve(target);
   if (fs.statSync(absoluteTarget).isDirectory()) {
     return validatePipelineDocuments(
       loadPipelineDocumentsFromInputs({ pipelineDir: absoluteTarget }),
     );
   }
-  return validatePipelineDocument(
-    loadPipelineDocumentsFromInputs({ pipelineFile: absoluteTarget })[0],
-  );
+  return validatePipelineDocument(loadPipelineDocumentFromFile(absoluteTarget));
+}
+
+function compileSourceLabel(target: string): string {
+  const absoluteTarget = path.resolve(target);
+  return fs.statSync(absoluteTarget).isDirectory()
+    ? `${absoluteTarget}/`
+    : absoluteTarget;
 }
 
 function runCompile(args: string[]): void {
@@ -102,15 +107,14 @@ function runCompile(args: string[]): void {
     }
   }
 
-  const pipelineFile = positional[0];
-  if (!pipelineFile) {
+  const pipelineTarget = positional[0];
+  if (!pipelineTarget) {
     compileUsage();
   }
 
-  const fileYaml = fs.readFileSync(pipelineFile, 'utf8');
-  const pipeline = validatePipeline(loadPipeline({ fileYaml }));
+  const pipeline = loadResolvedPipeline(pipelineTarget);
   const generated = generateWorkflow(pipeline, {
-    pipelineFile,
+    pipelineFile: compileSourceLabel(pipelineTarget),
     workflowOutput: workflowOutput || output || undefined,
     compileAction: compileAction || undefined,
     defaultBranch: defaultBranch || undefined,

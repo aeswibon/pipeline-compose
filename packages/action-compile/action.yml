@@ -6,7 +6,10 @@ branding:
 inputs:
   pipeline_file:
     description: Path to canonical pipeline YAML
-    required: true
+    required: false
+  pipeline_dir:
+    description: Directory of pipeline YAML files (merged by pipeline needs)
+    required: false
   pipeline_inline:
     description: Optional inline YAML override (experiments)
     required: false

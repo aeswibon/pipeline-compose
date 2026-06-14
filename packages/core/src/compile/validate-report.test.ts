@@ -36,6 +36,7 @@ describe('workflowMatchesGroupConvention', () => {
     expect(
       workflowMatchesGroupConvention('.github/workflows/stage-version-sync.yml', 'release'),
     ).toBe(true);
+    expect(workflowMatchesGroupConvention('.github/workflows/ci.yml', 'release', 'ci')).toBe(true);
   });
 
   it('warns on unrelated filenames', () => {
@@ -55,7 +56,7 @@ describe('formatPipelineTree', () => {
 describe('buildValidateReport', () => {
   it('promotes warnings to errors in strict mode', () => {
     const report = buildValidateReport(samplePipeline, { strict: true });
-    expect(report.issues.some((issue) => issue.code === 'group.path-prefix')).toBe(true);
+    expect(report.issues.some((issue) => issue.code === 'group.path-prefix')).toBe(false);
     expect(report.issues.every((issue) => issue.level === 'error')).toBe(true);
   });
 });

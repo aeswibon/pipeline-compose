@@ -63,6 +63,17 @@ pnpm run sync:workflows .github/pipelines/pipeline.yml --check
 
 Sources for sync live at `workflows/{group}/{stage-id}.yml` by convention (override with `workflows/sync.yml`).
 
+### Run-path `when:` expressions
+
+Supported by run and eval (subset of GitHub Actions syntax):
+
+- `startsWith(github.ref, 'refs/tags/v')`
+- `github.ref == 'refs/heads/master'`
+- `context.<stage>.<output> == 'value'`
+- `true` / `false`
+
+Skipped stages also skip transitive dependents in the run orchestrator.
+
 ## Typical workflow
 
 1. Edit shared logic in `packages/core/src/` or action-specific code in `packages/action-*/src/`.

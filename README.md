@@ -23,7 +23,9 @@ This repository is the **development monorepo** (core library, CLI, docs, releas
 | Extended examples | [docs/examples.md](docs/examples.md) |
 | Monorepo development | [docs/development.md](docs/development.md) |
 | Publishing actions | [docs/action-repos.md](docs/action-repos.md) |
-| Pipeline schema | [packages/core/schema/pipeline-v1.schema.json](packages/core/schema/pipeline-v1.schema.json) |
+| Pipeline schema (v1) | [packages/core/schema/pipeline-v1.schema.json](packages/core/schema/pipeline-v1.schema.json) |
+| Pipeline schema (v2, multi-pipeline) | [packages/core/schema/pipeline-v2.schema.json](packages/core/schema/pipeline-v2.schema.json) |
+| CLI validate / sync | `pnpm run validate` · `pnpm run sync:workflows` (see [docs/development.md](docs/development.md)) |
 
 ## License
 

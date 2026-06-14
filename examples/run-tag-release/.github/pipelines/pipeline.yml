@@ -1,5 +1,8 @@
 name: pipeline
 version: 1
+group: release
+companion_workflows:
+  - .github/workflows/release.yml
 stages:
   - id: ci
     workflow: .github/workflows/ci.yml

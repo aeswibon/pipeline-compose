@@ -79,13 +79,25 @@ Full walkthrough: [examples/run-tag-release](https://github.com/aeswibon/pipelin
 | `outputs` | Keys collected from the stage for downstream `context` |
 | `when` | Optional expression; false skips dispatch |
 
-Schema: [pipeline-v1.schema.json](https://github.com/aeswibon/pipeline-compose/blob/master/packages/core/schema/pipeline-v1.schema.json)
+Schema: [pipeline-v1.schema.json](https://github.com/aeswibon/pipeline-compose/blob/master/packages/core/schema/pipeline-v1.schema.json) · [pipeline-v2.schema.json](https://github.com/aeswibon/pipeline-compose/blob/master/packages/core/schema/pipeline-v2.schema.json)
+
+### `when:` on the run path
+
+The run action evaluates `when:` locally before dispatch. Supported forms:
+
+- `startsWith(github.ref, 'refs/tags/v')`
+- `github.ref == 'refs/heads/master'`
+- `context.<stage>.<output> == 'value'`
+- `true` / `false`
+
+If a stage is skipped, downstream stages that `needs:` it are skipped too.
 
 ## Inputs
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `pipeline_file` | yes | — | Path to pipeline YAML |
+| `pipeline_file` | one of file/dir | — | Path to pipeline YAML (v1 or v2) |
+| `pipeline_dir` | one of file/dir | — | Directory of v1 pipeline files merged by pipeline `needs` |
 | `ref` | no | `GITHUB_REF` | Git ref passed to each stage dispatch |
 | `github_token` | no | `github.token` | Token with `actions: write` |
 

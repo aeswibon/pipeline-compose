@@ -21,6 +21,8 @@ export interface Pipeline {
   group?: string;
   needs?: string[];
   groups?: Record<string, PipelineGroupMeta>;
+  /** Workflows not driven by stages but intentionally part of the repo (e.g. native release.yml). */
+  companion_workflows?: string[];
   context?: Record<string, string>;
   stages: PipelineStage[];
 }

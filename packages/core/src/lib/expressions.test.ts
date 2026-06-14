@@ -17,6 +17,14 @@ describe('evaluateExpression', () => {
     });
     expect(result).toBe(true);
   });
+
+  it('evaluates github.ref equality', () => {
+    const result = evaluateExpression("github.ref == 'refs/heads/master'", {
+      github: { ref: 'refs/heads/master' },
+      context: {},
+    });
+    expect(result).toBe(true);
+  });
 });
 
 describe('mergeContext', () => {

@@ -12,10 +12,18 @@ export function evaluateExpression(expr: string, ctx: EvalContext): boolean {
     return String(val ?? '').startsWith(startsWithMatch[2]);
   }
 
-  const eqMatch = trimmed.match(/^context\.([a-z0-9-]+)\.([a-z0-9_]+)\s*==\s*'([^']*)'$/);
-  if (eqMatch) {
-    const stage = ctx.context[eqMatch[1]] as Record<string, unknown> | undefined;
-    return stage?.[eqMatch[2]] === eqMatch[3];
+  const contextEqMatch = trimmed.match(
+    /^context\.([a-z0-9-]+)\.([a-z0-9_]+)\s*==\s*'([^']*)'$/,
+  );
+  if (contextEqMatch) {
+    const stage = ctx.context[contextEqMatch[1]] as Record<string, unknown> | undefined;
+    return stage?.[contextEqMatch[2]] === contextEqMatch[3];
+  }
+
+  const githubEqMatch = trimmed.match(/^github\.([a-z0-9_]+)\s*==\s*'([^']*)'$/);
+  if (githubEqMatch) {
+    const value = resolveRef(`github.${githubEqMatch[1]}`, ctx);
+    return String(value ?? '') === githubEqMatch[2];
   }
 
   if (trimmed === 'true') {

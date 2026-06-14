@@ -118,7 +118,39 @@ describe('runPipeline', () => {
       ref: 'refs/tags/v1.0.0',
       github: { ref: 'refs/tags/v1.0.0' },
     });
-    expect(results).toHaveLength(0);
+    expect(results).toHaveLength(1);
+    expect(results[0].skipped).toBe(true);
+    expect(client.dispatchWorkflow).not.toHaveBeenCalled();
+  });
+
+  it('skips downstream stages when an upstream stage is skipped', async () => {
+    const client = mockClient({
+      workflows: {
+        '.github/workflows/ci.yml': 1,
+        '.github/workflows/stage-version-sync.yml': 2,
+        '.github/workflows/stage-release-publish.yml': 3,
+      },
+    });
+
+    const pipelineWithWhen: Pipeline = {
+      ...pipeline,
+      stages: [
+        {
+          ...pipeline.stages[0],
+          when: "startsWith(github.ref, 'refs/heads/')",
+        },
+        pipeline.stages[1],
+        pipeline.stages[2],
+      ],
+    };
+
+    const results = await runPipeline(pipelineWithWhen, client, {
+      ref: 'refs/tags/v1.0.0',
+      github: { ref: 'refs/tags/v1.0.0' },
+    });
+
+    expect(results).toHaveLength(3);
+    expect(results.every((result) => result.skipped)).toBe(true);
     expect(client.dispatchWorkflow).not.toHaveBeenCalled();
   });
 

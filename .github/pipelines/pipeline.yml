@@ -1,6 +1,8 @@
 name: pipeline
 version: 1
 group: release
+companion_workflows:
+  - .github/workflows/release.yml
 groups:
   release:
     description: Meta-repo tag release chain

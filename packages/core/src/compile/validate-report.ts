@@ -29,12 +29,15 @@ function workflowBasename(workflowPath: string): string {
 export function workflowMatchesGroupConvention(
   workflowPath: string,
   group: string | undefined,
+  stageId?: string,
 ): boolean {
   if (!group) {
     return true;
   }
-  const base = workflowBasename(workflowPath);
-  const stem = base.replace(/\.(ya?ml)$/i, '');
+  const stem = workflowBasename(workflowPath).replace(/\.(ya?ml)$/i, '');
+  if (stageId && stem === stageId) {
+    return true;
+  }
   if (stem.startsWith(`${group}-`)) {
     return true;
   }
@@ -63,11 +66,11 @@ export function collectPipelineIssues(
       ungrouped += 1;
     }
 
-    if (group && !workflowMatchesGroupConvention(stage.workflow, group)) {
+    if (group && !workflowMatchesGroupConvention(stage.workflow, group, stage.id)) {
       issues.push({
         level: 'warn',
         code: 'group.path-prefix',
-        message: `Stage "${stage.id}" group "${group}" does not match workflow path ${stage.workflow} (expected ${group}-*, stage-*, or name containing "${group}")`,
+        message: `Stage "${stage.id}" group "${group}" does not match workflow path ${stage.workflow} (expected stage id, ${group}-*, stage-*, or name containing "${group}")`,
       });
     }
 
@@ -103,11 +106,14 @@ export function findOrphanWorkflows(
     return [];
   }
 
-  const referenced = new Set(
-    pipeline.stages.map((stage) =>
+  const referenced = new Set([
+    ...pipeline.stages.map((stage) =>
       path.normalize(path.resolve(repoRoot, stage.workflow)),
     ),
-  );
+    ...(pipeline.companion_workflows ?? []).map((workflow) =>
+      path.normalize(path.resolve(repoRoot, workflow)),
+    ),
+  ]);
 
   const entries = fs.readdirSync(workflowsDir, { withFileTypes: true });
   const orphans: string[] = [];

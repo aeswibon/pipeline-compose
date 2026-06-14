@@ -15,7 +15,33 @@ export type WorkflowRun = {
   conclusion: string | null;
   created_at: string;
   head_branch: string | null;
+  head_sha?: string | null;
+  event?: string;
 };
+
+export function matchesDispatchedRun(
+  candidate: WorkflowRun,
+  ref: string,
+  notBeforeMs: number,
+  clockSkewMs = 5000,
+): boolean {
+  const created = Date.parse(candidate.created_at);
+  if (Number.isNaN(created) || created < notBeforeMs - clockSkewMs) {
+    return false;
+  }
+
+  const refName = stripRefPrefix(ref);
+  if (candidate.head_branch === refName) {
+    return true;
+  }
+
+  // Tag dispatches often omit head_branch; accept recent runs for tag refs.
+  if (ref.startsWith('refs/tags/') && candidate.head_branch == null) {
+    return true;
+  }
+
+  return false;
+}
 
 export type WorkflowJob = {
   id: number;
@@ -122,13 +148,12 @@ export class GitHubActionsClient {
 
     while (Date.now() < deadline) {
       const data = await this.request<{ workflow_runs: WorkflowRun[] }>(
-        `/repos/${this.owner}/${this.repo}/actions/workflows/${workflowId}/runs?event=workflow_dispatch&per_page=10`,
+        `/repos/${this.owner}/${this.repo}/actions/workflows/${workflowId}/runs?event=workflow_dispatch&per_page=30`,
       );
 
-      const run = data.workflow_runs.find((candidate) => {
-        const created = Date.parse(candidate.created_at);
-        return created >= notBeforeMs - 5000 && candidate.head_branch === refName;
-      });
+      const run = data.workflow_runs.find((candidate) =>
+        matchesDispatchedRun(candidate, ref, notBeforeMs),
+      );
 
       if (run) {
         return run;

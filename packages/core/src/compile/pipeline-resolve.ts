@@ -74,12 +74,16 @@ export function mergePipelines(pipelines: Pipeline[]): ResolvedPipeline {
   }
 
   const primary = ordered[0];
+  const companion = [
+    ...new Set(ordered.flatMap((pipeline) => pipeline.companion_workflows ?? [])),
+  ];
   return {
     name: ordered.length === 1 ? primary.name : 'combined',
     version: 1,
     group: primary.group,
     groups: primary.groups,
     context: primary.context,
+    companion_workflows: companion.length > 0 ? companion : undefined,
     stages,
   };
 }
