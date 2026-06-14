@@ -7,7 +7,7 @@ import { generateWorkflow } from '../src/compile/codegen.js';
 
 function usage(): never {
   console.error(
-    'Usage: pipeline-compose compile <pipeline.yml> [-o <workflow.yml>] [--check] [--compile-action <ref>] [--default-branch <branch>]',
+    'Usage: pipeline-compose compile <pipeline.yml> [-o <workflow.yml>] [--check] [--compile-action <ref>] [--workflow-output <path>] [--default-branch <branch>]',
   );
   process.exit(1);
 }
@@ -20,6 +20,7 @@ if (args[0] !== 'compile') {
 let output = '';
 let check = false;
 let compileAction = '';
+let workflowOutput = '';
 let defaultBranch = '';
 const positional: string[] = [];
 
@@ -30,6 +31,8 @@ for (let i = 1; i < args.length; i++) {
     check = true;
   } else if (args[i] === '--compile-action') {
     compileAction = args[++i] ?? '';
+  } else if (args[i] === '--workflow-output') {
+    workflowOutput = args[++i] ?? '';
   } else if (args[i] === '--default-branch') {
     defaultBranch = args[++i] ?? '';
   } else {
@@ -46,7 +49,7 @@ const fileYaml = fs.readFileSync(pipelineFile, 'utf8');
 const pipeline = validatePipeline(loadPipeline({ fileYaml }));
 const generated = generateWorkflow(pipeline, {
   pipelineFile,
-  workflowOutput: output || undefined,
+  workflowOutput: workflowOutput || output || undefined,
   compileAction: compileAction || undefined,
   defaultBranch: defaultBranch || undefined,
 });
