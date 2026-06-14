@@ -57,7 +57,7 @@ stages:
       skip_publish: ${{ context.version-sync.skip_publish }}
 ```
 
-Full walkthrough: [examples/run-tag-release](https://github.com/aeswibon/pipeline-compose/tree/master/examples/run-tag-release) (copy `.github/` into your repo).
+Full walkthrough: [examples/run-tag-release](https://github.com/aeswibon/pipeline-compose/tree/master/examples/run-tag-release) · [Blog tutorial](https://github.com/aeswibon/pipeline-compose/blob/master/docs/tutorials/tag-release-pipeline.md)
 
 <!-- start usage -->
 ```yaml

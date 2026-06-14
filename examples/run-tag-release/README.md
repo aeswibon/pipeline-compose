@@ -62,4 +62,5 @@ The run action resolves this from the **version-sync** stage artifact after that
 ## Next steps
 
 - [pipeline-compose-run on Marketplace](https://github.com/marketplace/actions/pipeline-compose-run)
+- [Blog-style tutorial](https://github.com/aeswibon/pipeline-compose/blob/master/docs/tutorials/tag-release-pipeline.md)
 - [Full docs/examples.md](https://github.com/aeswibon/pipeline-compose/blob/master/docs/examples.md)
