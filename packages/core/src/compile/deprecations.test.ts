@@ -29,7 +29,7 @@ function makeRepo(workflows: Record<string, string>): string {
 }
 
 describe('collectWorkflowFileDeprecations', () => {
-  it('warns on monorepo subpath uses', () => {
+  it('errors on monorepo subpath uses', () => {
     const repo = makeRepo({
       '.github/workflows/release.yml': `
 jobs:
@@ -39,10 +39,11 @@ jobs:
 `,
     });
     const issues = collectWorkflowFileDeprecations(repo, '.github/workflows/release.yml');
-    expect(issues.some((issue) => issue.code === 'uses.monorepo-subpath-deprecated')).toBe(true);
+    const issue = issues.find((item) => item.code === 'uses.monorepo-subpath-deprecated');
+    expect(issue?.level).toBe('error');
   });
 
-  it('warns on @master pins', () => {
+  it('errors on @master pins', () => {
     const repo = makeRepo({
       '.github/workflows/ci.yml': `
 jobs:
@@ -52,12 +53,13 @@ jobs:
 `,
     });
     const issues = collectWorkflowFileDeprecations(repo, '.github/workflows/ci.yml');
-    expect(issues.some((issue) => issue.code === 'uses.master-pin-deprecated')).toBe(true);
+    const issue = issues.find((item) => item.code === 'uses.master-pin-deprecated');
+    expect(issue?.level).toBe('error');
   });
 });
 
 describe('collectStageExportDeprecations', () => {
-  it('warns when manual upload is used without export action', () => {
+  it('errors when manual upload is used without export action', () => {
     const repo = makeRepo({
       '.github/workflows/stage-version-sync.yml': `
 jobs:
@@ -75,7 +77,8 @@ jobs:
       workflow: '.github/workflows/stage-version-sync.yml',
       outputs: ['version'],
     });
-    expect(issues.some((issue) => issue.code === 'export.manual-upload-deprecated')).toBe(true);
+    const issue = issues.find((item) => item.code === 'export.manual-upload-deprecated');
+    expect(issue?.level).toBe('error');
   });
 
   it('accepts pipeline-compose-export action', () => {
@@ -84,7 +87,7 @@ jobs:
 jobs:
   sync:
     steps:
-      - uses: aeswibon/pipeline-compose-export@v0.4.3
+      - uses: aeswibon/pipeline-compose-export@v1.0.0
         with:
           stage_id: version-sync
           outputs: '{"version":"1.0.0"}'
@@ -117,17 +120,36 @@ jobs:
 });
 
 describe('collectDeprecationIssues', () => {
-  it('warns on pipeline schema v1', () => {
+  it('collects workflow and export issues for resolved pipelines', () => {
     const pipeline: ResolvedPipeline = {
-      name: 'legacy',
-      version: 1,
-      schemaVersion: 1,
-      stages: [{ id: 'ci', workflow: '.github/workflows/ci.yml' }],
+      name: 'release',
+      version: 2,
+      schemaVersion: 2,
+      stages: [
+        {
+          id: 'version-sync',
+          workflow: '.github/workflows/stage-version-sync.yml',
+          outputs: ['version'],
+        },
+      ],
+      companion_workflows: ['.github/workflows/release.yml'],
     };
     const repo = makeRepo({
-      '.github/workflows/ci.yml': 'on: workflow_dispatch\njobs: {}\n',
+      '.github/workflows/stage-version-sync.yml': `
+jobs:
+  sync:
+    steps:
+      - run: echo ok
+`,
+      '.github/workflows/release.yml': `
+jobs:
+  run:
+    steps:
+      - uses: aeswibon/pipeline-compose-run@master
+`,
     });
     const issues = collectDeprecationIssues(pipeline, repo);
-    expect(issues.some((issue) => issue.code === 'pipeline.v1-deprecated')).toBe(true);
+    expect(issues.some((issue) => issue.code === 'export.missing')).toBe(true);
+    expect(issues.some((issue) => issue.code === 'uses.master-pin-deprecated')).toBe(true);
   });
 });

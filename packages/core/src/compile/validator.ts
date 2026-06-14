@@ -2,6 +2,8 @@ import AjvImport from 'ajv';
 import type {
   Pipeline,
   PipelineDocument,
+  PipelineDocumentV2,
+  PipelineStage,
   ResolvedPipeline,
 } from './parser.js';
 import { isPipelineV2 } from './parser.js';
@@ -21,8 +23,11 @@ const Ajv = AjvImport as unknown as AjvConstructor;
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 type SchemaValidate = ((data: unknown) => boolean) & { errors?: object[] | null };
-const validateV1 = ajv.compile(schemaV1 as object) as SchemaValidate;
+ajv.compile(schemaV1 as object);
 const validateV2 = ajv.compile(schemaV2 as object) as SchemaValidate;
+
+export const V1_UNSUPPORTED_MESSAGE =
+  'Pipeline schema v1 is not supported in 1.0.0; migrate to version: 2 with pipelines: map (see docs/migration/v0.5.md)';
 
 function assertSchema(
   label: string,
@@ -34,9 +39,9 @@ function assertSchema(
   }
 }
 
-function assertUniqueStageIds(pipeline: Pipeline): void {
+function assertUniqueStageIds(stages: PipelineStage[]): void {
   const ids = new Set<string>();
-  for (const stage of pipeline.stages) {
+  for (const stage of stages) {
     if (ids.has(stage.id)) {
       throw new Error(`Duplicate stage id: ${stage.id}`);
     }
@@ -44,52 +49,39 @@ function assertUniqueStageIds(pipeline: Pipeline): void {
   }
 }
 
-export function validatePipelineDocument(doc: PipelineDocument): ResolvedPipeline {
-  if (isPipelineV2(doc)) {
-    assertSchema('pipeline v2', validateV2, doc);
-    for (const [key, def] of Object.entries(doc.pipelines)) {
-      assertUniqueStageIds({
-        name: key,
-        version: 1,
-        stages: def.stages,
-      });
-      sortStages(def.stages);
-    }
-    return resolvePipelineDocument(doc);
+function assertV2Document(doc: PipelineDocument): asserts doc is PipelineDocumentV2 {
+  if (!isPipelineV2(doc)) {
+    throw new Error(V1_UNSUPPORTED_MESSAGE);
   }
+}
 
-  assertSchema('pipeline v1', validateV1, doc);
-  assertUniqueStageIds(doc);
-  const sorted = sortStages(doc.stages);
-  return resolvePipelineDocument({ ...doc, stages: sorted });
+function validateV2Document(doc: PipelineDocumentV2): void {
+  assertSchema('pipeline v2', validateV2, doc);
+  for (const def of Object.values(doc.pipelines)) {
+    assertUniqueStageIds(def.stages);
+    sortStages(def.stages);
+  }
+}
+
+export function validatePipelineDocument(doc: PipelineDocument): ResolvedPipeline {
+  assertV2Document(doc);
+  validateV2Document(doc);
+  return resolvePipelineDocument(doc);
 }
 
 export function validatePipelineDocuments(docs: PipelineDocument[]): ResolvedPipeline {
-  const pipelines = docs.flatMap((doc) => {
-    if (isPipelineV2(doc)) {
-      assertSchema('pipeline v2', validateV2, doc);
-      for (const [key, def] of Object.entries(doc.pipelines)) {
-        assertUniqueStageIds({
-          name: key,
-          version: 1,
-          stages: def.stages,
-        });
-        sortStages(def.stages);
-      }
-    } else {
-      assertSchema('pipeline v1', validateV1, doc);
-      assertUniqueStageIds(doc);
-      sortStages(doc.stages);
-    }
-    return pipelineDocumentToList(doc);
-  });
+  const pipelines = [];
+  for (const doc of docs) {
+    assertV2Document(doc);
+    validateV2Document(doc);
+    pipelines.push(...pipelineDocumentToList(doc));
+  }
   const merged = mergePipelines(pipelines);
-  merged.schemaVersion = docs.some((doc) => isPipelineV2(doc)) ? 2 : 1;
+  merged.schemaVersion = 2;
   return merged;
 }
 
-export function validatePipeline(pipeline: Pipeline): Pipeline {
-  assertSchema('pipeline v1', validateV1, pipeline);
-  assertUniqueStageIds(pipeline);
-  return { ...pipeline, stages: sortStages(pipeline.stages) };
+/** @deprecated Pipeline v1 removed in 1.0.0 — use validatePipelineDocument with version: 2. */
+export function validatePipeline(_pipeline: Pipeline): Pipeline {
+  throw new Error(V1_UNSUPPORTED_MESSAGE);
 }

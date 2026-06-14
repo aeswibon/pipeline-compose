@@ -27,7 +27,12 @@ export {
   resolvePipelineDocument,
 } from './compile/pipeline-resolve.js';
 export { sortPipelineDocuments } from './compile/pipeline-sort.js';
-export { validatePipeline, validatePipelineDocument, validatePipelineDocuments } from './compile/validator.js';
+export {
+  validatePipeline,
+  validatePipelineDocument,
+  validatePipelineDocuments,
+  V1_UNSUPPORTED_MESSAGE,
+} from './compile/validator.js';
 export { sortStages } from './compile/topo-sort.js';
 export { generateWorkflow } from './compile/codegen.js';
 export type { GenerateOptions } from './compile/codegen.js';
@@ -41,10 +46,7 @@ export {
   serializeValidateReport,
   workflowMatchesGroupConvention,
 } from './compile/validate-report.js';
-export {
-  collectDeprecationIssues,
-  DEPRECATION_REMOVAL_VERSION,
-} from './compile/deprecations.js';
+export { collectDeprecationIssues } from './compile/deprecations.js';
 export { renderPipelineMermaid } from './compile/mermaid.js';
 export type { RenderPipelineMermaidOptions } from './compile/mermaid.js';
 export {

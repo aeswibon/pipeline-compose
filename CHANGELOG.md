@@ -7,14 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-14
+
 ### Added
 
-- **Mermaid guide** — [docs/mermaid-demo.md](docs/mermaid-demo.md) with local `--mermaid` usage, PR bot behavior, and sample PRs [#5](https://github.com/aeswibon/pipeline-compose/pull/5) / [#6](https://github.com/aeswibon/pipeline-compose/pull/6).
-- **`validate --mermaid` error styling** — red nodes for stage errors, amber nodes for stages blocked by upstream `needs:` failures; prefers root-cause labels when multiple errors hit one stage.
+- **1.0 GA migration guide** — [docs/migration/v1.0.md](docs/migration/v1.0.md).
+- **Mermaid guide** — [docs/mermaid-demo.md](docs/mermaid-demo.md) with PR bot samples [#5](https://github.com/aeswibon/pipeline-compose/pull/5) / [#7](https://github.com/aeswibon/pipeline-compose/pull/7).
+- **`validate --mermaid` error styling** — red error nodes and amber blocked-upstream nodes on failed validation.
 
 ### Changed
 
-- **Mermaid guide** — sample failure PR updated to closed [#7](https://github.com/aeswibon/pipeline-compose/pull/7) (annotated diagram); [#6](https://github.com/aeswibon/pipeline-compose/pull/6) noted as pre-styling baseline.
+- **Pipeline schema v2 only** — v1 documents rejected at load/validate.
+- **Legacy pattern validation** — monorepo action paths, `@master` pins, and manual export uploads are errors (not warnings).
+- **`init` / `compile` defaults** — v2 pipeline YAML; compile-check pin `@v1.0.0`.
+- **Examples and docs** — all examples migrated to v2; action pins `@v1.0.0`; README trimmed for GA.
+- **CI** — strict validate for meta pipeline, run-tag-release, and compile-check examples.
+
+### Removed
+
+- Pipeline schema **v1** support (file format with top-level `stages:`).
+- Deprecation warning mode for patterns removed in this release (see [v0.5 migration](docs/migration/v0.5.md)).
+
+### Fixed
+
+- **`findOrphanWorkflows`** — resolve `--repo-root` to an absolute path so orphan detection matches stage/companion references.
 
 ## [0.5.0] - 2026-06-14
 

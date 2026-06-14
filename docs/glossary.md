@@ -10,10 +10,10 @@ YAML under `.github/pipelines/` that declares **order and wiring only**. Stage i
 
 | Format | Top-level shape |
 |--------|-----------------|
-| **v1** | `name`, `version: 1`, `stages` |
-| **v2** | `version: 2`, `pipelines:` map (one file, multiple logical pipelines) |
+| **v2** (required since 1.0) | `version: 2`, `pipelines:` map (one file, multiple logical pipelines) |
+| ~~v1~~ | Removed in 1.0 — see [migration/v1.0.md](migration/v1.0.md) |
 
-Schema: [pipeline-v1.schema.json](../packages/core/schema/pipeline-v1.schema.json) · [pipeline-v2.schema.json](../packages/core/schema/pipeline-v2.schema.json)
+Schema: [pipeline-v2.schema.json](../packages/core/schema/pipeline-v2.schema.json) · [pipeline-v1.schema.json](../packages/core/schema/pipeline-v1.schema.json) (historical)
 
 ### Stage
 
@@ -33,7 +33,6 @@ A normal GitHub workflow (e.g. `.github/workflows/release.yml`) that **starts** 
 
 ### `stages` / `pipelines`
 
-- **v1:** `stages:` is the ordered list of stage definitions.
 - **v2:** `pipelines.<name>.stages` — each named pipeline has its own stage list. Cross-pipeline order uses pipeline-level **`needs`**.
 
 ### `id` (stage)

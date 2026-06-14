@@ -1,21 +1,14 @@
-# Copy to `.github/workflows/release.yml` (or add to an existing workflow).
-# Requires pipeline-compose-run: https://github.com/aeswibon/pipeline-compose-run
-
 name: Release
 on:
   push:
-    tags: ["v*"]
-
-permissions:
-  contents: write
-  actions: write
+    tags:
+      - v*
 
 jobs:
-  run-pipeline:
+  pipeline:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose-run@v0.3.1
+      - uses: aeswibon/pipeline-compose-run@v1.0.0
         with:
           pipeline_file: .github/pipelines/pipeline.yml
-          github_token: ${{ github.token }}

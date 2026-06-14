@@ -24,25 +24,28 @@ Use this pattern in **your** repository. The [pipeline-compose](https://github.c
 **Pipeline** — `.github/pipelines/pipeline.yml`
 
 ```yaml
-name: pipeline
-version: 1
-stages:
-  - id: ci
-    workflow: .github/workflows/ci.yml
-  - id: version-sync
-    workflow: .github/workflows/stage-version-sync.yml
-    needs:
-      - ci
-    outputs:
-      - version
-      - skip_publish
-  - id: release-publish
-    workflow: .github/workflows/stage-release-publish.yml
-    needs:
-      - version-sync
-    inputs:
-      version: ${{ context.version-sync.version }}
-      skip_publish: ${{ context.version-sync.skip_publish }}
+version: 2
+companion_workflows:
+  - .github/workflows/release.yml
+pipelines:
+  release:
+    stages:
+      - id: ci
+        workflow: .github/workflows/ci.yml
+      - id: version-sync
+        workflow: .github/workflows/stage-version-sync.yml
+        needs:
+          - ci
+        outputs:
+          - version
+          - skip_publish
+      - id: release-publish
+        workflow: .github/workflows/stage-release-publish.yml
+        needs:
+          - version-sync
+        inputs:
+          version: ${{ context.version-sync.version }}
+          skip_publish: ${{ context.version-sync.skip_publish }}
 ```
 
 **Entry** — `.github/workflows/release-pipeline.yml` (or use [templates/pipeline-run.yml](../templates/pipeline-run.yml))
@@ -59,7 +62,7 @@ jobs:
       actions: write
     steps:
       - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose-run@v0.4.3
+      - uses: aeswibon/pipeline-compose-run@v1.0.0
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           github_token: ${{ github.token }}
@@ -150,7 +153,7 @@ GitHub's REST API does not return job outputs for dispatched workflows. Upload:
 - **File:** `outputs.json` with your output keys
 
 ```yaml
-- uses: aeswibon/pipeline-compose-export@v0.4.1
+- uses: aeswibon/pipeline-compose-export@v1.0.0
   if: success()
   with:
     stage_id: my-stage

@@ -47,6 +47,12 @@ jobs:
           --repo-root examples/run-tag-release
           --workflows
           --strict
+      - run: >-
+          pnpm run validate
+          examples/compile-check/.github/pipelines/pipeline.yml
+          --repo-root examples/compile-check
+          --workflows
+          --strict
 
   compile-action-parity:
     name: Compile action parity

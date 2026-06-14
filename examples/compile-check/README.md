@@ -21,7 +21,7 @@ Copy this folder’s `.github/` into your repo.
 On your machine (or a one-off CI run without `check`):
 
 ```yaml
-- uses: aeswibon/pipeline-compose-compile@v0.3.1
+- uses: aeswibon/pipeline-compose-compile@v1.0.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     output: .github/workflows/pipeline-generated.yml

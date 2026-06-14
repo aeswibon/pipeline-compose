@@ -13,7 +13,7 @@ Guide for working on the **pipeline-compose** monorepo. For using the actions in
 | `packages/action-eval/` | `@aeswibon/pipeline-compose-action-eval` | Eval action source |
 | `packages/action-context-merge/` | `@aeswibon/pipeline-compose-action-context-merge` | Composite context merge action |
 | `packages/core/schema/` | — | Pipeline YAML JSON schema |
-| `.github/pipelines/pipeline.yml` | — | v2 release pipeline (dogfooded via `pipeline-compose-run` on tag push) |
+| `.github/pipelines/pipeline.yml` | — | v2 release pipeline (run via `pipeline-compose-run` on tag push) |
 | `.github/workflows/release.yml` | — | Tag entry workflow — runs `./packages/action-run` against `pipeline.yml` |
 
 Shared logic lives in **`packages/core`**. Action packages depend on it via the pnpm workspace; bundles include core at publish time.
@@ -46,7 +46,7 @@ pnpm install
 | `pnpm run sync:workflows` | Sync `workflows/{group}/` sources into flat `.github/workflows/` targets |
 | `pnpm run validate … --json` | Machine-readable validate report (for CI dashboards) |
 | `pnpm run validate … --mermaid` | Mermaid flowchart of stage topology — see [mermaid-demo.md](mermaid-demo.md) |
-| `pnpm run validate … --repo-root .` | Deprecation scans (manual export, `@master`, v1 schema) — see [docs/migration/v0.5.md](migration/v0.5.md) |
+| `pnpm run validate … --repo-root .` | Legacy-pattern checks (export, pins, paths) — see [docs/migration/v1.0.md](migration/v1.0.md) |
 | `pnpm run sync:workflows … --dry-run` | Preview create/update actions without writing files |
 | `pnpm run bundle:actions` | Bundle Node actions with `@vercel/ncc` into `packages/action-*/dist` |
 | `pnpm run publish:actions [tag]` | Bundle and push action packages locally (CI does this on tag push) |

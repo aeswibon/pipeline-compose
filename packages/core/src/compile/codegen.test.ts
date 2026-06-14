@@ -22,7 +22,7 @@ describe('generateWorkflow', () => {
       pipelineFile: '.github/pipelines/pipeline.yml',
     });
     expect(yaml).toContain('compile-check:');
-    expect(yaml).toContain('aeswibon/pipeline-compose-compile@master');
+    expect(yaml).toContain('aeswibon/pipeline-compose-compile@v1.0.0');
     expect(yaml).toContain('output: .github/workflows/pipeline.yml');
     expect(yaml).toContain('sync:');
     expect(yaml).toContain('uses: ./.github/workflows/sync.yml');

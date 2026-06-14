@@ -3,9 +3,6 @@ import * as path from 'node:path';
 import type { ResolvedPipeline, ResolvedStage } from './parser.js';
 import type { ValidationIssue } from './validate-report.js';
 
-/** Removed in 1.0.0 — see docs/migration/v0.5.md */
-export const DEPRECATION_REMOVAL_VERSION = '1.0.0';
-
 const MONOREPO_SUBPATH_USES =
   /uses:\s*['"]?aeswibon\/pipeline-compose\/(run|compile|eval|export|context-merge)/;
 
@@ -18,21 +15,6 @@ const UPLOAD_ARTIFACT = /uses:\s*actions\/upload-artifact@/;
 
 export function artifactNameForStage(stageId: string): string {
   return `pipeline-compose-${stageId}`;
-}
-
-export function collectPipelineVersionDeprecations(
-  pipeline: ResolvedPipeline,
-): ValidationIssue[] {
-  if (pipeline.schemaVersion !== 1) {
-    return [];
-  }
-  return [
-    {
-      level: 'warn',
-      code: 'pipeline.v1-deprecated',
-      message: `Pipeline schema v1 is deprecated; migrate to version: 2 with pipelines: map (removed in ${DEPRECATION_REMOVAL_VERSION})`,
-    },
-  ];
 }
 
 export function collectWorkflowFileDeprecations(
@@ -49,17 +31,17 @@ export function collectWorkflowFileDeprecations(
 
   if (MONOREPO_SUBPATH_USES.test(content)) {
     issues.push({
-      level: 'warn',
+      level: 'error',
       code: 'uses.monorepo-subpath-deprecated',
-      message: `Workflow ${relativePath} uses legacy aeswibon/pipeline-compose/<action> paths; pin separate action repos (aeswibon/pipeline-compose-run@…, removed in ${DEPRECATION_REMOVAL_VERSION})`,
+      message: `Workflow ${relativePath} uses legacy aeswibon/pipeline-compose/<action> paths; use separate action repos (e.g. aeswibon/pipeline-compose-run@v1.0.0)`,
     });
   }
 
   if (MASTER_PIN.test(content)) {
     issues.push({
-      level: 'warn',
+      level: 'error',
       code: 'uses.master-pin-deprecated',
-      message: `Workflow ${relativePath} pins actions at @master; use semver tags (@vX.Y.Z, removed in ${DEPRECATION_REMOVAL_VERSION})`,
+      message: `Workflow ${relativePath} pins actions at @master; use a semver tag (e.g. @v1.0.0)`,
     });
   }
 
@@ -94,16 +76,16 @@ export function collectStageExportDeprecations(
   if (hasManualUpload) {
     return [
       {
-        level: 'warn',
+        level: 'error',
         code: 'export.manual-upload-deprecated',
-        message: `Stage "${stage.id}" uses manual jq/upload-artifact export; use pipeline-compose-export (removed in ${DEPRECATION_REMOVAL_VERSION})`,
+        message: `Stage "${stage.id}" uses manual jq/upload-artifact export; use pipeline-compose-export`,
       },
     ];
   }
 
   return [
     {
-      level: 'warn',
+      level: 'error',
       code: 'export.missing',
       message: `Stage "${stage.id}" declares outputs but workflow ${relativePath} has no pipeline-compose-export step`,
     },
@@ -114,7 +96,7 @@ export function collectDeprecationIssues(
   pipeline: ResolvedPipeline,
   repoRoot: string,
 ): ValidationIssue[] {
-  const issues: ValidationIssue[] = collectPipelineVersionDeprecations(pipeline);
+  const issues: ValidationIssue[] = [];
   const scannedWorkflows = new Set<string>();
 
   for (const stage of pipeline.stages) {

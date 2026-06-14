@@ -123,4 +123,5 @@ gh pr create --title "Demo mermaid error styling" --body "Do not merge."
 
 - [development.md](development.md) — local validate flags
 - [glossary.md](glossary.md) — `validate --mermaid` entry
-- [migration/v0.5.md](migration/v0.5.md) — schema v2 and strict deprecations
+- [migration/v1.0.md](migration/v1.0.md) — 1.0 GA breaking changes
+- [migration/v0.5.md](migration/v0.5.md) — pre-1.0 deprecation checklist (historical)

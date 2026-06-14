@@ -134,17 +134,18 @@ export function findOrphanWorkflows(
   repoRoot: string,
   pipeline: ResolvedPipeline,
 ): string[] {
-  const workflowsDir = path.join(repoRoot, '.github', 'workflows');
+  const root = path.resolve(repoRoot);
+  const workflowsDir = path.join(root, '.github', 'workflows');
   if (!fs.existsSync(workflowsDir)) {
     return [];
   }
 
   const referenced = new Set([
     ...pipeline.stages.map((stage) =>
-      path.normalize(path.resolve(repoRoot, stage.workflow)),
+      path.normalize(path.resolve(root, stage.workflow)),
     ),
     ...(pipeline.companion_workflows ?? []).map((workflow) =>
-      path.normalize(path.resolve(repoRoot, workflow)),
+      path.normalize(path.resolve(root, workflow)),
     ),
   ]);
 
@@ -160,7 +161,7 @@ export function findOrphanWorkflows(
     }
     const fullPath = path.normalize(path.join(workflowsDir, entry.name));
     if (!referenced.has(fullPath)) {
-      orphans.push(path.relative(repoRoot, fullPath));
+      orphans.push(path.relative(root, fullPath));
     }
   }
 

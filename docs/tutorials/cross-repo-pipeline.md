@@ -24,24 +24,27 @@ In the target repository, add a callable workflow (see [examples/cross-repo-disp
 
 ```yaml
 # .github/pipelines/pipeline.yml
-name: deploy
-version: 1
-stages:
-  - id: ci
-    workflow: .github/workflows/ci.yml
+version: 2
+companion_workflows:
+  - .github/workflows/release.yml
+pipelines:
+  deploy:
+    stages:
+      - id: ci
+        workflow: .github/workflows/ci.yml
 
-  - id: remote-gate
-    needs: [ci]
-    repo: my-org/shared-gate-repo
-    workflow: .github/workflows/gate.yml
-    outputs:
-      - approved
+      - id: remote-gate
+        needs: [ci]
+        repo: my-org/shared-gate-repo
+        workflow: .github/workflows/gate.yml
+        outputs:
+          - approved
 ```
 
 ## Step 3 — Wire secrets in the entry workflow
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v0.3.2
+- uses: aeswibon/pipeline-compose-run@v1.0.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}

@@ -1,8 +1,9 @@
-name: smoke-cross-repo
-version: 1
-stages:
-  - id: remote-echo
-    repo: aeswibon/pipeline-compose-smoke-target
-    workflow: .github/workflows/echo.yml
-    outputs:
-      - message
+version: 2
+pipelines:
+  smoke-cross-repo:
+    stages:
+      - id: remote-echo
+        repo: aeswibon/pipeline-compose-smoke-target
+        workflow: .github/workflows/echo.yml
+        outputs:
+          - message

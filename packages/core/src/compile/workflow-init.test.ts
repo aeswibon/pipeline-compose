@@ -57,6 +57,8 @@ describe('workflow-init', () => {
       { id: 'ci', workflow: '.github/workflows/ci.yml' },
       { id: 'deploy', workflow: '.github/workflows/deploy.yml', needs: ['ci'] },
     ]);
+    expect(yaml).toContain('version: 2');
+    expect(yaml).toContain('pipelines:');
     expect(yaml).toContain('needs:');
     expect(yaml).toContain('- ci');
   });

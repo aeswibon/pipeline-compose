@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose-run@v0.3.0
+      - uses: aeswibon/pipeline-compose-run@v1.0.0
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           github_token: ${{ github.token }}
@@ -70,25 +70,28 @@ The `actions: write` permission is required because the action dispatches your s
 Create `.github/pipelines/pipeline.yml`:
 
 ```yaml
-name: pipeline
-version: 1
-stages:
-  - id: ci
-    workflow: .github/workflows/ci.yml
+version: 2
+companion_workflows:
+  - .github/workflows/release.yml
+pipelines:
+  release:
+    stages:
+      - id: ci
+        workflow: .github/workflows/ci.yml
 
-  - id: version-sync
-    workflow: .github/workflows/stage-version-sync.yml
-    needs:
-      - ci
-    outputs:
-      - version
+      - id: version-sync
+        workflow: .github/workflows/stage-version-sync.yml
+        needs:
+          - ci
+        outputs:
+          - version
 
-  - id: release-publish
-    workflow: .github/workflows/stage-release-publish.yml
-    needs:
-      - version-sync
-    inputs:
-      version: ${{ context.version-sync.version }}
+      - id: release-publish
+        workflow: .github/workflows/stage-release-publish.yml
+        needs:
+          - version-sync
+        inputs:
+          version: ${{ context.version-sync.version }}
 ```
 
 This file is the **source of truth for order**. Stage implementations stay in normal workflow files you can also run manually or reuse via `workflow_call`.
@@ -145,7 +148,7 @@ jobs:
             exit 1
           fi
 
-      - uses: aeswibon/pipeline-compose-export@v0.4.1
+      - uses: aeswibon/pipeline-compose-export@v1.0.0
         if: success()
         with:
           stage_id: version-sync
