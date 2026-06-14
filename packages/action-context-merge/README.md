@@ -13,13 +13,13 @@ After a job finishes, merge its outputs into a shared context file for later ste
   id: ci
   run: echo "passed=true" >> "$GITHUB_OUTPUT"
 
-- uses: aeswibon/pipeline-compose-context-merge@v0.3.3
+- uses: aeswibon/pipeline-compose-context-merge@v0.4.0
   with:
     context_file: .pipeline-context.json
     stage_id: ci
     outputs: ${{ toJson(steps.ci.outputs) }}
 
-- uses: aeswibon/pipeline-compose-context-merge@v0.3.3
+- uses: aeswibon/pipeline-compose-context-merge@v0.4.0
   with:
     context_file: .pipeline-context.json
     stage_id: version-sync
@@ -32,7 +32,7 @@ Full walkthrough: [examples/context-merge-manual](https://github.com/aeswibon/pi
 
 <!-- start usage -->
 ```yaml
-- uses: aeswibon/pipeline-compose-context-merge@v0.3.3
+- uses: aeswibon/pipeline-compose-context-merge@v0.4.0
   with:
     context_file: .pipeline-context.json
     stage_id: ci

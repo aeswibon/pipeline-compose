@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose-compile@v0.3.3
+      - uses: aeswibon/pipeline-compose-compile@v0.4.0
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           output: .github/workflows/pipeline-generated.yml
@@ -28,7 +28,7 @@ Full walkthrough: [examples/compile-check](https://github.com/aeswibon/pipeline-
 
 <!-- start usage -->
 ```yaml
-- uses: aeswibon/pipeline-compose-compile@v0.3.3
+- uses: aeswibon/pipeline-compose-compile@v0.4.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     output: .github/workflows/pipeline-generated.yml
@@ -38,7 +38,7 @@ Full walkthrough: [examples/compile-check](https://github.com/aeswibon/pipeline-
 ## One-off generation
 
 ```yaml
-- uses: aeswibon/pipeline-compose-compile@v0.3.3
+- uses: aeswibon/pipeline-compose-compile@v0.4.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     output: .github/workflows/pipeline-generated.yml

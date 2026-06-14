@@ -7,7 +7,7 @@ Part of [pipeline-compose](https://github.com/aeswibon/pipeline-compose).
 ## Usage
 
 ```yaml
-- uses: aeswibon/pipeline-compose-export@v0.3.3
+- uses: aeswibon/pipeline-compose-export@v0.4.0
   with:
     stage_id: my-stage
     outputs: '{"version":"1.2.3","sha":"${{ github.sha }}"}'
@@ -19,7 +19,7 @@ Or build JSON from step outputs:
 - id: meta
   run: echo "version=1.2.3" >> "$GITHUB_OUTPUT"
 
-- uses: aeswibon/pipeline-compose-export@v0.3.3
+- uses: aeswibon/pipeline-compose-export@v0.4.0
   with:
     stage_id: my-stage
     outputs: '{"version":"${{ steps.meta.outputs.version }}"}'

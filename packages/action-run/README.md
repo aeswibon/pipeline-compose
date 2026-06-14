@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose-run@v0.3.3
+      - uses: aeswibon/pipeline-compose-run@v0.4.0
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           github_token: ${{ github.token }}
@@ -67,7 +67,7 @@ Full walkthrough: [examples/run-tag-release](https://github.com/aeswibon/pipelin
 
 <!-- start usage -->
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v0.3.3
+- uses: aeswibon/pipeline-compose-run@v0.4.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}
@@ -90,7 +90,7 @@ stages:
 ```
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v0.3.3
+- uses: aeswibon/pipeline-compose-run@v0.4.0
   with:
     pipeline_dir: .github/pipelines
     github_token: ${{ github.token }}
@@ -137,7 +137,7 @@ Validate locally in the monorepo: `pnpm run validate .github/pipelines/pipeline.
 When a stage sets `repo: other-org/other-repo`, pass tokens GitHub Actions resolves from secrets:
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v0.3.3
+- uses: aeswibon/pipeline-compose-run@v0.4.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}
