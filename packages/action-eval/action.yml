@@ -1,7 +1,7 @@
 name: Pipeline Compose Eval
 description: "Evaluate a when: expression against github and context JSON"
 branding:
-  icon: question
+  icon: help-circle
   color: purple
 inputs:
   expression:
