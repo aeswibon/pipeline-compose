@@ -43070,7 +43070,18 @@ function validatePipeline(pipeline) {
     return { ...pipeline, stages: sortStages(pipeline.stages) };
 }
 
+;// CONCATENATED MODULE: external "node:child_process"
+const external_node_child_process_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:child_process");
+;// CONCATENATED MODULE: external "node:os"
+const external_node_os_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:os");
 ;// CONCATENATED MODULE: ./src/run/github.ts
+
+
+
+
+function artifactNameForStage(stageId) {
+    return `pipeline-compose-${stageId}`;
+}
 class GitHubActionsClient {
     token;
     owner;
@@ -43100,6 +43111,21 @@ class GitHubActionsClient {
             return undefined;
         }
         return (await res.json());
+    }
+    async downloadBinary(path) {
+        const res = await fetch(`${this.apiUrl}${path}`, {
+            headers: {
+                Accept: 'application/vnd.github+json',
+                Authorization: `Bearer ${this.token}`,
+                'X-GitHub-Api-Version': '2022-11-28',
+            },
+            redirect: 'follow',
+        });
+        if (!res.ok) {
+            const body = await res.text();
+            throw new Error(`GitHub API GET ${path} failed (${res.status}): ${body}`);
+        }
+        return Buffer.from(await res.arrayBuffer());
     }
     async getWorkflowByPath(workflowPath) {
         const normalized = workflowPath.replace(/^\.\//, '');
@@ -43144,9 +43170,45 @@ class GitHubActionsClient {
         }
         throw new Error(`Timed out waiting for workflow run ${runId}`);
     }
+    async getJob(jobId) {
+        return this.request(`/repos/${this.owner}/${this.repo}/actions/jobs/${jobId}`);
+    }
     async listRunJobs(runId) {
         const data = await this.request(`/repos/${this.owner}/${this.repo}/actions/runs/${runId}/jobs?per_page=100`);
-        return data.jobs;
+        return Promise.all(data.jobs.map((job) => this.getJob(job.id)));
+    }
+    async listRunArtifacts(runId) {
+        const data = await this.request(`/repos/${this.owner}/${this.repo}/actions/runs/${runId}/artifacts?per_page=100`);
+        return data.artifacts;
+    }
+    async downloadArtifactOutputs(artifactId) {
+        const zipBytes = await this.downloadBinary(`/repos/${this.owner}/${this.repo}/actions/artifacts/${artifactId}/zip`);
+        const zipPath = (0,external_node_path_namespaceObject.join)((0,external_node_os_namespaceObject.tmpdir)(), `pipeline-compose-artifact-${artifactId}.zip`);
+        const extractDir = (0,external_node_fs_namespaceObject.mkdtempSync)((0,external_node_path_namespaceObject.join)((0,external_node_os_namespaceObject.tmpdir)(), 'pipeline-compose-artifact-'));
+        (0,external_node_fs_namespaceObject.writeFileSync)(zipPath, zipBytes);
+        try {
+            (0,external_node_child_process_namespaceObject.execSync)(`unzip -o -q ${JSON.stringify(zipPath)} -d ${JSON.stringify(extractDir)}`);
+            const raw = (0,external_node_fs_namespaceObject.readFileSync)((0,external_node_path_namespaceObject.join)(extractDir, 'outputs.json'), 'utf8');
+            const parsed = JSON.parse(raw);
+            return Object.fromEntries(Object.entries(parsed).map(([key, value]) => [key, String(value)]));
+        }
+        finally {
+            (0,external_node_fs_namespaceObject.rmSync)(zipPath, { force: true });
+            (0,external_node_fs_namespaceObject.rmSync)(extractDir, { recursive: true, force: true });
+        }
+    }
+    async waitForStageArtifact(runId, stageId, timeoutMs, pollMs) {
+        const name = artifactNameForStage(stageId);
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+            const artifacts = await this.listRunArtifacts(runId);
+            const match = artifacts.find((artifact) => artifact.name === name);
+            if (match) {
+                return this.downloadArtifactOutputs(match.id);
+            }
+            await sleep(pollMs);
+        }
+        throw new Error(`Timed out waiting for artifact ${name} on run ${runId}`);
     }
 }
 function stripRefPrefix(ref) {
@@ -43221,10 +43283,7 @@ function shouldRunStage(stage, ctx) {
     }
     return evaluateExpression(stage.when, ctx);
 }
-function collectJobOutputs(jobs, declaredOutputs) {
-    if (!declaredOutputs?.length) {
-        return {};
-    }
+function outputsFromJobs(jobs, declaredOutputs) {
     for (const job of jobs) {
         if (job.conclusion !== 'success' || !job.outputs) {
             continue;
@@ -43233,7 +43292,22 @@ function collectJobOutputs(jobs, declaredOutputs) {
             return Object.fromEntries(declaredOutputs.map((key) => [key, job.outputs[key]]));
         }
     }
-    throw new Error(`Could not find job outputs for keys: ${declaredOutputs.join(', ')}`);
+    return null;
+}
+async function collectStageOutputs(client, runId, stageId, declaredOutputs, timeoutMs, pollMs) {
+    if (!declaredOutputs?.length) {
+        return {};
+    }
+    const jobs = await client.listRunJobs(runId);
+    const fromApi = outputsFromJobs(jobs, declaredOutputs);
+    if (fromApi) {
+        return fromApi;
+    }
+    const fromArtifact = await client.waitForStageArtifact(runId, stageId, timeoutMs, pollMs);
+    if (declaredOutputs.every((key) => fromArtifact[key] != null)) {
+        return Object.fromEntries(declaredOutputs.map((key) => [key, fromArtifact[key]]));
+    }
+    throw new Error(`Could not find outputs for stage "${stageId}" (expected keys: ${declaredOutputs.join(', ')})`);
 }
 async function runPipeline(pipeline, client, options) {
     const timeoutMs = options.timeoutMs ?? 60 * 60 * 1000;
@@ -43257,8 +43331,7 @@ async function runPipeline(pipeline, client, options) {
         if (run.conclusion !== 'success') {
             throw new Error(`Stage "${stage.id}" failed (${workflow.path}, run ${run.id}, conclusion=${run.conclusion})`);
         }
-        const jobs = await client.listRunJobs(run.id);
-        const outputs = collectJobOutputs(jobs, stage.outputs);
+        const outputs = await collectStageOutputs(client, run.id, stage.id, stage.outputs, timeoutMs, pollMs);
         context = mergeContext(context, stage.id, outputs);
         results.push({ stageId: stage.id, runId: run.id, outputs });
     }

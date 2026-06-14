@@ -27,14 +27,10 @@ function shouldRunStage(
   return evaluateExpression(stage.when, ctx);
 }
 
-function collectJobOutputs(
+function outputsFromJobs(
   jobs: WorkflowJob[],
-  declaredOutputs: string[] | undefined,
-): Record<string, string> {
-  if (!declaredOutputs?.length) {
-    return {};
-  }
-
+  declaredOutputs: string[],
+): Record<string, string> | null {
   for (const job of jobs) {
     if (job.conclusion !== 'success' || !job.outputs) {
       continue;
@@ -45,9 +41,41 @@ function collectJobOutputs(
       );
     }
   }
+  return null;
+}
+
+async function collectStageOutputs(
+  client: GitHubActionsClient,
+  runId: number,
+  stageId: string,
+  declaredOutputs: string[] | undefined,
+  timeoutMs: number,
+  pollMs: number,
+): Promise<Record<string, string>> {
+  if (!declaredOutputs?.length) {
+    return {};
+  }
+
+  const jobs = await client.listRunJobs(runId);
+  const fromApi = outputsFromJobs(jobs, declaredOutputs);
+  if (fromApi) {
+    return fromApi;
+  }
+
+  const fromArtifact = await client.waitForStageArtifact(
+    runId,
+    stageId,
+    timeoutMs,
+    pollMs,
+  );
+  if (declaredOutputs.every((key) => fromArtifact[key] != null)) {
+    return Object.fromEntries(
+      declaredOutputs.map((key) => [key, fromArtifact[key]]),
+    );
+  }
 
   throw new Error(
-    `Could not find job outputs for keys: ${declaredOutputs.join(', ')}`,
+    `Could not find outputs for stage "${stageId}" (expected keys: ${declaredOutputs.join(', ')})`,
   );
 }
 
@@ -93,8 +121,14 @@ export async function runPipeline(
       );
     }
 
-    const jobs = await client.listRunJobs(run.id);
-    const outputs = collectJobOutputs(jobs, stage.outputs);
+    const outputs = await collectStageOutputs(
+      client,
+      run.id,
+      stage.id,
+      stage.outputs,
+      timeoutMs,
+      pollMs,
+    );
 
     context = mergeContext(context, stage.id, outputs) as Record<
       string,

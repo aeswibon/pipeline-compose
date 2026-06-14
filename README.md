@@ -107,7 +107,24 @@ Stages with a false `when` expression are not dispatched.
 
 Each stage workflow must include `workflow_dispatch`. If downstream stages need values, declare matching `workflow_dispatch` inputs.
 
-Stage jobs must expose outputs listed under `outputs` in the pipeline file. See [docs/examples.md](docs/examples.md) for full stage contracts and troubleshooting.
+Stage jobs must expose outputs listed under `outputs` in the pipeline file.
+
+Because GitHub's API does not return job outputs for `workflow_dispatch` runs, upload an artifact named `pipeline-compose-<stage-id>` containing `outputs.json`:
+
+```yaml
+- name: Export outputs for pipeline-compose
+  if: success()
+  run: |
+    mkdir -p pipeline-compose
+    jq -n --arg version "$VERSION" '{version: $version}' > pipeline-compose/outputs.json
+- uses: actions/upload-artifact@v4
+  with:
+    name: pipeline-compose-my-stage
+    path: pipeline-compose/outputs.json
+    retention-days: 1
+```
+
+See [docs/examples.md](docs/examples.md) for full stage contracts and troubleshooting.
 
 # Recommended permissions
 

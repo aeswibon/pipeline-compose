@@ -1,3 +1,8 @@
+import { execSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 export type WorkflowSummary = {
   id: number;
   path: string;
@@ -19,6 +24,15 @@ export type WorkflowJob = {
   conclusion: string | null;
   outputs?: Record<string, string>;
 };
+
+export type WorkflowArtifact = {
+  id: number;
+  name: string;
+};
+
+export function artifactNameForStage(stageId: string): string {
+  return `pipeline-compose-${stageId}`;
+}
 
 export class GitHubActionsClient {
   constructor(
@@ -52,6 +66,22 @@ export class GitHubActionsClient {
     }
 
     return (await res.json()) as T;
+  }
+
+  private async downloadBinary(path: string): Promise<Buffer> {
+    const res = await fetch(`${this.apiUrl}${path}`, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${this.token}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+      redirect: 'follow',
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`GitHub API GET ${path} failed (${res.status}): ${body}`);
+    }
+    return Buffer.from(await res.arrayBuffer());
   }
 
   async getWorkflowByPath(workflowPath: string): Promise<WorkflowSummary> {
@@ -124,11 +154,63 @@ export class GitHubActionsClient {
     throw new Error(`Timed out waiting for workflow run ${runId}`);
   }
 
+  async getJob(jobId: number): Promise<WorkflowJob> {
+    return this.request<WorkflowJob>(`/repos/${this.owner}/${this.repo}/actions/jobs/${jobId}`);
+  }
+
   async listRunJobs(runId: number): Promise<WorkflowJob[]> {
     const data = await this.request<{ jobs: WorkflowJob[] }>(
       `/repos/${this.owner}/${this.repo}/actions/runs/${runId}/jobs?per_page=100`,
     );
-    return data.jobs;
+    return Promise.all(data.jobs.map((job) => this.getJob(job.id)));
+  }
+
+  async listRunArtifacts(runId: number): Promise<WorkflowArtifact[]> {
+    const data = await this.request<{ artifacts: WorkflowArtifact[] }>(
+      `/repos/${this.owner}/${this.repo}/actions/runs/${runId}/artifacts?per_page=100`,
+    );
+    return data.artifacts;
+  }
+
+  async downloadArtifactOutputs(artifactId: number): Promise<Record<string, string>> {
+    const zipBytes = await this.downloadBinary(
+      `/repos/${this.owner}/${this.repo}/actions/artifacts/${artifactId}/zip`,
+    );
+    const zipPath = join(tmpdir(), `pipeline-compose-artifact-${artifactId}.zip`);
+    const extractDir = mkdtempSync(join(tmpdir(), 'pipeline-compose-artifact-'));
+    writeFileSync(zipPath, zipBytes);
+    try {
+      execSync(`unzip -o -q ${JSON.stringify(zipPath)} -d ${JSON.stringify(extractDir)}`);
+      const raw = readFileSync(join(extractDir, 'outputs.json'), 'utf8');
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      return Object.fromEntries(
+        Object.entries(parsed).map(([key, value]) => [key, String(value)]),
+      );
+    } finally {
+      rmSync(zipPath, { force: true });
+      rmSync(extractDir, { recursive: true, force: true });
+    }
+  }
+
+  async waitForStageArtifact(
+    runId: number,
+    stageId: string,
+    timeoutMs: number,
+    pollMs: number,
+  ): Promise<Record<string, string>> {
+    const name = artifactNameForStage(stageId);
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+      const artifacts = await this.listRunArtifacts(runId);
+      const match = artifacts.find((artifact) => artifact.name === name);
+      if (match) {
+        return this.downloadArtifactOutputs(match.id);
+      }
+      await sleep(pollMs);
+    }
+
+    throw new Error(`Timed out waiting for artifact ${name} on run ${runId}`);
   }
 }
 

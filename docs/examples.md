@@ -107,6 +107,26 @@ jobs:
       - run: echo "Release ${{ inputs.version }}"
 ```
 
+### Export outputs artifact (required for `run`)
+
+GitHub's REST API does not return job outputs for dispatched workflows. Upload:
+
+- **Artifact name:** `pipeline-compose-<stage-id>`
+- **File:** `outputs.json` with your output keys
+
+```yaml
+- name: Export outputs for pipeline-compose
+  if: success()
+  run: |
+    mkdir -p pipeline-compose
+    jq -n --arg version "$VERSION" '{version: $version}' > pipeline-compose/outputs.json
+- uses: actions/upload-artifact@v4
+  with:
+    name: pipeline-compose-my-stage
+    path: pipeline-compose/outputs.json
+    retention-days: 1
+```
+
 ---
 
 ## Example 3 — Context wiring

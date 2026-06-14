@@ -75,3 +75,22 @@ jobs:
           VERSION: ${{ steps.tag.outputs.version }}
           DEFAULT_BRANCH: master
         run: bash scripts/ci/publish-version-sync.sh "${VERSION}"
+
+      - name: Export outputs for pipeline-compose
+        if: success()
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+          SKIP_PUBLISH: ${{ steps.git-state.outputs.skip_publish }}
+        run: |
+          mkdir -p pipeline-compose
+          jq -n \
+            --arg version "$VERSION" \
+            --arg skip_publish "$SKIP_PUBLISH" \
+            '{version: $version, skip_publish: $skip_publish}' > pipeline-compose/outputs.json
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: pipeline-compose-version-sync
+          path: pipeline-compose/outputs.json
+          retention-days: 1
