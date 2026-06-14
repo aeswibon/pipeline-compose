@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-14
+
 ### Added
 
 - **Cross-Repo Orchestrator positioning** — README and docs emphasize multi-repo orchestration as the primary value proposition.
