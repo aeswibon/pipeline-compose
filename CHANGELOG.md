@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Action READMEs** — per-action **Glossary** sections (self-contained; no monorepo visit required).
 - **Meta-repo** — v2 `pipeline.yml` + `release.yml` dogfoods `./packages/action-run`.
+- **Action publish** — append-only `master` on action repos, immutable semver tags (no force push / no tag retag); publish commits record monorepo SHA.
 
 ## [0.4.0] - 2026-06-14
 

@@ -34,9 +34,13 @@ Add a repository secret on **pipeline-compose**:
 
 Fine-grained PAT: grant **Contents** read/write on each action repo. Classic PAT: `repo` scope works if you own all repos.
 
-To re-run publish without re-tagging: [Actions → Publish actions → Run workflow](https://github.com/aeswibon/pipeline-compose/actions/workflows/publish-actions.yml) with the semver (no `v` prefix, e.g. `0.3.1`). Enable **use_master** to publish from `master` HEAD instead of the matching tag (doc-only fixes without retagging).
+Manual publish (e.g. after a failed CI stage): [Actions → Publish actions → Run workflow](https://github.com/aeswibon/pipeline-compose/actions/workflows/publish-actions.yml) with the semver (no `v` prefix, e.g. `0.4.1`). The version must **not** already exist on the action repos — tags are **immutable**.
 
-`scripts/publish-action-packages.sh` bundles each Node action, copies `action.yml` and `README.md`, force-pushes to the matching GitHub repo, tags, and creates/updates GitHub Releases with CHANGELOG-derived notes.
+`scripts/publish-action-packages.sh` clones each action repo, copies `action.yml`, `README.md`, and bundled `dist/`, commits on **`master`** (append-only, no force push), creates a **new** tag once, and opens a GitHub Release with CHANGELOG-derived notes. Each commit message records the monorepo SHA it was built from.
+
+Doc or README fixes ship as a **new patch release** (`0.4.1`, `0.4.2`, …): update the monorepo, add a `CHANGELOG` section, tag, and let CI publish. Do not republish an existing action tag.
+
+Optional **use_master** only changes which monorepo commit is checked out before publish (master HEAD vs `v{version}`); it does **not** allow overwriting an existing action-repo tag.
 
 Local publish uses SSH remotes when `GH_TOKEN` is unset; CI uses `GH_TOKEN` from the secret (HTTPS via `gh auth setup-git`).
 
@@ -76,14 +80,16 @@ cat /tmp/notes.md
 
 The meta repo must already have a non-empty `## [0.3.0]` section (`require-changelog-section.sh`).
 
-### Manual update
+### Release notes only
 
-To refresh notes on an existing action release without republishing code:
+Tags and publish commits are immutable. To fix release notes after ship, edit the GitHub Release manually:
 
 ```bash
 bash scripts/ci/render-action-release-notes.sh 0.3.0 pipeline-compose-run notes.md
 gh release edit v0.3.0 --repo aeswibon/pipeline-compose-run --notes-file notes.md
 ```
+
+Do not move or recreate the tag — consumers pin `@v0.3.0` to that commit.
 
 ## GitHub Marketplace
 

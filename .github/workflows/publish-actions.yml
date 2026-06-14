@@ -8,7 +8,7 @@ on:
         type: string
         required: true
       use_master:
-        description: Publish from master HEAD instead of the release tag
+        description: Build from monorepo master HEAD instead of v{version} (action repo tag must still be new)
         type: boolean
         required: false
         default: false
@@ -19,7 +19,7 @@ on:
         type: string
         required: true
       use_master:
-        description: Publish from master HEAD instead of the release tag
+        description: Build from monorepo master HEAD instead of v{version} (action repo tag must still be new)
         type: boolean
         required: false
         default: false
