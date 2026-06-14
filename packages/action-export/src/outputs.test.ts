@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import * as path from 'node:path';
 import {
   OUTPUTS_FILE,
   artifactNameForStage,
+  artifactUploadFiles,
   parseOutputsJson,
+  resolveOutputPaths,
   serializeOutputs,
 } from './outputs.js';
 
@@ -31,6 +34,21 @@ describe('serializeOutputs', () => {
     expect(serializeOutputs({ version: '1.0.0', skip_publish: 'false' })).toBe(
       '{"version":"1.0.0","skip_publish":"false"}',
     );
+  });
+});
+
+describe('resolveOutputPaths', () => {
+  it('places outputs.json under pipeline-compose/', () => {
+    const { outDir, outPath } = resolveOutputPaths('/repo');
+    expect(outDir).toBe(path.join('/repo', 'pipeline-compose'));
+    expect(outPath).toBe(path.join('/repo', 'pipeline-compose', OUTPUTS_FILE));
+  });
+});
+
+describe('artifactUploadFiles', () => {
+  it('uses absolute file path for artifact client', () => {
+    const outPath = '/repo/pipeline-compose/outputs.json';
+    expect(artifactUploadFiles(outPath)).toEqual([outPath]);
   });
 });
 

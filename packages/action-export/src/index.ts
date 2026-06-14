@@ -1,12 +1,11 @@
 import { DefaultArtifactClient } from '@actions/artifact';
 import * as core from '@actions/core';
 import * as fs from 'node:fs';
-import * as path from 'node:path';
 import {
-  OUTPUTS_DIR,
-  OUTPUTS_FILE,
   artifactNameForStage,
+  artifactUploadFiles,
   parseOutputsJson,
+  resolveOutputPaths,
   serializeOutputs,
 } from './outputs.js';
 
@@ -17,16 +16,15 @@ async function run(): Promise<void> {
   const outputsRaw = core.getInput('outputs', { required: true });
   const outputs = parseOutputsJson(outputsRaw);
 
-  const outDir = path.join(process.cwd(), OUTPUTS_DIR);
+  const { outDir, outPath } = resolveOutputPaths(process.cwd());
   fs.mkdirSync(outDir, { recursive: true });
-  const outPath = path.join(outDir, OUTPUTS_FILE);
   fs.writeFileSync(outPath, serializeOutputs(outputs));
 
   const artifactName = artifactNameForStage(stageId);
   const client = new DefaultArtifactClient();
   const { id, size } = await client.uploadArtifact(
     artifactName,
-    [OUTPUTS_FILE],
+    artifactUploadFiles(outPath),
     outDir,
     { retentionDays: RETENTION_DAYS },
   );

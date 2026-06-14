@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-06-14
+
+### Fixed
+
+- **pipeline-compose-export** — pass absolute `outputs.json` path to `@actions/artifact` (relative paths resolved from workspace root, not `rootDirectory`).
+
 ## [0.4.2] - 2026-06-14
 
 ### Changed
