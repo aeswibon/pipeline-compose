@@ -1,0 +1,10 @@
+# Placeholder — generate with pipeline-compose-compile, then commit.
+# See examples/compile-check/README.md
+name: Pipeline (generated)
+on:
+  workflow_dispatch:
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Replace by running compile action once"

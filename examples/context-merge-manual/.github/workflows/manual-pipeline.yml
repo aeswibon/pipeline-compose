@@ -1,0 +1,67 @@
+name: Manual pipeline context
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build, test, merge context
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build
+        id: build
+        run: |
+          echo "image=myapp:1.0.0" >> "$GITHUB_OUTPUT"
+          echo "Build complete"
+
+      - uses: aeswibon/pipeline-compose-context-merge@v0.3.0
+        with:
+          context_file: .pipeline-context.json
+          stage_id: build
+          outputs: ${{ toJson(steps.build.outputs) }}
+
+      - name: Test
+        id: test
+        run: |
+          echo "passed=true" >> "$GITHUB_OUTPUT"
+          echo "Tests complete"
+
+      - uses: aeswibon/pipeline-compose-context-merge@v0.3.0
+        with:
+          context_file: .pipeline-context.json
+          stage_id: test
+          outputs: ${{ toJson(steps.test.outputs) }}
+
+      - name: Show accumulated context
+        run: cat .pipeline-context.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-context
+          path: .pipeline-context.json
+          retention-days: 7
+
+  deploy:
+    name: Deploy using context
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pipeline-context
+
+      - id: load
+        run: echo "json=$(jq -c . .pipeline-context.json)" >> "$GITHUB_OUTPUT"
+
+      - uses: aeswibon/pipeline-compose-eval@v0.3.0
+        id: eval
+        with:
+          expression: context.test.passed == 'true'
+          context: ${{ steps.load.outputs.json }}
+
+      - name: Deploy
+        if: steps.eval.outputs.result == 'true'
+        run: |
+          echo "Deploying with context:"
+          cat .pipeline-context.json

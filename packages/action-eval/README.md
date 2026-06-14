@@ -30,6 +30,8 @@ Gate on prior stage output:
     context: '{"ci":{"passed":"true"}}'
 ```
 
+Full walkthrough: [examples/eval-conditional](https://github.com/aeswibon/pipeline-compose/tree/master/examples/eval-conditional).
+
 <!-- start usage -->
 ```yaml
 - uses: aeswibon/pipeline-compose-eval@v0.3.0
@@ -56,6 +58,15 @@ Gate on prior stage output:
 ## Supported expressions
 
 Subset aligned with pipeline `when:` fields — e.g. `startsWith`, `endsWith`, `contains`, equality, `&&`, `||`, `!`, and property access on `github` and `context`.
+
+## Compare approaches
+
+| Approach | Tradeoff |
+|----------|----------|
+| **Inline `if:` with bash** | Duplicates logic already in pipeline `when:` |
+| **Reusable workflow inputs** | Verbose for simple ref/context gates |
+| **pipeline-compose-run** | Evaluates `when:` per stage automatically |
+| **pipeline-compose-eval** | Same expression language; use anywhere in a workflow |
 
 ## License
 

@@ -28,6 +28,8 @@ After a job finishes, merge its outputs into a shared context file for later ste
 
 The file is created if missing. Existing keys under other stage ids are preserved.
 
+Full walkthrough: [examples/context-merge-manual](https://github.com/aeswibon/pipeline-compose/tree/master/examples/context-merge-manual).
+
 <!-- start usage -->
 ```yaml
 - uses: aeswibon/pipeline-compose-context-merge@v0.3.0
@@ -45,6 +47,14 @@ The file is created if missing. Existing keys under other stage ids are preserve
 | `context_file` | yes | `pipeline-context.json` | Path to context JSON file |
 | `stage_id` | yes | — | Stage id key under `context` |
 | `outputs` | yes | — | JSON object of outputs to merge |
+
+## Compare approaches
+
+| Approach | Tradeoff |
+|----------|----------|
+| **Ad-hoc `jq` / Node scripts** | Easy to get wrong; no shared schema |
+| **pipeline-compose-run** | Context handled across dispatched stages |
+| **pipeline-compose-context-merge** | Explicit file merge for composite/manual pipelines |
 
 ## License
 

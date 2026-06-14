@@ -1,0 +1,38 @@
+name: Deploy gate
+on:
+  push:
+    tags: ["v*"]
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    name: Should deploy?
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.eval.outputs.result }}
+    steps:
+      - id: eval
+        uses: aeswibon/pipeline-compose-eval@v0.3.0
+        with:
+          expression: startsWith(github.ref, 'refs/tags/v')
+          github: ${{ toJson(github) }}
+
+  deploy:
+    name: Deploy
+    needs: evaluate
+    if: needs.evaluate.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: echo "Deploy ${{ github.ref }} — replace with your deploy command"
+
+  notify-skipped:
+    name: Skipped (not a tag)
+    needs: evaluate
+    if: needs.evaluate.outputs.deploy != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Deploy skipped — push a v* tag to deploy"

@@ -57,7 +57,7 @@ stages:
       skip_publish: ${{ context.version-sync.skip_publish }}
 ```
 
-Full template: [pipeline-compose/templates/pipeline-run.yml](https://github.com/aeswibon/pipeline-compose/blob/master/templates/pipeline-run.yml)
+Full walkthrough: [examples/run-tag-release](https://github.com/aeswibon/pipeline-compose/tree/master/examples/run-tag-release) (copy `.github/` into your repo).
 
 <!-- start usage -->
 ```yaml
@@ -126,6 +126,15 @@ Because GitHub does not return job outputs for `workflow_dispatch` runs, upload 
 ```
 
 More examples: [pipeline-compose docs/examples.md](https://github.com/aeswibon/pipeline-compose/blob/master/docs/examples.md)
+
+## Compare approaches
+
+| Approach | Tradeoff |
+|----------|----------|
+| **`workflow_run` chains** | Hard to pass outputs; easy to break when renaming workflows |
+| **One monolithic workflow** | Simple at first; painful as release stages grow |
+| **pipeline-compose-compile** | Native GitHub `needs:` but you commit generated YAML |
+| **pipeline-compose-run** | Ordered dispatch + context; one pipeline file; no codegen |
 
 ## Related actions
 

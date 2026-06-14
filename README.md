@@ -18,6 +18,7 @@ This repository is the **development monorepo** (core library, CLI, docs, releas
 | Topic | Location |
 |-------|----------|
 | Run action usage | [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) |
+| Copy-paste examples (all actions) | [examples/](examples/) |
 | Extended examples | [docs/examples.md](docs/examples.md) |
 | Monorepo development | [docs/development.md](docs/development.md) |
 | Publishing actions | [docs/action-repos.md](docs/action-repos.md) |

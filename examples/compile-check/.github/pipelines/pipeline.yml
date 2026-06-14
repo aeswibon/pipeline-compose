@@ -1,0 +1,11 @@
+name: pipeline
+version: 1
+stages:
+  - id: ci
+    workflow: .github/workflows/ci.yml
+
+  - id: deploy
+    workflow: .github/workflows/deploy.yml
+    needs:
+      - ci
+    when: startsWith(github.ref, 'refs/tags/v')

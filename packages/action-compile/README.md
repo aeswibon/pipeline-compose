@@ -24,6 +24,8 @@ jobs:
 
 When `check: true`, the action fails if the committed workflow differs from what the pipeline compiles to.
 
+Full walkthrough: [examples/compile-check](https://github.com/aeswibon/pipeline-compose/tree/master/examples/compile-check).
+
 <!-- start usage -->
 ```yaml
 - uses: aeswibon/pipeline-compose-compile@v0.3.0
@@ -72,6 +74,14 @@ pnpm exec tsx packages/cli/src/main.ts compile .github/pipelines/pipeline.yml -o
 ## Pipeline format
 
 Same as the run action — see [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run#start-here--tag-release-pipeline).
+
+## Compare approaches
+
+| Approach | Tradeoff |
+|----------|----------|
+| **Hand-written `needs:` graph** | Full control; drifts from your pipeline YAML |
+| **pipeline-compose-run** | No generated file; runtime orchestrator |
+| **pipeline-compose-compile** | Single source pipeline YAML → committed workflow; CI drift check |
 
 ## License
 

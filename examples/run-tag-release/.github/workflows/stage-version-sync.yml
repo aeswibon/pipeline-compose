@@ -1,0 +1,34 @@
+name: Version sync
+on:
+  workflow_dispatch:
+
+jobs:
+  version-sync:
+    name: Resolve version from tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve semver from ref
+        id: version
+        run: |
+          ref="${GITHUB_REF}"
+          if [[ "$ref" =~ ^refs/tags/v(.+)$ ]]; then
+            echo "value=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "Expected a version tag ref, got: $ref" >&2
+            exit 1
+          fi
+
+      - name: Export outputs for pipeline-compose
+        if: success()
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          mkdir -p pipeline-compose
+          jq -n --arg version "$VERSION" '{version: $version}' > pipeline-compose/outputs.json
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: pipeline-compose-version-sync
+          path: pipeline-compose/outputs.json
+          retention-days: 1
