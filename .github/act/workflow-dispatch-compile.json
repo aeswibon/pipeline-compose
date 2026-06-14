@@ -1,0 +1,10 @@
+{
+  "inputs": {
+    "pipeline_file": {
+      "default": "examples/pipeline-release.yml"
+    },
+    "pipeline_inline": {
+      "default": ""
+    }
+  }
+}

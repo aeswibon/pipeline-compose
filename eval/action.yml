@@ -1,0 +1,20 @@
+name: Evaluate pipeline expression
+description: Evaluate a when: expression against github and context JSON
+inputs:
+  expression:
+    description: Expression to evaluate
+    required: true
+  context:
+    description: Pipeline context JSON
+    required: false
+    default: '{}'
+  github:
+    description: GitHub context JSON subset
+    required: false
+    default: '{}'
+outputs:
+  result:
+    description: Boolean result as string
+runs:
+  using: node20
+  main: dist/index.js

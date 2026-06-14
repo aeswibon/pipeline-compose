@@ -1,0 +1,64 @@
+name: CI
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm run bundle
+
+  compile-check:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run bundle
+      - run: pnpm exec tsx bin/pipeline-compose.ts compile examples/pipeline-release.yml -o /tmp/out.yml
+      - run: grep -q 'workflow_call' /tmp/out.yml
+      - uses: ./compile
+        with:
+          pipeline_file: examples/pipeline-release.yml
+          output: /tmp/action-out.yml
+      - run: diff /tmp/out.yml /tmp/action-out.yml
+
+  compile-stale-check:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run bundle
+      - run: pnpm exec tsx bin/pipeline-compose.ts compile examples/pipeline-release.yml -o examples/release.generated.yml
+      - uses: ./compile
+        with:
+          pipeline_file: examples/pipeline-release.yml
+          output: examples/release.generated.yml
+          check: 'true'

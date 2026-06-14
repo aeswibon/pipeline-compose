@@ -1,0 +1,26 @@
+name: release
+version: 1
+context:
+  ref: ${{ github.ref }}
+stages:
+  - id: sync
+    workflow: .github/workflows/sync-version.yml
+    when: startsWith(github.ref, 'refs/tags/v')
+    outputs:
+      - version
+  - id: build
+    workflow: .github/workflows/test-and-build.yml
+    needs:
+      - sync
+    inputs:
+      release: "true"
+      version: ${{ context.sync.version }}
+    outputs:
+      - image_tag
+  - id: deploy
+    workflow: .github/workflows/deploy.yml
+    needs:
+      - build
+    environment: production
+    inputs:
+      image_tag: ${{ context.build.image_tag }}

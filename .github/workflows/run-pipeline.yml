@@ -1,0 +1,39 @@
+name: Run pipeline
+on:
+  workflow_call:
+    inputs:
+      pipeline_file:
+        type: string
+        required: true
+      pipeline_inline:
+        type: string
+        required: false
+        default: ''
+      output:
+        type: string
+        required: false
+        default: .github/workflows/pipeline.generated.yml
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run bundle
+      - uses: ./compile
+        with:
+          pipeline_file: ${{ inputs.pipeline_file }}
+          pipeline_inline: ${{ inputs.pipeline_inline }}
+          output: ${{ inputs.output }}
+      - name: Next steps
+        run: |
+          echo "Compiled workflow written to ${{ inputs.output }}"
+          echo "Commit the generated file and call it from your entry workflow."

@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/aeswibon/pipeline-compose/schema/pipeline-v1.schema.json",
+  "title": "pipeline-compose pipeline v1",
+  "type": "object",
+  "required": ["name", "version", "stages"],
+  "additionalProperties": false,
+  "properties": {
+    "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "version": { "const": 1 },
+    "context": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "stages": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["id", "workflow"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "workflow": { "type": "string", "minLength": 1 },
+          "when": { "type": "string" },
+          "needs": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "environment": { "type": "string" },
+          "inputs": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "outputs": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

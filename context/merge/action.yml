@@ -1,0 +1,31 @@
+name: Merge stage outputs into context
+description: Merge a stage outputs object into the pipeline context JSON file
+inputs:
+  context_file:
+    description: Path to context JSON file
+    required: true
+    default: pipeline-context.json
+  stage_id:
+    description: Stage id key under context
+    required: true
+  outputs:
+    description: JSON object of outputs to merge
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        CONTEXT_FILE: ${{ inputs.context_file }}
+        STAGE_ID: ${{ inputs.stage_id }}
+        OUTPUTS: ${{ inputs.outputs }}
+      run: |
+        node <<'NODE'
+        const fs = require('node:fs');
+        const file = process.env.CONTEXT_FILE;
+        const ctx = fs.existsSync(file)
+          ? JSON.parse(fs.readFileSync(file, 'utf8'))
+          : {};
+        ctx[process.env.STAGE_ID] = JSON.parse(process.env.OUTPUTS);
+        fs.writeFileSync(file, JSON.stringify(ctx, null, 2));
+        NODE

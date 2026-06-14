@@ -1,0 +1,35 @@
+name: Compile example (act)
+on:
+  workflow_dispatch:
+    inputs:
+      pipeline_file:
+        description: Pipeline YAML path
+        required: true
+        default: examples/pipeline-release.yml
+      pipeline_inline:
+        description: Optional inline YAML override
+        required: false
+        default: ''
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run bundle
+      - uses: ./compile
+        id: compile
+        with:
+          pipeline_file: ${{ inputs.pipeline_file }}
+          pipeline_inline: ${{ inputs.pipeline_inline }}
+          output: examples/act-output.generated.yml
+      - name: Show generated workflow
+        run: cat examples/act-output.generated.yml
