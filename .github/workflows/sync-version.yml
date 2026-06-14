@@ -7,7 +7,7 @@ on:
         description: Semver without v prefix
         value: ${{ jobs.sync.outputs.version }}
       skip_publish:
-        description: True when main and tag already had synced version files
+        description: True when master and tag already had synced version files
         value: ${{ jobs.sync.outputs.skip_publish }}
 
 permissions:
@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: main
+          ref: master
 
       - name: Resolve tag version
         id: tag
@@ -56,21 +56,21 @@ jobs:
         env:
           VERSION: ${{ steps.tag.outputs.version }}
         run: |
-          git fetch origin main "refs/tags/v${VERSION}"
-          main_sha=$(git rev-parse origin/main)
+          git fetch origin master "refs/tags/v${VERSION}"
+          master_sha=$(git rev-parse origin/master)
           tag_sha=$(git rev-parse "refs/tags/v${VERSION}^{commit}" 2>/dev/null || echo "")
-          if [ -z "$(git status --porcelain)" ] && [ -n "$tag_sha" ] && [ "$tag_sha" = "$main_sha" ]; then
-            echo "Git release aligned: tag v${VERSION} at main with synced files."
+          if [ -z "$(git status --porcelain)" ] && [ -n "$tag_sha" ] && [ "$tag_sha" = "$master_sha" ]; then
+            echo "Git release aligned: tag v${VERSION} at master with synced files."
             echo "skip_publish=true" >> "$GITHUB_OUTPUT"
           else
             echo "Git release needs publish (version commit and/or retag)."
             echo "skip_publish=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Publish version sync to main
+      - name: Publish version sync to master
         if: steps.git_state.outputs.skip_publish != 'true'
         id: publish
         env:
           VERSION: ${{ steps.tag.outputs.version }}
-          DEFAULT_BRANCH: main
+          DEFAULT_BRANCH: master
         run: bash scripts/ci/publish-version-sync.sh "${VERSION}"

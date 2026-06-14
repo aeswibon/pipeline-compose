@@ -147,7 +147,7 @@ See [.github/act/README.md](.github/act/README.md) for fixtures and guardrails.
 Push an annotated semver tag (`vX.Y.Z`). **Release on tag** (`.github/workflows/release-on-tag.yml`) will:
 
 1. Update `package.json` to match the tag (via `scripts/ci/sync-versions-from-tag.sh`)
-2. Commit the sync to `main` and move the tag to that commit
+2. Commit the sync to `master` and move the tag to that commit
 3. Create a GitHub Release with generated notes
 
 ```bash

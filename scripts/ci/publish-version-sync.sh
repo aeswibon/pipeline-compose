@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Commit synced version files to main and move the release tag.
+# Commit synced version files to master and move the release tag.
 set -euo pipefail
 
 version="${1:?version required (e.g. 0.4.5)}"
-default_branch="${DEFAULT_BRANCH:-main}"
+default_branch="${DEFAULT_BRANCH:-master}"
 
 VERSION_FILES=(
   package.json
