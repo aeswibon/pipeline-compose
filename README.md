@@ -1,202 +1,28 @@
 # pipeline-compose
 
-Define **in what order** your GitHub Actions workflows run. Add one pipeline file and one `run` step — no compile step and no generated workflow to commit.
+Define **in what order** your GitHub Actions workflows run — one pipeline YAML file, one orchestrator step. No generated workflow to commit.
 
-This repository is a **pnpm workspace monorepo**: shared core, CLI, action sources, schema, docs, and release workflows. Each GitHub Action is published to its own repository (Marketplace-ready).
+This repository is the **development monorepo** (core library, CLI, docs, release automation). Each GitHub Action is published from its own repository:
 
-# Actions
+| Action | Repository |
+|--------|------------|
+| **Run** (start here) | [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) |
+| Compile (optional) | [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile) |
+| Eval | [pipeline-compose-eval](https://github.com/aeswibon/pipeline-compose-eval) |
+| Context merge | [pipeline-compose-context-merge](https://github.com/aeswibon/pipeline-compose-context-merge) |
 
-| Action | Repository | Usage |
-|--------|------------|-------|
-| **Run** (primary) | [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) | `aeswibon/pipeline-compose-run@v0.1.0` |
-| **Compile** (optional) | [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile) | `aeswibon/pipeline-compose-compile@v0.1.0` |
-| **Eval** | [pipeline-compose-eval](https://github.com/aeswibon/pipeline-compose-eval) | `aeswibon/pipeline-compose-eval@v0.1.0` |
-| **Context merge** | [pipeline-compose-context-merge](https://github.com/aeswibon/pipeline-compose-context-merge) | `aeswibon/pipeline-compose-context-merge@v0.1.0` |
+**Usage, inputs, and examples** live in those action repositories (same pattern as [actions/checkout](https://github.com/actions/checkout)).
 
-# Usage
+## Documentation
 
-```yaml
-- uses: aeswibon/pipeline-compose-run@master
-  with:
-    # Path to pipeline YAML (stage order and wiring)
-    pipeline_file: .github/pipelines/pipeline.yml
+| Topic | Location |
+|-------|----------|
+| Run action usage | [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) |
+| Extended examples | [docs/examples.md](docs/examples.md) |
+| Monorepo development | [docs/development.md](docs/development.md) |
+| Publishing actions | [docs/action-repos.md](docs/action-repos.md) |
+| Pipeline schema | [packages/core/schema/pipeline-v1.schema.json](packages/core/schema/pipeline-v1.schema.json) |
 
-    # Git ref for each workflow_dispatch (default: GITHUB_REF)
-    ref: ''
+## License
 
-    # Token with actions:write to dispatch workflows (default: GITHUB_TOKEN)
-    github_token: ''
-```
-
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `pipeline_file` | yes | — | Path to pipeline YAML |
-| `ref` | no | `GITHUB_REF` | Ref passed to each stage dispatch |
-| `github_token` | no | `github.token` in workflow | Token with `actions: write` |
-
-| Output | Description |
-|--------|-------------|
-| `results_json` | JSON array of `{ stageId, runId, outputs }` per completed stage |
-
-# Scenarios
-
-## Run ordered workflows on tag push
-
-```yaml
-name: Release
-on:
-  push:
-    tags: ["v*"]
-
-permissions:
-  contents: write
-  actions: write
-
-jobs:
-  run-pipeline:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose-run@master
-        with:
-          pipeline_file: .github/pipelines/pipeline.yml
-          github_token: ${{ github.token }}
-```
-
-Template: [templates/pipeline-run.yml](templates/pipeline-run.yml)
-
-## Define a pipeline file
-
-Create `.github/pipelines/pipeline.yml`:
-
-```yaml
-name: pipeline
-version: 1
-stages:
-  - id: version-sync
-    workflow: .github/workflows/stage-version-sync.yml
-    outputs:
-      - version
-      - skip_publish
-
-  - id: release-publish
-    workflow: .github/workflows/stage-release-publish.yml
-    needs:
-      - version-sync
-    inputs:
-      version: ${{ context.version-sync.version }}
-      skip_publish: ${{ context.version-sync.skip_publish }}
-```
-
-Each stage `workflow` path must point at an existing workflow file in your repo.
-
-## Pass outputs between stages
-
-Reference a prior stage's job outputs in later stage inputs:
-
-```yaml
-inputs:
-  version: ${{ context.version-sync.version }}
-```
-
-At runtime the action resolves these from the completed stage's outputs.
-
-## Skip a stage conditionally
-
-```yaml
-stages:
-  - id: deploy
-    workflow: .github/workflows/deploy.yml
-    when: startsWith(github.ref, 'refs/tags/v')
-```
-
-Stages with a false `when` expression are not dispatched.
-
-## Prepare stage workflows
-
-Each stage workflow must include `workflow_dispatch`. If downstream stages need values, declare matching `workflow_dispatch` inputs.
-
-Stage jobs must expose outputs listed under `outputs` in the pipeline file.
-
-Because GitHub's API does not return job outputs for `workflow_dispatch` runs, upload an artifact named `pipeline-compose-<stage-id>` containing `outputs.json`:
-
-```yaml
-- name: Export outputs for pipeline-compose
-  if: success()
-  run: |
-    mkdir -p pipeline-compose
-    jq -n --arg version "$VERSION" '{version: $version}' > pipeline-compose/outputs.json
-- uses: actions/upload-artifact@v4
-  with:
-    name: pipeline-compose-my-stage
-    path: pipeline-compose/outputs.json
-    retention-days: 1
-```
-
-See [docs/examples.md](docs/examples.md) for full stage contracts and troubleshooting.
-
-# Recommended permissions
-
-When the run action dispatches other workflows in the same repository:
-
-```yaml
-permissions:
-  contents: write
-  actions: write
-```
-
-# Action version
-
-| Ref | When to use |
-|-----|-------------|
-| `@v0.3.0` | Monorepo layout (current) |
-| `@v0.2.0` | Split action repos, meta repo CLI-only |
-| `@v0.1.0` | Previous monorepo layout with embedded actions |
-| `@master` | Latest on the default branch |
-
-# Publishing (maintainers)
-
-Actions are **not** published from this repo’s Releases page. Each action lives in its own GitHub repo and is pushed from this monorepo.
-
-## Automatic (recommended)
-
-1. Add a `## [X.Y.Z]` section to [CHANGELOG.md](CHANGELOG.md) (optional `### pipeline-compose-run` subsections per action).
-2. Push `master`, then tag and push:
-
-```bash
-git tag v0.3.0 && git push origin v0.3.0
-```
-
-3. The [Release](https://github.com/aeswibon/pipeline-compose/actions/workflows/release.yml) workflow runs:
-
-**ci → version-sync → release-publish → publish-actions**
-
-The last step bundles and pushes all four action repos and creates their GitHub Releases.
-
-Requires repository secret **`ACTION_PUBLISH_TOKEN`** (PAT with `contents: write` on each action repo).
-
-## Manual re-run
-
-[Actions → Publish actions → Run workflow](https://github.com/aeswibon/pipeline-compose/actions/workflows/publish-actions.yml)
-
-Enter the semver **without** `v` (e.g. `0.3.0`). Uses the matching tag when it exists, otherwise `master`.
-
-## Local fallback
-
-```bash
-pnpm run publish:actions v0.3.0
-```
-
-## GitHub Marketplace
-
-CI creates **GitHub Releases** on each action repo. Listing on the Marketplace is a separate one-time step per repo: open the release on e.g. [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run/releases) and check **Publish this Action to the GitHub Marketplace**.
-
-See [docs/action-repos.md](docs/action-repos.md) for details.
-
-# Development
-
-See [docs/development.md](docs/development.md) for the monorepo layout and [docs/action-repos.md](docs/action-repos.md) for publishing actions to GitHub.
-
-# License
-
-The scripts and documentation in this project are released under the [MIT License](LICENSE)
+[MIT](LICENSE)

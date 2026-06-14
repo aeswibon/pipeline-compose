@@ -1,6 +1,6 @@
 # Local development
 
-Guide for working on the **pipeline-compose** monorepo. For using the actions in your repo, see the [README](../README.md).
+Guide for working on the **pipeline-compose** monorepo. For using the actions in your repo, see [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run).
 
 ## Repository layout
 
@@ -80,6 +80,6 @@ Quick links: [Release workflow](https://github.com/aeswibon/pipeline-compose/act
 
 ## Related
 
-- [README](../README.md) — consumer usage
-- [docs/action-repos.md](action-repos.md) — action repo mapping and publish flow
-- [docs/examples.md](examples.md) — stage contracts, examples, troubleshooting
+- [README](../README.md) — monorepo overview
+- [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) — primary action usage
+- [docs/development.md](development.md)

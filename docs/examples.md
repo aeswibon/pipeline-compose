@@ -2,8 +2,8 @@
 
 Extended guide for the **run** action, pipeline YAML, and stage contracts.
 
-- [README](../README.md) — usage and scenarios
-- [docs/development.md](development.md) — this repository layout and local development
+- [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) — primary action usage
+- [docs/development.md](development.md) — monorepo development
 
 ## Mental model
 
@@ -223,6 +223,7 @@ templates/
 
 ## Related
 
-- [README](../README.md)
+- [README](../README.md) — monorepo overview
+- [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) — action usage
 - [docs/development.md](development.md)
 - [packages/core/schema/pipeline-v1.schema.json](../packages/core/schema/pipeline-v1.schema.json)
