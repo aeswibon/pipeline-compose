@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Pipeline } from '@aeswibon/pipeline-compose-core';
 import { runPipeline } from './orchestrator.js';
+import * as githubModule from './github.js';
 import type { GitHubActionsClient, WorkflowJob } from './github.js';
 
 const runOptions = {
@@ -8,6 +9,8 @@ const runOptions = {
   github: { ref: 'refs/tags/v1.0.0' },
   defaultOwner: 'owner',
   defaultRepo: 'repo',
+  githubToken: 'gh-default',
+  repoTokens: {},
 };
 
 function mockClient(handlers: {
@@ -212,14 +215,20 @@ describe('runPipeline', () => {
     ).rejects.toThrow(/Stage "ci" failed/);
   });
 
-  it('uses withRepo for cross-repo stage dispatch', async () => {
+  it('uses scoped client with mapped token for cross-repo stage dispatch', async () => {
     const remoteClient = mockClient({
       workflows: { '.github/workflows/remote.yml': 99 },
     });
     const client = mockClient({
       workflows: { '.github/workflows/remote.yml': 99 },
     });
-    vi.mocked(client.withRepo).mockReturnValue(remoteClient);
+    const constructSpy = vi.spyOn(githubModule, 'GitHubActionsClient');
+    constructSpy.mockImplementationOnce(function (token, owner, repo) {
+      expect(token).toBe('remote-pat');
+      expect(owner).toBe('other-org');
+      expect(repo).toBe('other-repo');
+      return remoteClient as unknown as GitHubActionsClient;
+    });
 
     await runPipeline(
       {
@@ -234,12 +243,39 @@ describe('runPipeline', () => {
         ],
       },
       client,
-      runOptions,
+      {
+        ...runOptions,
+        repoTokens: { 'other-org/other-repo': 'remote-pat' },
+      },
     );
 
-    expect(client.withRepo).toHaveBeenCalledWith('other-org', 'other-repo');
     expect(remoteClient.dispatchWorkflow).toHaveBeenCalled();
     expect(client.dispatchWorkflow).not.toHaveBeenCalled();
+    constructSpy.mockRestore();
+  });
+
+  it('throws when cross-repo stage lacks repo_tokens_json entry', async () => {
+    const client = mockClient({
+      workflows: { '.github/workflows/remote.yml': 99 },
+    });
+
+    await expect(
+      runPipeline(
+        {
+          name: 'pipeline',
+          version: 1,
+          stages: [
+            {
+              id: 'remote',
+              workflow: '.github/workflows/remote.yml',
+              repo: 'other-org/other-repo',
+            },
+          ],
+        },
+        client,
+        runOptions,
+      ),
+    ).rejects.toThrow(/repo_tokens_json has no entry/);
   });
 
   it('throws when required context from a skipped stage is missing', async () => {
@@ -304,7 +340,10 @@ describe('runPipeline', () => {
     const client = mockClient({
       workflows: { '.github/workflows/remote-a.yml': 1, '.github/workflows/remote-b.yml': 2 },
     });
-    vi.mocked(client.withRepo).mockReturnValue(remoteClient);
+    const constructSpy = vi.spyOn(githubModule, 'GitHubActionsClient');
+    constructSpy.mockImplementation(function () {
+      return remoteClient as unknown as GitHubActionsClient;
+    });
 
     await runPipeline(
       {
@@ -324,9 +363,13 @@ describe('runPipeline', () => {
         ],
       },
       client,
-      runOptions,
+      {
+        ...runOptions,
+        repoTokens: { 'other-org/other-repo': 'remote-pat' },
+      },
     );
 
-    expect(client.withRepo).toHaveBeenCalledTimes(1);
+    expect(constructSpy).toHaveBeenCalledTimes(1);
+    constructSpy.mockRestore();
   });
 });

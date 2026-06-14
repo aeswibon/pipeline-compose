@@ -16,6 +16,10 @@ inputs:
   github_token:
     description: Token with actions:write to dispatch workflows
     required: false
+  repo_tokens_json:
+    description: JSON map of owner/repo slugs to tokens for cross-repo stage dispatch
+    required: false
+    default: '{}'
 outputs:
   results_json:
     description: JSON array of stage results (id, runId, outputs)

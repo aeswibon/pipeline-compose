@@ -5,6 +5,7 @@ import {
 } from '@aeswibon/pipeline-compose-core';
 import { GitHubActionsClient } from './github.js';
 import { runPipeline } from './orchestrator.js';
+import { parseRepoTokensJson } from './repo-tokens.js';
 
 function githubContextFromEnv(): Record<string, unknown> {
   return {
@@ -22,6 +23,9 @@ async function run(): Promise<void> {
   const ref = core.getInput('ref') || process.env.GITHUB_REF || '';
   const token =
     core.getInput('github_token') || process.env.GITHUB_TOKEN || '';
+  const repoTokens = parseRepoTokensJson(
+    core.getInput('repo_tokens_json') || '{}',
+  );
   const repository = process.env.GITHUB_REPOSITORY ?? '';
 
   if (!pipelineFile && !pipelineDir) {
@@ -52,6 +56,8 @@ async function run(): Promise<void> {
     github: githubContextFromEnv(),
     defaultOwner: owner,
     defaultRepo: repo,
+    githubToken: token,
+    repoTokens,
   });
 
   core.setOutput('results_json', JSON.stringify(results));

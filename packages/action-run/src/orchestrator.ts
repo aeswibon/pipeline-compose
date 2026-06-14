@@ -1,13 +1,16 @@
 import type { Pipeline, PipelineStage } from '@aeswibon/pipeline-compose-core';
 import { evaluateExpression, mergeContext, parseRepoSlug } from '@aeswibon/pipeline-compose-core';
 import { resolveStageInputs } from './inputs.js';
-import type { GitHubActionsClient, WorkflowJob } from './github.js';
+import { resolveStageToken, type RepoTokenMap } from './repo-tokens.js';
+import { GitHubActionsClient, type WorkflowJob } from './github.js';
 
 export type OrchestratorOptions = {
   ref: string;
   github: Record<string, unknown>;
   defaultOwner: string;
   defaultRepo: string;
+  githubToken: string;
+  repoTokens: RepoTokenMap;
   timeoutMs?: number;
   pollMs?: number;
 };
@@ -107,29 +110,42 @@ async function collectStageOutputs(
   );
 }
 
+function clientCacheKey(owner: string, repo: string, token: string): string {
+  return `${owner}/${repo}#${token.slice(0, 8)}`;
+}
+
 function clientForStage(
   cache: Map<string, GitHubActionsClient>,
   baseClient: GitHubActionsClient,
   stage: PipelineStage,
-  defaultOwner: string,
-  defaultRepo: string,
+  options: OrchestratorOptions,
 ): GitHubActionsClient {
+  const defaultSlug = `${options.defaultOwner}/${options.defaultRepo}`;
+
   if (!stage.repo) {
     return baseClient;
   }
 
   const { owner, repo } = parseRepoSlug(stage.repo);
-  if (owner === defaultOwner && repo === defaultRepo) {
+  const token = resolveStageToken(
+    stage.repo,
+    defaultSlug,
+    options.githubToken,
+    options.repoTokens,
+  );
+
+  if (owner === options.defaultOwner && repo === options.defaultRepo) {
     return baseClient;
   }
 
-  const key = `${owner}/${repo}`;
+  const key = clientCacheKey(owner, repo, token);
   const existing = cache.get(key);
   if (existing) {
     return existing;
   }
 
-  const scoped = baseClient.withRepo(owner, repo);
+  const apiUrl = process.env.GITHUB_API_URL ?? 'https://api.github.com';
+  const scoped = new GitHubActionsClient(token, owner, repo, apiUrl, true);
   cache.set(key, scoped);
   return scoped;
 }
@@ -171,13 +187,7 @@ export async function runPipeline(
       );
     }
 
-    const stageClient = clientForStage(
-      repoClients,
-      client,
-      stage,
-      options.defaultOwner,
-      options.defaultRepo,
-    );
+    const stageClient = clientForStage(repoClients, client, stage, options);
 
     const workflow = await stageClient.getWorkflowByPath(stage.workflow);
     const inputs = resolveStageInputs(stage.inputs, context);

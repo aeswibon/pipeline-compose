@@ -35,7 +35,7 @@ function evalUsage(): never {
 
 function validateUsage(): never {
   console.error(
-    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict] [--json]',
+    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict] [--json] [--repo-tokens-file <path>]',
   );
   process.exit(1);
 }
@@ -178,6 +178,7 @@ function runValidate(args: string[]): void {
   let workflows = false;
   let strict = false;
   let json = false;
+  let repoTokensFile = '';
   const positional: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -189,6 +190,8 @@ function runValidate(args: string[]): void {
       strict = true;
     } else if (args[i] === '--json') {
       json = true;
+    } else if (args[i] === '--repo-tokens-file') {
+      repoTokensFile = args[++i] ?? '';
     } else {
       positional.push(args[i]);
     }
@@ -201,10 +204,19 @@ function runValidate(args: string[]): void {
 
   const resolvedRoot = resolveRepoRoot(repoRoot || undefined);
   const pipeline = loadResolvedPipeline(target);
+  let repoTokenSlugs: Set<string> | undefined;
+  if (repoTokensFile) {
+    const raw = fs.readFileSync(path.resolve(repoTokensFile), 'utf8');
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    repoTokenSlugs = new Set(Object.keys(parsed));
+  }
+
   const report = buildValidateReport(pipeline, {
     repoRoot: resolvedRoot,
     workflows,
     strict,
+    defaultRepo: process.env.GITHUB_REPOSITORY,
+    repoTokenSlugs,
   });
 
   console.log(json ? serializeValidateReport(report) : formatValidateReport(report));

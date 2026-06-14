@@ -242,4 +242,21 @@ describe('GitHubActionsClient', () => {
     const artifacts = await client.listRunArtifacts(10);
     expect(artifacts[0].name).toBe('pipeline-compose-ci');
   });
+
+  it('mentions repo_tokens_json on 403 for cross-repo workflow list', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response('Forbidden', { status: 403 }),
+    );
+
+    const client = new GitHubActionsClient(
+      'bad-token',
+      'other-org',
+      'other-repo',
+      'https://api.github.com',
+      true,
+    );
+    await expect(
+      client.getWorkflowByPath('.github/workflows/remote.yml'),
+    ).rejects.toThrow(/repo_tokens_json includes "other-org\/other-repo"/);
+  });
 });

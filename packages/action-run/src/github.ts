@@ -66,6 +66,7 @@ export class GitHubActionsClient {
     private readonly owner: string,
     private readonly repo: string,
     private readonly apiUrl = process.env.GITHUB_API_URL ?? 'https://api.github.com',
+    private readonly crossRepo = false,
   ) {}
 
   private async request<T>(
@@ -84,6 +85,11 @@ export class GitHubActionsClient {
 
     if (!res.ok) {
       const body = await res.text();
+      if (res.status === 403 && this.crossRepo) {
+        throw new Error(
+          `Cross-repo dispatch to ${this.owner}/${this.repo} failed (403). Ensure repo_tokens_json includes "${this.owner}/${this.repo}" and the token has actions: write on the target repository.`,
+        );
+      }
       throw new Error(`GitHub API ${init?.method ?? 'GET'} ${path} failed (${res.status}): ${body}`);
     }
 
@@ -238,8 +244,11 @@ export class GitHubActionsClient {
     throw new Error(`Timed out waiting for artifact ${name} on run ${runId}`);
   }
 
-  withRepo(owner: string, repo: string): GitHubActionsClient {
-    return new GitHubActionsClient(this.token, owner, repo, this.apiUrl);
+  withRepo(owner: string, repo: string, tokenOverride?: string): GitHubActionsClient {
+    const token = tokenOverride ?? this.token;
+    const crossRepo =
+      owner !== this.owner || repo !== this.repo || token !== this.token;
+    return new GitHubActionsClient(token, owner, repo, this.apiUrl, crossRepo);
   }
 }
 

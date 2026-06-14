@@ -82,10 +82,58 @@ describe('buildValidateReport', () => {
           repo: 'not-a-slug',
         },
       ],
-    });
+    }, { defaultRepo: 'host-org/host-repo' });
 
     expect(report.issues.some((issue) => issue.code === 'stage.cross-repo')).toBe(true);
     expect(report.issues.some((issue) => issue.code === 'stage.repo-invalid')).toBe(true);
+    expect(report.issues.some((issue) => issue.code === 'stage.cross-repo-token')).toBe(true);
+  });
+
+  it('suppresses cross-repo-token issue when slug is in repo tokens file', () => {
+    const report = buildValidateReport(
+      {
+        name: 'p',
+        version: 1,
+        stages: [
+          {
+            id: 'remote',
+            workflow: '.github/workflows/remote.yml',
+            repo: 'other-org/other-repo',
+          },
+        ],
+      },
+      {
+        defaultRepo: 'host-org/host-repo',
+        repoTokenSlugs: new Set(['other-org/other-repo']),
+      },
+    );
+
+    expect(report.issues.some((issue) => issue.code === 'stage.cross-repo-token')).toBe(
+      false,
+    );
+  });
+
+  it('promotes cross-repo-token to error in strict mode', () => {
+    const report = buildValidateReport(
+      {
+        name: 'p',
+        version: 1,
+        stages: [
+          {
+            id: 'remote',
+            workflow: '.github/workflows/remote.yml',
+            repo: 'other-org/other-repo',
+          },
+        ],
+      },
+      { strict: true, defaultRepo: 'host-org/host-repo' },
+    );
+
+    expect(
+      report.issues.some(
+        (issue) => issue.code === 'stage.cross-repo-token' && issue.level === 'error',
+      ),
+    ).toBe(true);
   });
 });
 

@@ -132,6 +132,21 @@ If a stage is skipped, downstream stages that `needs:` it are skipped too (recor
 
 Validate locally in the monorepo: `pnpm run validate .github/pipelines/pipeline.yml --workflows --strict`
 
+### Cross-repo stages
+
+When a stage sets `repo: other-org/other-repo`, pass tokens GitHub Actions resolves from secrets:
+
+```yaml
+- uses: aeswibon/pipeline-compose-run@v0.3.2
+  with:
+    pipeline_file: .github/pipelines/pipeline.yml
+    github_token: ${{ github.token }}
+    repo_tokens_json: >
+      {"other-org/other-repo":"${{ secrets.REMOTE_DISPATCH_TOKEN }}"}
+```
+
+Tutorial: [docs/tutorials/cross-repo-pipeline.md](https://github.com/aeswibon/pipeline-compose/blob/master/docs/tutorials/cross-repo-pipeline.md)
+
 ## Inputs
 
 | Input | Required | Default | Description |
@@ -139,7 +154,8 @@ Validate locally in the monorepo: `pnpm run validate .github/pipelines/pipeline.
 | `pipeline_file` | one of file/dir | — | Path to pipeline YAML (v1 or v2) |
 | `pipeline_dir` | one of file/dir | — | Directory of v1 pipeline files merged by pipeline `needs` |
 | `ref` | no | `GITHUB_REF` | Git ref passed to each stage dispatch |
-| `github_token` | no | `github.token` | Token with `actions: write` |
+| `github_token` | no | `github.token` | Token with `actions: write` on the default repo |
+| `repo_tokens_json` | no | `{}` | JSON map of `owner/repo` → token for cross-repo `repo:` stages |
 
 ## Outputs
 

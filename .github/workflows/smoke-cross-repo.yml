@@ -1,0 +1,27 @@
+name: Smoke — cross-repo dispatch
+
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: Cross-repo dispatch smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - uses: ./packages/action-run
+        with:
+          pipeline_file: .github/pipelines/smoke-cross-repo.yml
+          github_token: ${{ github.token }}
+          repo_tokens_json: >
+            {"aeswibon/pipeline-compose-smoke-target":"${{ secrets.CROSS_REPO_SMOKE_TOKEN }}"}

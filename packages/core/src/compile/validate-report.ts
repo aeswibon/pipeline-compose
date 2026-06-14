@@ -16,6 +16,8 @@ export interface ValidateReportOptions {
   repoRoot?: string;
   workflows?: boolean;
   strict?: boolean;
+  defaultRepo?: string;
+  repoTokenSlugs?: Set<string>;
 }
 
 export interface ValidateReport {
@@ -53,8 +55,9 @@ export function workflowMatchesGroupConvention(
 
 export function collectPipelineIssues(
   pipeline: ResolvedPipeline,
-  repoRoot?: string,
+  options: ValidateReportOptions = {},
 ): ValidationIssue[] {
+  const repoRoot = options.repoRoot;
   const issues: ValidationIssue[] = [];
   const grouped = new Set<string>();
   let ungrouped = 0;
@@ -94,6 +97,17 @@ export function collectPipelineIssues(
           code: 'stage.cross-repo',
           message: `Stage "${stage.id}" dispatches in ${stage.repo}; github_token must have actions:write on that repository`,
         });
+        if (
+          options.defaultRepo &&
+          stage.repo !== options.defaultRepo &&
+          !options.repoTokenSlugs?.has(stage.repo)
+        ) {
+          issues.push({
+            level: 'warn',
+            code: 'stage.cross-repo-token',
+            message: `Stage "${stage.id}" targets ${stage.repo}; add it to repo_tokens_json (or --repo-tokens-file for local validate)`,
+          });
+        }
       } catch {
         issues.push({
           level: 'error',
@@ -156,7 +170,7 @@ export function buildValidateReport(
   pipeline: ResolvedPipeline,
   options: ValidateReportOptions = {},
 ): ValidateReport {
-  const issues = collectPipelineIssues(pipeline, options.repoRoot);
+  const issues = collectPipelineIssues(pipeline, options);
 
   if (options.workflows && options.repoRoot) {
     for (const orphan of findOrphanWorkflows(options.repoRoot, pipeline)) {
