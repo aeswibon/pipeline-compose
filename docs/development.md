@@ -98,6 +98,8 @@ git tag v0.3.1 && git push origin v0.3.1
 
 Tag push runs `.github/workflows/release.yml`: **ci → version-sync → release-publish → publish-actions**.
 
+Version sync updates all workspace `package.json` files and `@v` refs in action README usage blocks (`packages/action-*/README.md`). It does **not** bump pins in `examples/` or tutorials — those stay on stable demo versions.
+
 Configure repository secret `ACTION_PUBLISH_TOKEN` before the first tag release (see [docs/action-repos.md](action-repos.md)).
 
 Quick links: [Release workflow](https://github.com/aeswibon/pipeline-compose/actions/workflows/release.yml) (tag push) · [Publish actions workflow](https://github.com/aeswibon/pipeline-compose/actions/workflows/publish-actions.yml) (manual)

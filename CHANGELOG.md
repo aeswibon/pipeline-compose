@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CI** — pipeline validate (strict) on meta + example; coverage baseline in unit tests.
 - **Local act smoke** — `pnpm run act:full` runs full-smoke workflow (tests, validate, eval, compile parity, bundle).
 - **Group path convention** — workflow basename may match stage `id`.
+- **Version sync scope** — all workspace `package.json` files and action README `@v` usage blocks (not `examples/`).
+
+### Fixed (release)
+
+- **Version sync** — expands to all workspace packages and action README consumer refs; release/publish jobs checkout `master` after tag retag to avoid checkout race.
 
 ### Changed
 

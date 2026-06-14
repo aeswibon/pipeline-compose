@@ -10,6 +10,9 @@ on:
       skip_publish:
         description: True when master and tag already had synced version files
         value: ${{ jobs.version-sync.outputs.skip_publish }}
+      commit_sha:
+        description: Commit SHA after version sync (tag target)
+        value: ${{ jobs.version-sync.outputs.commit_sha }}
 
 permissions:
   contents: write
@@ -27,6 +30,7 @@ jobs:
     outputs:
       version: ${{ steps.tag.outputs.version }}
       skip_publish: ${{ steps.git-state.outputs.skip_publish }}
+      commit_sha: ${{ steps.resolve-head.outputs.commit_sha }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -78,6 +82,14 @@ jobs:
           VERSION: ${{ steps.tag.outputs.version }}
           DEFAULT_BRANCH: master
         run: bash scripts/ci/publish-version-sync.sh "${VERSION}"
+
+      - name: Resolve release commit
+        id: resolve-head
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          git fetch origin master "refs/tags/v${VERSION}"
+          echo "commit_sha=$(git rev-parse "refs/tags/v${VERSION}^{commit}")" >> "$GITHUB_OUTPUT"
 
       - name: Export outputs for pipeline-compose
         if: success()

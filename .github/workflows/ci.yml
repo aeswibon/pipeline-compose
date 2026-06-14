@@ -22,6 +22,7 @@ jobs:
       - run: pnpm test
       - run: pnpm run build
       - run: pnpm run test:coverage
+      - run: bash scripts/ci/sync-versions-from-tag.test.sh
 
   pipeline-validate:
     name: Pipeline validate

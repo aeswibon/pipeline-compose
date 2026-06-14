@@ -36,6 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          ref: master
           fetch-depth: 0
 
       - name: Render release notes

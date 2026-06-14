@@ -2,12 +2,14 @@
 # Commit synced version files to master and move the release tag.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=version-sync-manifest.sh
+source "${SCRIPT_DIR}/version-sync-manifest.sh"
+
 version="${1:?version required (e.g. 0.4.5)}"
 default_branch="${DEFAULT_BRANCH:-master}"
 
-VERSION_FILES=(
-  package.json
-)
+VERSION_FILES=("${VERSION_PACKAGE_JSONS[@]}" "${VERSION_ACTION_READMES[@]}")
 
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
