@@ -42,7 +42,7 @@ flowchart TD
 | `release-publish` | `stage-release-publish.yml` | Creates meta repo GitHub Release |
 | `publish-actions` | `publish-actions.yml` | Bundles and pushes five action repos |
 
-**Entry:** [`.github/workflows/release.yml`](../../.github/workflows/release.yml) runs `aeswibon/pipeline-compose-run@v1.7.0` with `pipeline_file: .github/pipelines/pipeline.yml`.
+**Entry:** [`.github/workflows/release.yml`](../../.github/workflows/release.yml) runs `aeswibon/pipeline-compose-run@v1.8.0` with `pipeline_file: .github/pipelines/pipeline.yml`.
 
 ---
 
@@ -146,7 +146,7 @@ pnpm run validate .github/pipelines/pipeline.yml \
 
 pnpm run validate .github/pipelines/pipeline.yml \
   --repo-root . --workflows --strict --simulate \
-  --github '{"ref":"refs/tags/v1.7.0","event_name":"push"}'
+  --github '{"ref":"refs/tags/v1.8.0","event_name":"push"}'
 ```
 
 PRs touching `pipeline.yml` get bot comment automatically.

@@ -19,7 +19,7 @@ jobs:
     steps:
       - id: out
         run: echo "message=hello-from-target" >> "$GITHUB_OUTPUT"
-      - uses: aeswibon/pipeline-compose-export@v1.7.0
+      - uses: aeswibon/pipeline-compose-export@v1.8.0
         if: success()
         with:
           stage_id: remote-echo
