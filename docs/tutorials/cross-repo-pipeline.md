@@ -44,7 +44,7 @@ pipelines:
 ## Step 3 — Wire secrets in the entry workflow
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.3.0
+- uses: aeswibon/pipeline-compose-run@v1.4.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}

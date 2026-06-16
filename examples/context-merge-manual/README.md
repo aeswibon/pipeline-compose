@@ -13,7 +13,7 @@ Copy `.github/workflows/manual-pipeline.yml`.
 ## 2. Merge after each logical stage
 
 ```yaml
-- uses: aeswibon/pipeline-compose-context-merge@v1.3.0
+- uses: aeswibon/pipeline-compose-context-merge@v1.4.0
   with:
     context_file: .pipeline-context.json
     stage_id: build
