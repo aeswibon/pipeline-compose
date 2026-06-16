@@ -59,6 +59,10 @@ Unique stage identifier within the merged pipeline graph. Used in:
 
 Path to the workflow file **in the repo** (or target repo when `repo:` is set). That file must include **`workflow_dispatch`** (and matching `inputs` if the pipeline passes inputs).
 
+### `catalog` / `use` (stage)
+
+Optional root **`catalog`** map defines reusable stage templates (workflow, outputs, default inputs). A stage sets **`use: <key>`** instead of `workflow` / `pipeline_file`; per-stage fields (`id`, `needs`, `inputs`, …) override the template.
+
 ### `needs` (stage)
 
 Prior **stage ids** that must complete before this stage runs. Defines the DAG inside one pipeline.

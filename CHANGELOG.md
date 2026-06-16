@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-06-16
+
 ### Added
 
 - **Stage catalog** — optional root `catalog` map of reusable stage templates; stages reference entries with `use: <key>` and override `needs`, `inputs`, etc.
