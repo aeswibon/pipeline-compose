@@ -152,6 +152,11 @@ Ideas that score low on all five belong in this document, not the next release.
 
 ---
 
+## What to read next
+
+- [12 — Validation, simulate, and PR bot](12-validation-simulate-and-pr-bot.md)  
+- [13 — Meta release pipeline](13-meta-release-pipeline.md)
+
 ## Series index
 
 [README](README.md)
