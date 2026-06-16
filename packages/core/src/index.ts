@@ -43,6 +43,7 @@ export { generateWorkflow } from './compile/codegen.js';
 export type { GenerateOptions } from './compile/codegen.js';
 export {
   buildValidateReport,
+  collectContextIssues,
   collectNeedsIssues,
   collectPipelineIssues,
   findOrphanWorkflows,
@@ -86,3 +87,5 @@ export {
   concurrencyFromCodegen,
   resolveConcurrencyGroup,
 } from './lib/concurrency.js';
+export { parseContextInputRefs, CONTEXT_INPUT_REF_RE } from './lib/context-refs.js';
+export type { ContextInputRef } from './lib/context-refs.js';

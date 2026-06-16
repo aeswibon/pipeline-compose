@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { afterEach, describe, it, expect } from 'vitest';
 import {
   buildValidateReport,
+  collectContextIssues,
   collectNeedsIssues,
   findOrphanWorkflows,
   formatPipelineTree,
@@ -145,6 +146,40 @@ describe('collectNeedsIssues', () => {
     ]);
     expect(issues).toEqual([
       expect.objectContaining({ code: 'needs.unknown', level: 'error' }),
+    ]);
+  });
+});
+
+describe('collectContextIssues', () => {
+  it('reports unknown context stage references', () => {
+    const issues = collectContextIssues([
+      {
+        id: 'publish',
+        workflow: '.github/workflows/publish.yml',
+        inputs: { version: '${{ context.missing.version }}' },
+      },
+    ]);
+    expect(issues).toEqual([
+      expect.objectContaining({ code: 'context.unknown-stage', level: 'error' }),
+    ]);
+  });
+
+  it('reports undeclared output keys on upstream stages', () => {
+    const issues = collectContextIssues([
+      {
+        id: 'sync',
+        workflow: '.github/workflows/sync.yml',
+        outputs: ['version'],
+      },
+      {
+        id: 'publish',
+        workflow: '.github/workflows/publish.yml',
+        needs: ['sync'],
+        inputs: { version: '${{ context.sync.tag }}' },
+      },
+    ]);
+    expect(issues).toEqual([
+      expect.objectContaining({ code: 'context.unknown-output', level: 'error' }),
     ]);
   });
 });

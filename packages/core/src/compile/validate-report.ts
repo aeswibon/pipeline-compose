@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import type { ResolvedPipeline, ResolvedStage } from './parser.js';
 import { resolveStageGroup } from './parser.js';
 import { parseRepoSlug } from '../lib/expressions.js';
+import { parseContextInputRefs } from '../lib/context-refs.js';
 import { collectDeprecationIssues } from './deprecations.js';
 
 export type ValidationIssueLevel = 'warn' | 'error';
@@ -149,6 +150,39 @@ export function collectNeedsIssues(stages: ResolvedPipeline['stages']): Validati
   return issues;
 }
 
+export function collectContextIssues(stages: ResolvedPipeline['stages']): ValidationIssue[] {
+  const ids = new Set(stages.map((stage) => stage.id));
+  const outputsByStage = new Map(
+    stages.map((stage) => [stage.id, new Set(stage.outputs ?? [])]),
+  );
+  const issues: ValidationIssue[] = [];
+
+  for (const stage of stages) {
+    if (!stage.inputs) {
+      continue;
+    }
+    for (const value of Object.values(stage.inputs)) {
+      for (const { stageId, outputKey } of parseContextInputRefs(value)) {
+        if (!ids.has(stageId)) {
+          issues.push({
+            level: 'error',
+            code: 'context.unknown-stage',
+            message: `Stage "${stage.id}" references context.${stageId}.${outputKey} but no stage "${stageId}" exists`,
+          });
+        } else if (!outputsByStage.get(stageId)?.has(outputKey)) {
+          issues.push({
+            level: 'error',
+            code: 'context.unknown-output',
+            message: `Stage "${stage.id}" references context.${stageId}.${outputKey} but stage "${stageId}" does not declare output "${outputKey}"`,
+          });
+        }
+      }
+    }
+  }
+
+  return issues;
+}
+
 export function findOrphanWorkflows(
   repoRoot: string,
   pipeline: ResolvedPipeline,
@@ -193,6 +227,7 @@ export function buildValidateReport(
 ): ValidateReport {
   const issues = collectPipelineIssues(pipeline, options);
   issues.push(...collectNeedsIssues(pipeline.stages));
+  issues.push(...collectContextIssues(pipeline.stages));
 
   if (options.repoRoot) {
     issues.push(...collectDeprecationIssues(pipeline, options.repoRoot));

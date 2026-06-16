@@ -1,6 +1,6 @@
 import type { ResolvedPipeline, ResolvedStage } from './parser.js';
 import { evaluateExpression, mergeContext } from '../lib/expressions.js';
-import { sortStages } from './topo-sort.js';
+import { groupStagesIntoWaves } from './stage-waves.js';
 
 export type SimulateStageStatus = 'run' | 'skip' | 'blocked';
 
@@ -10,6 +10,8 @@ export interface SimulateStageResult {
   workflow: string;
   repo?: string;
   reason?: string;
+  /** 1-based DAG wave (parallel stages share a wave). */
+  wave: number;
 }
 
 export interface SimulatePipelineOptions {
@@ -40,12 +42,62 @@ function missingRequiredContext(
   return null;
 }
 
-function orderedStages(pipeline: ResolvedPipeline): ResolvedStage[] {
-  try {
-    return sortStages([...pipeline.stages]);
-  } catch {
-    return pipeline.stages;
+function simulateStage(
+  stage: ResolvedStage,
+  wave: number,
+  skipped: Set<string>,
+  github: Record<string, unknown>,
+  context: Record<string, Record<string, string>>,
+): { result: SimulateStageResult; nextContext: Record<string, Record<string, string>> } {
+  const base = {
+    id: stage.id,
+    workflow: stage.workflow,
+    repo: stage.repo,
+    wave,
+  };
+
+  if (hasSkippedDependency(stage, skipped)) {
+    skipped.add(stage.id);
+    return {
+      result: { ...base, status: 'blocked', reason: 'upstream stage skipped' },
+      nextContext: context,
+    };
   }
+
+  if (stage.when && !evaluateExpression(stage.when, { github, context })) {
+    skipped.add(stage.id);
+    return {
+      result: { ...base, status: 'skip', reason: `when: ${stage.when}` },
+      nextContext: context,
+    };
+  }
+
+  const missing = missingRequiredContext(stage, context);
+  if (missing) {
+    skipped.add(stage.id);
+    return {
+      result: {
+        ...base,
+        status: 'blocked',
+        reason: `missing context.${missing}`,
+      },
+      nextContext: context,
+    };
+  }
+
+  let nextContext = context;
+  if (stage.outputs?.length) {
+    nextContext = mergeContext(
+      context,
+      stage.id,
+      Object.fromEntries(stage.outputs.map((key) => [key, ''])),
+    ) as Record<string, Record<string, string>>;
+  }
+
+  return {
+    result: { ...base, status: 'run' },
+    nextContext,
+  };
 }
 
 export function simulatePipeline(
@@ -57,45 +109,15 @@ export function simulatePipeline(
   let context: Record<string, Record<string, string>> = {};
   const results: SimulateStageResult[] = [];
 
-  for (const stage of orderedStages(pipeline)) {
-    const base = {
-      id: stage.id,
-      workflow: stage.workflow,
-      repo: stage.repo,
-    };
-
-    if (hasSkippedDependency(stage, skipped)) {
-      skipped.add(stage.id);
-      results.push({ ...base, status: 'blocked', reason: 'upstream stage skipped' });
-      continue;
+  const waves = groupStagesIntoWaves(pipeline.stages);
+  for (let waveIndex = 0; waveIndex < waves.length; waveIndex++) {
+    const wave = waves[waveIndex];
+    const waveNum = waveIndex + 1;
+    for (const stage of wave) {
+      const { result, nextContext } = simulateStage(stage, waveNum, skipped, github, context);
+      context = nextContext;
+      results.push(result);
     }
-
-    if (stage.when && !evaluateExpression(stage.when, { github, context })) {
-      skipped.add(stage.id);
-      results.push({ ...base, status: 'skip', reason: `when: ${stage.when}` });
-      continue;
-    }
-
-    const missing = missingRequiredContext(stage, context);
-    if (missing) {
-      skipped.add(stage.id);
-      results.push({
-        ...base,
-        status: 'blocked',
-        reason: `missing context.${missing}`,
-      });
-      continue;
-    }
-
-    if (stage.outputs?.length) {
-      context = mergeContext(
-        context,
-        stage.id,
-        Object.fromEntries(stage.outputs.map((key) => [key, ''])),
-      ) as Record<string, Record<string, string>>;
-    }
-
-    results.push({ ...base, status: 'run' });
   }
 
   return results;
@@ -103,10 +125,17 @@ export function simulatePipeline(
 
 export function formatSimulateReport(results: SimulateStageResult[]): string {
   const lines = ['Simulation (no workflows dispatched):', ''];
+  let currentWave = 0;
+
   for (const stage of results) {
+    if (stage.wave !== currentWave) {
+      currentWave = stage.wave;
+      lines.push(`  Wave ${currentWave}`);
+    }
     const target = stage.repo ? `${stage.repo} → ${stage.workflow}` : stage.workflow;
     const suffix = stage.reason ? ` — ${stage.reason}` : '';
-    lines.push(`  ${stage.status.padEnd(7)} ${stage.id} → ${target}${suffix}`);
+    lines.push(`    ${stage.status.padEnd(7)} ${stage.id} → ${target}${suffix}`);
   }
+
   return lines.join('\n');
 }

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`validate` context wiring checks** — `context.unknown-stage` / `context.unknown-output` errors when stage `inputs` reference missing stages or undeclared `outputs`.
+- **`validate --simulate` wave grouping** — dry-run table shows DAG waves (parallel stages grouped).
+
 ## [1.2.0] - 2026-06-16
 
 ### Fixed
