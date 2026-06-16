@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-06-16
+
 ### Added
 
 - **Global concurrency** — `concurrency.global: true` with optional `lock_repo` coordinates pipeline runs across repositories via lock files under `.pipeline-compose/locks/` (requires `contents: read/write` on the lock repo).
