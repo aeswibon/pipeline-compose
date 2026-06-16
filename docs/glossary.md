@@ -35,6 +35,7 @@ A normal GitHub workflow (e.g. `.github/workflows/release.yml`) that **starts** 
 | **Parallel stages** (siblings in the DAG) | **Run:** same-wave concurrent dispatch. **Compile:** native GitHub `needs:` |
 | **Smart rerun** | Optional `smart_rerun: true` — on workflow re-run, skip dispatch for stages whose inputs match the previous attempt |
 | **Sub-pipeline** | Stage uses `pipeline_file` instead of `workflow` to run a nested pipeline inline (max one level) |
+| **Stage catalog** | Root `catalog` map holds reusable templates; stage `use: <key>` merges defaults with per-stage overrides |
 | **Typed context** | Optional `context_schema` JSON Schema validates `context.<stage>.<output>` wiring |
 
 ---

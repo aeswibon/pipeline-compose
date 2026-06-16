@@ -33,6 +33,10 @@
       "type": "object",
       "additionalProperties": { "type": "string" }
     },
+    "catalog": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/catalogEntry" }
+    },
     "stages": {
       "type": "array",
       "minItems": 1,
@@ -56,6 +60,41 @@
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "use": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Reference a catalog entry for workflow and default fields"
+        },
+        "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+        "group": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "workflow": { "type": "string", "minLength": 1 },
+        "pipeline_file": { "type": "string", "minLength": 1 },
+        "pipeline": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "when": { "type": "string" },
+        "needs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "environment": { "type": "string" },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "outputs": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "oneOf": [
+        { "required": ["workflow"], "not": { "anyOf": [{ "required": ["pipeline_file"] }, { "required": ["use"] }] } },
+        { "required": ["pipeline_file"], "not": { "anyOf": [{ "required": ["workflow"] }, { "required": ["use"] }] } },
+        { "required": ["use"], "not": { "anyOf": [{ "required": ["workflow"] }, { "required": ["pipeline_file"] }] } }
+      ]
+    },
+    "catalogEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
         "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
         "group": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
         "workflow": { "type": "string", "minLength": 1 },

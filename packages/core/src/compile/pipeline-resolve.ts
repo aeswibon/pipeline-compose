@@ -8,6 +8,7 @@ import type {
   ResolvedStage,
 } from './parser.js';
 import { isPipelineV2, resolveStageGroup } from './parser.js';
+import { expandCatalogStages, catalogFromDocument } from './catalog.js';
 import { sortPipelineDocuments } from './pipeline-sort.js';
 import { sortStages } from './topo-sort.js';
 
@@ -36,12 +37,30 @@ function sortStagesLenient(stages: PipelineStage[]): PipelineStage[] {
   }
 }
 
-export function pipelineDocumentToList(doc: PipelineDocument): Pipeline[] {
+export function pipelineDocumentToList(
+  doc: PipelineDocument,
+  options: { lenientCatalog?: boolean } = {},
+): Pipeline[] {
+  const catalog = catalogFromDocument(doc);
   if (!isPipelineV2(doc)) {
-    return [doc];
+    return [
+      {
+        ...doc,
+        stages: expandCatalogStages(doc.stages, catalog, options),
+      },
+    ];
   }
   return Object.entries(doc.pipelines).map(([key, def]) =>
-    definitionToPipeline(key, def, doc.groups, doc.concurrency, doc.smart_rerun, def.context_schema),
+    definitionToPipeline(
+      key,
+      def,
+      doc.groups,
+      doc.concurrency,
+      doc.smart_rerun,
+      def.context_schema,
+      catalog,
+      options,
+    ),
   );
 }
 
@@ -52,6 +71,8 @@ function definitionToPipeline(
   concurrency?: PipelineDocumentV2['concurrency'],
   smartRerun?: boolean,
   contextSchema?: PipelineDefinition['context_schema'],
+  catalog?: Record<string, Omit<PipelineStage, 'id' | 'use'>>,
+  options: { lenientCatalog?: boolean } = {},
 ): Pipeline {
   return {
     name: key,
@@ -62,7 +83,7 @@ function definitionToPipeline(
     concurrency,
     smart_rerun: smartRerun,
     context_schema: contextSchema,
-    stages: def.stages,
+    stages: expandCatalogStages(def.stages, catalog, options),
   };
 }
 
@@ -111,7 +132,7 @@ export function mergePipelines(pipelines: Pipeline[], options: { lenientNeeds?: 
 }
 
 export function resolvePipelineDocumentForReport(doc: PipelineDocument): ResolvedPipeline {
-  const merged = mergePipelines(pipelineDocumentToList(doc), { lenientNeeds: true });
+  const merged = mergePipelines(pipelineDocumentToList(doc, { lenientCatalog: true }), { lenientNeeds: true });
   merged.schemaVersion = isPipelineV2(doc) ? 2 : 1;
   if (isPipelineV2(doc) && doc.companion_workflows?.length) {
     merged.companion_workflows = [

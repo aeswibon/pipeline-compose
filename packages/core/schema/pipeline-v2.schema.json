@@ -27,6 +27,10 @@
       "type": "boolean",
       "description": "On workflow re-run, reuse outputs from the previous attempt when stage inputs are unchanged"
     },
+    "catalog": {
+      "type": "object",
+      "additionalProperties": { "$ref": "pipeline-v1.schema.json#/$defs/catalogEntry" }
+    },
     "pipelines": {
       "type": "object",
       "minProperties": 1,

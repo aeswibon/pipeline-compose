@@ -87,7 +87,7 @@ export function validatePipelineDocumentsForReport(docs: PipelineDocument[]): Re
     for (const def of Object.values(doc.pipelines)) {
       assertUniqueStageIds(def.stages);
     }
-    pipelines.push(...pipelineDocumentToList(doc));
+    pipelines.push(...pipelineDocumentToList(doc, { lenientCatalog: true }));
   }
   const merged = mergePipelines(pipelines, { lenientNeeds: true });
   merged.schemaVersion = 2;

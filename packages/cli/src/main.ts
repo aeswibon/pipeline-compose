@@ -22,6 +22,7 @@ import {
   validatePipelineDocumentsForReport,
   validateReportExitCode,
   writeInitPipeline,
+  collectDocumentCatalogIssues,
   type ResolvedPipeline,
 } from '@aeswibon/pipeline-compose-core';
 
@@ -100,6 +101,16 @@ function loadResolvedPipelineForValidate(target: string): ResolvedPipeline {
     );
   }
   return validatePipelineDocumentForReport(loadPipelineDocumentFromFile(absoluteTarget));
+}
+
+function loadCatalogIssuesForValidate(target: string) {
+  const absoluteTarget = path.resolve(target);
+  if (fs.statSync(absoluteTarget).isDirectory()) {
+    return loadPipelineDocumentsFromInputs({ pipelineDir: absoluteTarget }).flatMap(
+      collectDocumentCatalogIssues,
+    );
+  }
+  return collectDocumentCatalogIssues(loadPipelineDocumentFromFile(absoluteTarget));
 }
 
 function compileSourceLabel(target: string): string {
@@ -236,6 +247,7 @@ function runValidate(args: string[]): void {
 
   const resolvedRoot = resolveRepoRoot(repoRoot || undefined);
   const pipeline = loadResolvedPipelineForValidate(target);
+  const catalogIssues = loadCatalogIssuesForValidate(target);
   let repoTokenSlugs: Set<string> | undefined;
   if (repoTokensFile) {
     const raw = fs.readFileSync(path.resolve(repoTokensFile), 'utf8');
@@ -249,6 +261,7 @@ function runValidate(args: string[]): void {
     strict,
     defaultRepo: process.env.GITHUB_REPOSITORY,
     repoTokenSlugs,
+    extraIssues: catalogIssues,
   });
 
   const simulation = simulate

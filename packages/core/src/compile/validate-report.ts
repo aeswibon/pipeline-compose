@@ -27,6 +27,7 @@ export interface ValidateReportOptions {
   strict?: boolean;
   defaultRepo?: string;
   repoTokenSlugs?: Set<string>;
+  extraIssues?: ValidationIssue[];
 }
 
 export interface ValidateReport {
@@ -273,6 +274,9 @@ export function buildValidateReport(
   options: ValidateReportOptions = {},
 ): ValidateReport {
   const issues = collectPipelineIssues(pipeline, options);
+  if (options.extraIssues?.length) {
+    issues.push(...options.extraIssues);
+  }
   issues.push(...collectNeedsIssues(pipeline.stages));
   issues.push(...collectContextIssues(pipeline.stages));
   issues.push(...collectContextSchemaIssues(pipeline));

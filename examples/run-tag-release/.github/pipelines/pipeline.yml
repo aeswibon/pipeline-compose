@@ -4,19 +4,24 @@ groups:
     description: Tag release example chain
 companion_workflows:
   - .github/workflows/release.yml
+catalog:
+  ci:
+    workflow: .github/workflows/ci.yml
+  version-sync:
+    workflow: .github/workflows/stage-version-sync.yml
+    outputs:
+      - version
 pipelines:
   release:
     group: release
     stages:
       - id: ci
-        workflow: .github/workflows/ci.yml
+        use: ci
 
       - id: version-sync
-        workflow: .github/workflows/stage-version-sync.yml
+        use: version-sync
         needs:
           - ci
-        outputs:
-          - version
 
       - id: release-publish
         workflow: .github/workflows/stage-release-publish.yml

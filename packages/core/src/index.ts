@@ -97,6 +97,13 @@ export {
   listWorkflowPaths,
 } from './compile/sub-pipeline.js';
 export {
+  collectCatalogStageIssues,
+  collectDocumentCatalogIssues,
+  expandCatalogStage,
+  expandCatalogStages,
+} from './compile/catalog.js';
+export type { CatalogEntry } from './compile/catalog.js';
+export {
   collectContextSchemaIssues,
   validateContextSchemaDocument,
 } from './lib/context-schema.js';

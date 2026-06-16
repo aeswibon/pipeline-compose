@@ -11,6 +11,8 @@ export interface PipelineConcurrency {
 
 export interface PipelineStage {
   id: string;
+  /** Reference a reusable entry from the document `catalog` map. */
+  use?: string;
   workflow?: string;
   /** Nested pipeline YAML (mutually exclusive with workflow). */
   pipeline_file?: string;
@@ -41,6 +43,8 @@ export interface Pipeline {
   context?: Record<string, string>;
   /** JSON Schema describing expected context.<stage>.<output> shapes. */
   context_schema?: Record<string, unknown>;
+  /** Reusable stage templates referenced by stage `use`. */
+  catalog?: Record<string, Omit<PipelineStage, 'id' | 'use'>>;
   stages: PipelineStage[];
 }
 
@@ -60,6 +64,8 @@ export interface PipelineDocumentV2 {
   /** Applied to merged pipeline when using pipeline-compose-run. */
   concurrency?: PipelineConcurrency;
   smart_rerun?: boolean;
+  /** Reusable stage templates referenced by stage `use`. */
+  catalog?: Record<string, Omit<PipelineStage, 'id' | 'use'>>;
   pipelines: Record<string, PipelineDefinition>;
 }
 
