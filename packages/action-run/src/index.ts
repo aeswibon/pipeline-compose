@@ -14,6 +14,7 @@ function githubContextFromEnv(): Record<string, unknown> {
     repository: process.env.GITHUB_REPOSITORY ?? '',
     event_name: process.env.GITHUB_EVENT_NAME ?? '',
     workflow: process.env.GITHUB_WORKFLOW ?? '',
+    run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT ?? '1'),
   };
 }
 
@@ -52,6 +53,10 @@ async function run(): Promise<void> {
 
   const client = new GitHubActionsClient(token, owner, repo);
   const currentRunId = Number(process.env.GITHUB_RUN_ID ?? '0') || undefined;
+  const runAttempt = Number(process.env.GITHUB_RUN_ATTEMPT ?? '1');
+  if (pipeline.smart_rerun && runAttempt === 1) {
+    core.info('Smart rerun enabled; state will be saved for workflow re-runs');
+  }
   const results = await runPipeline(pipeline, client, {
     ref,
     github: githubContextFromEnv(),
@@ -60,6 +65,8 @@ async function run(): Promise<void> {
     githubToken: token,
     repoTokens,
     currentRunId,
+    smartRerun: pipeline.smart_rerun,
+    runAttempt,
   });
 
   core.setOutput('results_json', JSON.stringify(results));

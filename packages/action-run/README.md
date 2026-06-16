@@ -88,6 +88,22 @@ You can also add `concurrency` on the entry workflow (belt-and-suspenders); valu
 | **run** (dispatch) | Yes — same wave dispatches together | `concurrency` in pipeline YAML |
 | **compile** (generated YAML) | Yes — native GHA DAG | `concurrency` in pipeline YAML → generated workflow |
 
+### Smart rerun (failed workflow re-run)
+
+When a pipeline run fails partway through, GitHub’s **Re-run failed jobs** starts a new attempt (`GITHUB_RUN_ATTEMPT` > 1). With **`smart_rerun: true`** on the pipeline file:
+
+```yaml
+version: 2
+smart_rerun: true
+pipelines:
+  release:
+    stages: [...]
+```
+
+The run action saves a **`pipeline-compose-rerun-state`** artifact after each wave. On re-run, stages whose fingerprint (workflow, ref, resolved inputs, `when`) matches the previous attempt reuse cached outputs instead of dispatching again.
+
+Stages with changed inputs or missing prior outputs still dispatch normally.
+
 ---
 
 ## First-time setup checklist

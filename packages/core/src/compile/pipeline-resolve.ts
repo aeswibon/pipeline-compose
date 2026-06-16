@@ -41,7 +41,7 @@ export function pipelineDocumentToList(doc: PipelineDocument): Pipeline[] {
     return [doc];
   }
   return Object.entries(doc.pipelines).map(([key, def]) =>
-    definitionToPipeline(key, def, doc.groups, doc.concurrency),
+    definitionToPipeline(key, def, doc.groups, doc.concurrency, doc.smart_rerun),
   );
 }
 
@@ -50,6 +50,7 @@ function definitionToPipeline(
   def: PipelineDefinition,
   groups?: PipelineDocumentV2['groups'],
   concurrency?: PipelineDocumentV2['concurrency'],
+  smartRerun?: boolean,
 ): Pipeline {
   return {
     name: key,
@@ -58,6 +59,7 @@ function definitionToPipeline(
     needs: def.needs,
     groups,
     concurrency,
+    smart_rerun: smartRerun,
     stages: def.stages,
   };
 }
@@ -90,6 +92,7 @@ export function mergePipelines(pipelines: Pipeline[], options: { lenientNeeds?: 
     ...new Set(ordered.flatMap((pipeline) => pipeline.companion_workflows ?? [])),
   ];
   const concurrency = ordered.find((p) => p.concurrency)?.concurrency;
+  const smartRerun = ordered.find((p) => p.smart_rerun)?.smart_rerun;
   return {
     name: ordered.length === 1 ? primary.name : 'combined',
     version: 1,
@@ -97,6 +100,7 @@ export function mergePipelines(pipelines: Pipeline[], options: { lenientNeeds?: 
     groups: primary.groups,
     context: primary.context,
     concurrency,
+    smart_rerun: smartRerun,
     companion_workflows: companion.length > 0 ? companion : undefined,
     stages,
   };
@@ -110,6 +114,9 @@ export function resolvePipelineDocumentForReport(doc: PipelineDocument): Resolve
       ...new Set([...(merged.companion_workflows ?? []), ...doc.companion_workflows]),
     ];
   }
+  if (isPipelineV2(doc) && doc.smart_rerun) {
+    merged.smart_rerun = doc.smart_rerun;
+  }
   return merged;
 }
 
@@ -120,6 +127,9 @@ export function resolvePipelineDocument(doc: PipelineDocument): ResolvedPipeline
     merged.companion_workflows = [
       ...new Set([...(merged.companion_workflows ?? []), ...doc.companion_workflows]),
     ];
+  }
+  if (isPipelineV2(doc) && doc.smart_rerun) {
+    merged.smart_rerun = doc.smart_rerun;
   }
   return merged;
 }

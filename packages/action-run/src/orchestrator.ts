@@ -1,14 +1,23 @@
 import type { Pipeline, PipelineStage } from '@aeswibon/pipeline-compose-core';
 import {
+  canReuseStage,
   evaluateExpression,
   groupStagesIntoWaves,
   mergeContext,
   parseRepoSlug,
+  stageFingerprint,
+  type RerunState,
 } from '@aeswibon/pipeline-compose-core';
+import * as core from '@actions/core';
 import { enforcePipelineConcurrency } from './concurrency-enforce.js';
 import { resolveStageInputs } from './inputs.js';
 import { resolveStageToken, type RepoTokenMap } from './repo-tokens.js';
 import { GitHubActionsClient, type WorkflowJob } from './github.js';
+import {
+  emptyRerunState,
+  loadPreviousRerunState,
+  persistRerunState,
+} from './smart-rerun.js';
 
 export type OrchestratorOptions = {
   ref: string;
@@ -19,6 +28,10 @@ export type OrchestratorOptions = {
   repoTokens: RepoTokenMap;
   /** Parent workflow run id (GITHUB_RUN_ID) for concurrency enforcement. */
   currentRunId?: number;
+  /** Reuse prior attempt outputs when stage inputs are unchanged. */
+  smartRerun?: boolean;
+  /** GITHUB_RUN_ATTEMPT (1 on first run). */
+  runAttempt?: number;
   timeoutMs?: number;
   pollMs?: number;
 };
@@ -28,6 +41,7 @@ export type StageResult = {
   runId: number;
   outputs: Record<string, string>;
   skipped?: boolean;
+  reused?: boolean;
 };
 
 function shouldRunStage(
@@ -171,6 +185,8 @@ async function runOneStage(
   repoClients: Map<string, GitHubActionsClient>,
   timeoutMs: number,
   pollMs: number,
+  previousRerun: RerunState | null,
+  currentRerun: RerunState,
 ): Promise<StageResult> {
   const evalCtx = {
     github: options.github,
@@ -195,8 +211,28 @@ async function runOneStage(
   }
 
   const stageClient = clientForStage(repoClients, baseClient, stage, options);
-  const workflow = await stageClient.getWorkflowByPath(stage.workflow);
   const inputs = resolveStageInputs(stage.inputs, state.context);
+  const fingerprint = stageFingerprint(stage, inputs, options.ref);
+
+  if (options.smartRerun && previousRerun && (options.runAttempt ?? 1) > 1) {
+    const previous = previousRerun.stages[stage.id];
+    if (canReuseStage(previous, fingerprint, stage.outputs)) {
+      core.info(`Smart rerun: reusing stage "${stage.id}" from attempt ${(options.runAttempt ?? 1) - 1}`);
+      currentRerun.stages[stage.id] = {
+        fingerprint: previous!.fingerprint,
+        outputs: previous!.outputs,
+        runId: previous!.runId,
+      };
+      return {
+        stageId: stage.id,
+        runId: previous!.runId,
+        outputs: previous!.outputs,
+        reused: true,
+      };
+    }
+  }
+
+  const workflow = await stageClient.getWorkflowByPath(stage.workflow);
   const dispatchAt = Date.now();
 
   await stageClient.dispatchWorkflow(workflow.id, options.ref, inputs);
@@ -226,6 +262,10 @@ async function runOneStage(
     pollMs,
   );
 
+  if (options.smartRerun) {
+    currentRerun.stages[stage.id] = { fingerprint, outputs, runId: run.id };
+  }
+
   return { stageId: stage.id, runId: run.id, outputs };
 }
 
@@ -239,6 +279,13 @@ export async function runPipeline(
   const results: StageResult[] = [];
   const state: StageRunState = { skipped: new Set<string>(), context: {} };
   const repoClients = new Map<string, GitHubActionsClient>();
+  const smartRerun = Boolean(options.smartRerun);
+  const runAttempt = options.runAttempt ?? 1;
+  const previousRerun =
+    smartRerun && options.currentRunId && runAttempt > 1
+      ? await loadPreviousRerunState(client, options.currentRunId, runAttempt)
+      : null;
+  const currentRerun = emptyRerunState();
 
   if (pipeline.concurrency && options.currentRunId) {
     await enforcePipelineConcurrency(client, {
@@ -264,6 +311,8 @@ export async function runPipeline(
           repoClients,
           timeoutMs,
           pollMs,
+          previousRerun,
+          currentRerun,
         ),
       ),
     );
@@ -278,6 +327,10 @@ export async function runPipeline(
         >;
       }
       results.push(result);
+    }
+
+    if (smartRerun && Object.keys(currentRerun.stages).length > 0) {
+      await persistRerunState(currentRerun);
     }
   }
 

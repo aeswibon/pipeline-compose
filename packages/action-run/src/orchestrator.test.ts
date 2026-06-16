@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { Pipeline } from '@aeswibon/pipeline-compose-core';
+import { stageFingerprint, type Pipeline } from '@aeswibon/pipeline-compose-core';
 import { runPipeline } from './orchestrator.js';
 import * as githubModule from './github.js';
+import * as smartRerunModule from './smart-rerun.js';
 import type { GitHubActionsClient, WorkflowJob } from './github.js';
 
 const runOptions = {
@@ -426,5 +427,44 @@ describe('runPipeline', () => {
     expect(lintIndex).toBeGreaterThanOrEqual(0);
     expect(testIndex).toBeGreaterThanOrEqual(0);
     expect(testIndex).toBeLessThan(lintIndex + 2);
+  });
+
+  it('reuses prior attempt outputs when smart_rerun is enabled', async () => {
+    const stage = {
+      id: 'ci',
+      workflow: '.github/workflows/ci.yml',
+    };
+    const fingerprint = stageFingerprint(stage, {}, 'refs/tags/v1.0.0');
+    const loadSpy = vi.spyOn(smartRerunModule, 'loadPreviousRerunState').mockResolvedValue({
+      version: 1,
+      stages: {
+        ci: { fingerprint, outputs: { ok: 'true' }, runId: 42 },
+      },
+    });
+    const persistSpy = vi.spyOn(smartRerunModule, 'persistRerunState').mockResolvedValue();
+
+    const client = mockClient({
+      workflows: { '.github/workflows/ci.yml': 1 },
+    });
+
+    const results = await runPipeline(
+      {
+        name: 'pipeline',
+        version: 1,
+        smart_rerun: true,
+        stages: [stage],
+      },
+      client,
+      { ...runOptions, smartRerun: true, runAttempt: 2, currentRunId: 999 },
+    );
+
+    expect(client.dispatchWorkflow).not.toHaveBeenCalled();
+    expect(results[0]?.reused).toBe(true);
+    expect(results[0]?.runId).toBe(42);
+    expect(results[0]?.outputs).toEqual({ ok: 'true' });
+    expect(persistSpy).toHaveBeenCalled();
+
+    loadSpy.mockRestore();
+    persistSpy.mockRestore();
   });
 });

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Smart rerun** — optional `smart_rerun: true` on pipeline v2 YAML; on workflow re-run, stages with unchanged inputs reuse outputs from the previous attempt (fingerprint over workflow, ref, inputs, and `when`).
+
 ### Changed
 
 - **Examples and docs** — action pins updated to `@v1.3.0`; compile codegen default pin `@v1.3.0`.

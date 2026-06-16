@@ -108,6 +108,9 @@ importers:
 
   packages/action-run:
     dependencies:
+      '@actions/artifact':
+        specifier: ^6.2.1
+        version: 6.2.1
       '@actions/core':
         specifier: ^3.0.1
         version: 3.0.1

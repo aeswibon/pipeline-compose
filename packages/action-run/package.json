@@ -9,6 +9,7 @@
     "test": "vitest run --dir src"
   },
   "dependencies": {
+    "@actions/artifact": "^6.2.1",
     "@actions/core": "^3.0.1",
     "@aeswibon/pipeline-compose-core": "workspace:*"
   },

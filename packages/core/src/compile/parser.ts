@@ -32,6 +32,8 @@ export interface Pipeline {
   companion_workflows?: string[];
   /** Serialize or cancel overlapping runs of the same entry workflow (enforced by run action). */
   concurrency?: PipelineConcurrency;
+  /** Reuse prior attempt stage outputs on workflow re-run when inputs are unchanged. */
+  smart_rerun?: boolean;
   context?: Record<string, string>;
   stages: PipelineStage[];
 }
@@ -49,6 +51,7 @@ export interface PipelineDocumentV2 {
   companion_workflows?: string[];
   /** Applied to merged pipeline when using pipeline-compose-run. */
   concurrency?: PipelineConcurrency;
+  smart_rerun?: boolean;
   pipelines: Record<string, PipelineDefinition>;
 }
 

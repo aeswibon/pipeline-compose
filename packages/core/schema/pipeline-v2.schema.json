@@ -23,6 +23,10 @@
       "maxItems": 10
     },
     "concurrency": { "$ref": "pipeline-v1.schema.json#/$defs/concurrency" },
+    "smart_rerun": {
+      "type": "boolean",
+      "description": "On workflow re-run, reuse outputs from the previous attempt when stage inputs are unchanged"
+    },
     "pipelines": {
       "type": "object",
       "minProperties": 1,

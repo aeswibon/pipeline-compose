@@ -18,6 +18,8 @@ export type WorkflowRun = {
   head_sha?: string | null;
   event?: string;
   workflow_id?: number;
+  run_number?: number;
+  run_attempt?: number;
 };
 
 export function matchesDispatchedRun(
@@ -187,7 +189,7 @@ export class GitHubActionsClient {
   }
 
   async getWorkflowRun(runId: number): Promise<WorkflowRun & { workflow_id: number }> {
-    return this.request<WorkflowRun & { workflow_id: number }>(
+    return this.request<WorkflowRun & { workflow_id: number; run_number: number; run_attempt: number }>(
       `/repos/${this.owner}/${this.repo}/actions/runs/${runId}`,
     );
   }
@@ -231,6 +233,14 @@ export class GitHubActionsClient {
   }
 
   async downloadArtifactOutputs(artifactId: number): Promise<Record<string, string>> {
+    const raw = await this.downloadArtifactFile(artifactId, 'outputs.json');
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.entries(parsed).map(([key, value]) => [key, String(value)]),
+    );
+  }
+
+  async downloadArtifactFile(artifactId: number, fileName: string): Promise<string> {
     const zipBytes = await this.downloadBinary(
       `/repos/${this.owner}/${this.repo}/actions/artifacts/${artifactId}/zip`,
     );
@@ -239,15 +249,29 @@ export class GitHubActionsClient {
     writeFileSync(zipPath, zipBytes);
     try {
       execSync(`unzip -o -q ${JSON.stringify(zipPath)} -d ${JSON.stringify(extractDir)}`);
-      const raw = readFileSync(join(extractDir, 'outputs.json'), 'utf8');
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
-      return Object.fromEntries(
-        Object.entries(parsed).map(([key, value]) => [key, String(value)]),
-      );
+      return readFileSync(join(extractDir, fileName), 'utf8');
     } finally {
       rmSync(zipPath, { force: true });
       rmSync(extractDir, { recursive: true, force: true });
     }
+  }
+
+  async findPreviousAttemptRunId(
+    currentRunId: number,
+    runAttempt: number,
+  ): Promise<number | null> {
+    if (runAttempt <= 1) {
+      return null;
+    }
+    const current = await this.getWorkflowRun(currentRunId);
+    const runs = await this.listWorkflowRuns(current.workflow_id);
+    const previous = runs.find(
+      (run) =>
+        run.id !== currentRunId &&
+        run.run_number === current.run_number &&
+        run.run_attempt === runAttempt - 1,
+    );
+    return previous?.id ?? null;
   }
 
   async waitForStageArtifact(

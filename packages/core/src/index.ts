@@ -89,3 +89,10 @@ export {
 } from './lib/concurrency.js';
 export { parseContextInputRefs, CONTEXT_INPUT_REF_RE } from './lib/context-refs.js';
 export type { ContextInputRef } from './lib/context-refs.js';
+export {
+  RERUN_STATE_ARTIFACT,
+  canReuseStage,
+  parseRerunState,
+  stageFingerprint,
+} from './lib/smart-rerun.js';
+export type { RerunStageState, RerunState } from './lib/smart-rerun.js';
