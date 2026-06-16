@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-06-16
+
 ### Added
 
 - **Cross-repo smart rerun digest** — `repo:` stage fingerprints include remote workflow file content via the GitHub Contents API.
+- **`catalog-global` example** — validate fixture for `catalog_from`, local `catalog`, and `concurrency.global`.
+- **Design rationale parts 14–15** — global concurrency and remote catalog fetch ADRs.
 
 ## [1.9.0] - 2026-06-16
 
