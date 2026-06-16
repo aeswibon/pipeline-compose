@@ -1,0 +1,33 @@
+version: 2
+concurrency:
+  group: staging-${{ github.ref }}
+  global: true
+  lock_repo: my-org/pipeline-locks
+catalog_from:
+  repo: my-org/pipeline-catalog
+  path: .github/pipelines/catalog.yml
+  ref: main
+catalog:
+  shared-echo:
+    workflow: .github/workflows/demo-echo.yml
+    outputs:
+      - message
+  local-echo:
+    workflow: .github/workflows/demo-echo.yml
+    outputs:
+      - message
+companion_workflows:
+  - .github/workflows/demo.yml
+pipelines:
+  demo:
+    stages:
+      - id: ci
+        workflow: .github/workflows/ci.yml
+      - id: remote-echo
+        use: shared-echo
+        needs:
+          - ci
+      - id: local-echo
+        use: local-echo
+        needs:
+          - ci

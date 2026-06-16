@@ -1,0 +1,6 @@
+version: 2
+catalog:
+  shared-echo:
+    workflow: .github/workflows/demo-echo.yml
+    outputs:
+      - message

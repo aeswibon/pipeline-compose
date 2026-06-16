@@ -1,0 +1,17 @@
+name: echo
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        required: false
+        type: string
+
+jobs:
+  echo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aeswibon/pipeline-compose-export@v1.8.0
+        with:
+          stage_id: echo
+          outputs_json: '{"message":"hello"}'

@@ -174,6 +174,11 @@ PRs touching `pipeline.yml` get bot comment automatically.
 
 ---
 
+## What to read next
+
+- [14 — Global concurrency](14-global-concurrency.md)
+- [15 — Remote catalog fetch](15-remote-catalog-fetch.md)
+
 ## Series index
 
 [README](README.md)

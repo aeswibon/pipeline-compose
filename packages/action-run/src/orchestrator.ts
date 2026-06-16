@@ -23,7 +23,7 @@ import {
   persistRerunState,
 } from './smart-rerun.js';
 import { runDurationSeconds } from './run-duration.js';
-import { workflowFileDigest } from './workflow-digest.js';
+import { workflowFileDigest, workflowRemoteDigest } from './workflow-digest.js';
 
 export type OrchestratorOptions = {
   ref: string;
@@ -72,14 +72,23 @@ function hasSkippedDependency(stage: PipelineStage, skipped: Set<string>): boole
   return (stage.needs ?? []).some((dep) => skipped.has(dep));
 }
 
-function workflowDigestForStage(
+async function workflowDigestForStage(
   stage: PipelineStage,
   options: OrchestratorOptions,
-): string | undefined {
-  if (!stage.workflow || !options.repoRoot || stage.repo) {
+  baseClient: GitHubActionsClient,
+  repoClients: Map<string, GitHubActionsClient>,
+): Promise<string | undefined> {
+  if (!stage.workflow) {
     return undefined;
   }
-  return workflowFileDigest(options.repoRoot, stage.workflow);
+  if (stage.repo) {
+    const client = await clientForStage(repoClients, baseClient, stage, options);
+    return workflowRemoteDigest(client, stage.workflow, options.ref);
+  }
+  if (options.repoRoot) {
+    return workflowFileDigest(options.repoRoot, stage.workflow);
+  }
+  return undefined;
 }
 
 function missingRequiredContext(
@@ -249,7 +258,7 @@ async function runOneStage(
       stage,
       inputs,
       options.ref,
-      workflowDigestForStage(stage, options),
+      await workflowDigestForStage(stage, options, baseClient, repoClients),
     );
 
     if (stage.pipeline_file) {

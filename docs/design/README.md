@@ -39,6 +39,8 @@ Each part follows a consistent shape where useful:
 | [11 — Deferred and rejected](11-deferred-and-rejected.md) | Roadmap | Explicit non-bets; how to propose changes |
 | [12 — Validation, simulate, and PR bot](12-validation-simulate-and-pr-bot.md) | Shift-left | Stable issue codes, dry-run parity, PR comment workflow |
 | [13 — Meta release pipeline](13-meta-release-pipeline.md) | Dogfooding | How this repo releases itself; maps series to real files |
+| [14 — Global concurrency](14-global-concurrency.md) | v1.8 | Cross-repo lock files; when per-repo `concurrency` is insufficient |
+| [15 — Remote catalog fetch](15-remote-catalog-fetch.md) | v1.8 | `catalog_from` at run time; merge with local overrides |
 
 ## Related docs
 

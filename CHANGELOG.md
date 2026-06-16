@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Cross-repo smart rerun digest** — `repo:` stage fingerprints include remote workflow file content via the GitHub Contents API.
+
 ## [1.9.0] - 2026-06-16
 
 ### Added

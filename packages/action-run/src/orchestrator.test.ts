@@ -63,6 +63,11 @@ function mockClient(handlers: {
       updated_at: '2026-01-01T00:02:00Z',
       head_branch: 'v1.0.0',
     })),
+    getRepositoryContent: vi.fn(async () => ({
+      sha: 'abc',
+      encoding: 'base64',
+      content: Buffer.from('name: wf\n', 'utf8').toString('base64'),
+    })),
     listRunJobs: vi.fn(async (runId) => jobsByRun.get(runId) ?? []),
     waitForStageArtifact: vi.fn(async (_runId, stageId) => {
       if (stageId === 'artifact-stage') {

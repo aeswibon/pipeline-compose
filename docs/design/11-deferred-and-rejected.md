@@ -73,7 +73,7 @@ Documented ceilings with upgrade paths—**not bugs** until revisit criteria hit
 | Location | Shortcut | Upgrade path |
 |----------|----------|--------------|
 | `orchestrator.ts` `outputsFromJobs` | Last successful job wins | Named job per stage in schema |
-| `smart-rerun.ts` fingerprint | Same-repo workflow file hash included (v1.9); cross-repo digest deferred |
+| `smart-rerun.ts` fingerprint | Same-repo and cross-repo workflow content hash (Contents API for `repo:` stages) |
 | `github-app.ts` cache | Per orchestrator job only | Shared cache with TTL if jobs split |
 | `concurrency-enforce.ts` | Tag ref heuristics | Explicit ref normalization table |
 | Sub-pipeline depth | Max 1 | Configurable `max_nest_depth` |
