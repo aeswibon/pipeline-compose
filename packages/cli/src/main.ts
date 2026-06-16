@@ -93,6 +93,14 @@ function loadResolvedPipeline(target: string): ResolvedPipeline {
   return validatePipelineDocument(loadPipelineDocumentFromFile(absoluteTarget));
 }
 
+function loadDocumentsForValidate(target: string) {
+  const absoluteTarget = path.resolve(target);
+  if (fs.statSync(absoluteTarget).isDirectory()) {
+    return loadPipelineDocumentsFromInputs({ pipelineDir: absoluteTarget });
+  }
+  return [loadPipelineDocumentFromFile(absoluteTarget)];
+}
+
 function loadResolvedPipelineForValidate(target: string): ResolvedPipeline {
   const absoluteTarget = path.resolve(target);
   if (fs.statSync(absoluteTarget).isDirectory()) {
@@ -246,6 +254,7 @@ function runValidate(args: string[]): void {
   }
 
   const resolvedRoot = resolveRepoRoot(repoRoot || undefined);
+  const documents = loadDocumentsForValidate(target);
   const pipeline = loadResolvedPipelineForValidate(target);
   const catalogIssues = loadCatalogIssuesForValidate(target);
   let repoTokenSlugs: Set<string> | undefined;
@@ -262,6 +271,7 @@ function runValidate(args: string[]): void {
     defaultRepo: process.env.GITHUB_REPOSITORY,
     repoTokenSlugs,
     extraIssues: catalogIssues,
+    documents,
   });
 
   const simulation = simulate

@@ -43,6 +43,8 @@ export { generateWorkflow } from './compile/codegen.js';
 export type { GenerateOptions } from './compile/codegen.js';
 export {
   buildValidateReport,
+  collectCatalogFromIssues,
+  collectConcurrencyIssues,
   collectContextIssues,
   collectNeedsIssues,
   collectPipelineIssues,
@@ -107,6 +109,20 @@ export {
   collectContextSchemaIssues,
   validateContextSchemaDocument,
 } from './lib/context-schema.js';
+export {
+  globalLockPath,
+  parseGlobalLockRecord,
+  serializeGlobalLockRecord,
+  GLOBAL_LOCK_DIR,
+} from './lib/global-lock.js';
+export type { GlobalLockHolder, GlobalLockRecord } from './lib/global-lock.js';
+export {
+  mergeCatalogMaps,
+  parseRemoteCatalogYaml,
+  decodeGitHubFileContent,
+  catalogFromFetchedDocument,
+} from './compile/catalog-remote.js';
+export type { CatalogFromRef } from './compile/catalog-remote.js';
 export {
   RERUN_STATE_ARTIFACT,
   canReuseStage,

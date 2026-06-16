@@ -10,10 +10,13 @@ import {
   resolveCommitStatusSha,
   shouldReportCommitStatus,
 } from './commit-status.js';
+import { acquireGlobalConcurrencyLock } from './global-lock-enforce.js';
 import { GitHubAppTokenProvider } from './github-app.js';
 import { GitHubActionsClient } from './github.js';
 import { runPipeline } from './orchestrator.js';
+import { applyRemoteCatalogToDocuments } from './remote-catalog.js';
 import { parseRepoTokensJson } from './repo-tokens.js';
+import { writePipelineRunSummary } from './run-summary.js';
 
 function githubContextFromEnv(): Record<string, unknown> {
   return {
@@ -72,12 +75,28 @@ async function run(): Promise<void> {
   }
 
   const [owner, repo] = repository.split('/');
-  const docs = loadPipelineDocumentsFromInputs({ pipelineFile, pipelineDir });
+  let docs = loadPipelineDocumentsFromInputs({ pipelineFile, pipelineDir });
+
+  core.info(`Running pipeline on ref ${ref}`);
+
+  const client = new GitHubActionsClient(token, owner, repo);
+  const appTokenProvider =
+    githubAppId && githubAppPrivateKey
+      ? new GitHubAppTokenProvider(githubAppId, githubAppPrivateKey.replace(/\\n/g, '\n'))
+      : undefined;
+  const remoteOptions = {
+    defaultOwner: owner,
+    defaultRepo: repo,
+    githubToken: token,
+    repoTokens,
+    appTokenProvider,
+  };
+
+  docs = await applyRemoteCatalogToDocuments(docs, client, remoteOptions);
   const pipeline = validatePipelineDocuments(docs);
 
   core.info(`Running pipeline "${pipeline.name}" on ref ${ref}`);
 
-  const client = new GitHubActionsClient(token, owner, repo);
   const event = loadGithubEvent();
   const eventName = process.env.GITHUB_EVENT_NAME ?? '';
   const commitStatusSha = resolveCommitStatusSha(event, {
@@ -94,14 +113,26 @@ async function run(): Promise<void> {
     );
   }
 
-  const appTokenProvider =
-    githubAppId && githubAppPrivateKey
-      ? new GitHubAppTokenProvider(githubAppId, githubAppPrivateKey.replace(/\\n/g, '\n'))
-      : undefined;
   const currentRunId = Number(process.env.GITHUB_RUN_ID ?? '0') || undefined;
   const runAttempt = Number(process.env.GITHUB_RUN_ATTEMPT ?? '1');
   if (pipeline.smart_rerun && runAttempt === 1) {
     core.info('Smart rerun enabled; state will be saved for workflow re-runs');
+  }
+
+  let releaseGlobalLock: (() => Promise<void>) | undefined;
+  if (pipeline.concurrency?.global && currentRunId) {
+    const lock = await acquireGlobalConcurrencyLock(client, {
+      concurrency: pipeline.concurrency,
+      github: githubContextFromEnv(),
+      currentRunId,
+      ...remoteOptions,
+      pollMs: 10_000,
+      timeoutMs: 5 * 60 * 1000,
+    });
+    releaseGlobalLock = lock.release;
+    core.info(
+      `Global concurrency lock acquired (group: ${pipeline.concurrency.group}, repo: ${pipeline.concurrency.lock_repo ?? repository})`,
+    );
   }
 
   try {
@@ -125,6 +156,7 @@ async function run(): Promise<void> {
     if (reused > 0) {
       core.info(`Smart rerun: reused ${reused} stage(s) on this attempt`);
     }
+    writePipelineRunSummary(pipeline.name, results);
     await commitStatus?.pipelineComplete(
       true,
       `Pipeline "${pipeline.name}" completed (${results.length} stage(s))`,
@@ -134,6 +166,8 @@ async function run(): Promise<void> {
     const message = error instanceof Error ? error.message : String(error);
     await commitStatus?.pipelineComplete(false, message);
     throw error;
+  } finally {
+    await releaseGlobalLock?.();
   }
 }
 

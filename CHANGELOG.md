@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Global concurrency** — `concurrency.global: true` with optional `lock_repo` coordinates pipeline runs across repositories via lock files under `.pipeline-compose/locks/` (requires `contents: read/write` on the lock repo).
+- **Smart rerun job summary** — run action writes a GitHub Actions job summary table including reused stage counts.
+- **Remote stage catalog** — `catalog_from: { repo, path, ref? }` merges a catalog from another repository (local `catalog` overrides remote keys).
+
 ## [1.7.0] - 2026-06-16
 
 ### Added

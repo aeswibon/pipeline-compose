@@ -31,6 +31,16 @@
       "type": "object",
       "additionalProperties": { "$ref": "pipeline-v1.schema.json#/$defs/catalogEntry" }
     },
+    "catalog_from": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "path"],
+      "properties": {
+        "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+        "path": { "type": "string", "minLength": 1 },
+        "ref": { "type": "string", "minLength": 1 }
+      }
+    },
     "pipelines": {
       "type": "object",
       "minProperties": 1,

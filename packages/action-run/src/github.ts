@@ -311,6 +311,56 @@ export class GitHubActionsClient {
     });
   }
 
+  async getRepositoryContent(
+    filePath: string,
+    ref?: string,
+  ): Promise<{ sha: string; content: string; encoding: string } | null> {
+    const params = ref ? `?ref=${encodeURIComponent(ref)}` : '';
+    try {
+      return await this.request<{ sha: string; content: string; encoding: string }>(
+        `/repos/${this.owner}/${this.repo}/contents/${filePath.replace(/^\//, '')}${params}`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('(404)')) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  async putRepositoryContent(
+    filePath: string,
+    message: string,
+    contentUtf8: string,
+    sha?: string,
+  ): Promise<void> {
+    const body: Record<string, string> = {
+      message,
+      content: Buffer.from(contentUtf8, 'utf8').toString('base64'),
+    };
+    if (sha) {
+      body.sha = sha;
+    }
+    await this.request(`/repos/${this.owner}/${this.repo}/contents/${filePath.replace(/^\//, '')}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  }
+
+  async deleteRepositoryContent(
+    filePath: string,
+    message: string,
+    sha: string,
+  ): Promise<void> {
+    await this.request(`/repos/${this.owner}/${this.repo}/contents/${filePath.replace(/^\//, '')}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, sha }),
+    });
+  }
+
   withRepo(owner: string, repo: string, tokenOverride?: string): GitHubActionsClient {
     const token = tokenOverride ?? this.token;
     const crossRepo =

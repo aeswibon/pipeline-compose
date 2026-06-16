@@ -1,7 +1,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type { ResolvedPipeline, ResolvedStage } from './parser.js';
-import { resolveStageGroup } from './parser.js';
+import type { PipelineDocument, ResolvedPipeline, ResolvedStage } from './parser.js';
+import { isPipelineV2, resolveStageGroup } from './parser.js';
+import { GLOBAL_LOCK_DIR } from '../lib/global-lock.js';
 import { parseRepoSlug } from '../lib/expressions.js';
 import { parseContextInputRefs } from '../lib/context-refs.js';
 import { collectContextSchemaIssues } from '../lib/context-schema.js';
@@ -28,6 +29,8 @@ export interface ValidateReportOptions {
   defaultRepo?: string;
   repoTokenSlugs?: Set<string>;
   extraIssues?: ValidationIssue[];
+  /** Source documents for catalog_from and similar root-level checks. */
+  documents?: PipelineDocument[];
 }
 
 export interface ValidateReport {
@@ -220,6 +223,69 @@ export function collectContextIssues(stages: ResolvedPipeline['stages']): Valida
   return issues;
 }
 
+export function collectConcurrencyIssues(
+  concurrency: ResolvedPipeline['concurrency'],
+  defaultRepo?: string,
+): ValidationIssue[] {
+  if (!concurrency?.global) {
+    return [];
+  }
+  const issues: ValidationIssue[] = [];
+  const lockRepo = concurrency.lock_repo ?? defaultRepo;
+  if (!lockRepo) {
+    issues.push({
+      level: 'error',
+      code: 'concurrency.lock-repo-missing',
+      message: 'Global concurrency requires lock_repo or a default entry repository',
+    });
+    return issues;
+  }
+  try {
+    parseRepoSlug(lockRepo);
+  } catch {
+    issues.push({
+      level: 'error',
+      code: 'concurrency.lock-repo-invalid',
+      message: `Invalid lock_repo slug "${lockRepo}" (expected owner/repo)`,
+    });
+  }
+  issues.push({
+    level: 'warn',
+    code: 'concurrency.global',
+    message: `Global concurrency stores locks in ${lockRepo} (${GLOBAL_LOCK_DIR}/); token needs contents:read and contents:write`,
+  });
+  return issues;
+}
+
+export function collectCatalogFromIssues(doc: PipelineDocument): ValidationIssue[] {
+  if (!isPipelineV2(doc) || !doc.catalog_from) {
+    return [];
+  }
+  const issues: ValidationIssue[] = [];
+  try {
+    parseRepoSlug(doc.catalog_from.repo);
+  } catch {
+    issues.push({
+      level: 'error',
+      code: 'catalog-from.invalid-repo',
+      message: `catalog_from.repo is invalid: "${doc.catalog_from.repo}"`,
+    });
+  }
+  if (!doc.catalog_from.path?.trim()) {
+    issues.push({
+      level: 'error',
+      code: 'catalog-from.invalid-path',
+      message: 'catalog_from.path must be a non-empty repository file path',
+    });
+  }
+  issues.push({
+    level: 'warn',
+    code: 'catalog-from.remote',
+    message: `Pipeline loads catalog from ${doc.catalog_from.repo}:${doc.catalog_from.path} at run time (local catalog overrides remote keys)`,
+  });
+  return issues;
+}
+
 export function findOrphanWorkflows(
   repoRoot: string,
   pipeline: ResolvedPipeline,
@@ -280,6 +346,10 @@ export function buildValidateReport(
   issues.push(...collectNeedsIssues(pipeline.stages));
   issues.push(...collectContextIssues(pipeline.stages));
   issues.push(...collectContextSchemaIssues(pipeline));
+  issues.push(...collectConcurrencyIssues(pipeline.concurrency, options.defaultRepo));
+  for (const doc of options.documents ?? []) {
+    issues.push(...collectCatalogFromIssues(doc));
+  }
 
   if (options.repoRoot) {
     issues.push(...collectDeprecationIssues(pipeline, options.repoRoot));

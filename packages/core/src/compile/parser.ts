@@ -7,6 +7,10 @@ export interface PipelineGroupMeta {
 export interface PipelineConcurrency {
   group: string;
   cancel_in_progress?: boolean;
+  /** Hold the concurrency group across repos via a lock file (see lock_repo). */
+  global?: boolean;
+  /** Repo storing `.pipeline-compose/locks/*.json` (owner/repo). Defaults to entry repo when global. */
+  lock_repo?: string;
 }
 
 export interface PipelineStage {
@@ -66,6 +70,8 @@ export interface PipelineDocumentV2 {
   smart_rerun?: boolean;
   /** Reusable stage templates referenced by stage `use`. */
   catalog?: Record<string, Omit<PipelineStage, 'id' | 'use'>>;
+  /** Fetch catalog entries from another repository (merged under local catalog). */
+  catalog_from?: { repo: string; path: string; ref?: string };
   pipelines: Record<string, PipelineDefinition>;
 }
 
