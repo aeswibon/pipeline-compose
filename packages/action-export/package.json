@@ -9,7 +9,7 @@
     "bundle": "ncc build src/index.ts -o dist -s"
   },
   "dependencies": {
-    "@actions/artifact": "^5.0.0",
+    "@actions/artifact": "^6.2.1",
     "@actions/core": "^3.0.1"
   },
   "devDependencies": {
