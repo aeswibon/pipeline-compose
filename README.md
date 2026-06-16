@@ -4,7 +4,7 @@
 
 Native `needs:` stops at repo boundaries. **pipeline-compose-run** dispatches each stage workflow, waits for completion, merges stage outputs into context, and surfaces one pipeline result. No generated workflow to commit unless you choose [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile).
 
-**Stable release:** **v1.3.0** — context input validation, simulate DAG waves, parallel stage waves, pipeline `concurrency`.
+**Stable release:** **v1.4.0** — smart rerun, sub-pipelines, typed `context_schema`, plus v1.3 context validation and parallel waves.
 
 ## Actions
 

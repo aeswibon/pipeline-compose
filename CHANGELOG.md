@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-06-16
+
 ### Added
 
 - **Sub-pipelines** — stage may use `pipeline_file` (+ optional `pipeline` key) instead of `workflow`; run action executes nested pipeline inline and surfaces declared outputs on the parent stage id.
