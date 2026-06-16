@@ -29,7 +29,7 @@ export function collectCatalogStageIssues(
         message: `Catalog entry "${key}" cannot set both workflow and pipeline_file`,
       });
     }
-    if (entry.use) {
+    if ('use' in entry && (entry as PipelineStage).use) {
       issues.push({
         level: 'error',
         code: 'catalog.invalid-entry',
@@ -109,7 +109,7 @@ export function expandCatalogStage(stage: PipelineStage, catalog: Record<string,
 export function expandCatalogStages(
   stages: PipelineStage[],
   catalog: Record<string, CatalogEntry> | undefined,
-  options: { lenient?: boolean } = {},
+  options: { lenientCatalog?: boolean } = {},
 ): PipelineStage[] {
   if (!catalog) {
     return stages;
@@ -117,7 +117,7 @@ export function expandCatalogStages(
 
   const issues = collectCatalogStageIssues(stages, catalog);
   const hasErrors = issues.some((issue) => issue.level === 'error');
-  if (hasErrors && !options.lenient) {
+  if (hasErrors && !options.lenientCatalog) {
     const first = issues.find((issue) => issue.level === 'error');
     throw new Error(first?.message ?? 'Invalid catalog reference');
   }
