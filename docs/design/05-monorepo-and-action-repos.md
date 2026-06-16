@@ -47,7 +47,7 @@ Actions bundle with `@vercel/ncc` into `dist/` at publish time. Consumers never 
 ### Version coupling
 
 - Meta repo version == action tag `vX.Y.Z` (convention).
-- README stable pin (e.g. `@v1.9.0`) updated in docs/examples on release.
+- README stable pin (e.g. `@v1.10.0`) updated in docs/examples on release.
 - `CHANGELOG.md` is **single source**; per-action release notes sliced by `### pipeline-compose-run` headings.
 
 ---
