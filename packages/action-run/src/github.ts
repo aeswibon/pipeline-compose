@@ -295,6 +295,22 @@ export class GitHubActionsClient {
     throw new Error(`Timed out waiting for artifact ${name} on run ${runId}`);
   }
 
+  async createCommitStatus(
+    sha: string,
+    body: {
+      state: 'pending' | 'success' | 'failure' | 'error';
+      context: string;
+      description: string;
+      target_url?: string;
+    },
+  ): Promise<void> {
+    await this.request(`/repos/${this.owner}/${this.repo}/statuses/${sha}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  }
+
   withRepo(owner: string, repo: string, tokenOverride?: string): GitHubActionsClient {
     const token = tokenOverride ?? this.token;
     const crossRepo =

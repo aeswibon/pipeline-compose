@@ -1,8 +1,15 @@
 import * as core from '@actions/core';
+import { readFileSync } from 'node:fs';
 import {
   loadPipelineDocumentsFromInputs,
   validatePipelineDocuments,
 } from '@aeswibon/pipeline-compose-core';
+import {
+  CommitStatusReporter,
+  parseCommitStatusMode,
+  resolveCommitStatusSha,
+  shouldReportCommitStatus,
+} from './commit-status.js';
 import { GitHubAppTokenProvider } from './github-app.js';
 import { GitHubActionsClient } from './github.js';
 import { runPipeline } from './orchestrator.js';
@@ -19,6 +26,18 @@ function githubContextFromEnv(): Record<string, unknown> {
   };
 }
 
+function loadGithubEvent(): Record<string, unknown> {
+  const eventPath = process.env.GITHUB_EVENT_PATH;
+  if (!eventPath) {
+    return {};
+  }
+  try {
+    return JSON.parse(readFileSync(eventPath, 'utf8')) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
 async function run(): Promise<void> {
   const pipelineFile = core.getInput('pipeline_file', { required: false });
   const pipelineDir = core.getInput('pipeline_dir', { required: false });
@@ -31,6 +50,10 @@ async function run(): Promise<void> {
   const repository = process.env.GITHUB_REPOSITORY ?? '';
   const githubAppId = core.getInput('github_app_id');
   const githubAppPrivateKey = core.getInput('github_app_private_key');
+  const commitStatusMode = parseCommitStatusMode(
+    core.getInput('commit_status') || 'auto',
+  );
+  const commitStatusShaInput = core.getInput('commit_status_sha');
 
   if (!pipelineFile && !pipelineDir) {
     throw new Error('pipeline_file or pipeline_dir input is required');
@@ -55,6 +78,22 @@ async function run(): Promise<void> {
   core.info(`Running pipeline "${pipeline.name}" on ref ${ref}`);
 
   const client = new GitHubActionsClient(token, owner, repo);
+  const event = loadGithubEvent();
+  const eventName = process.env.GITHUB_EVENT_NAME ?? '';
+  const commitStatusSha = resolveCommitStatusSha(event, {
+    explicitSha: commitStatusShaInput,
+    envSha: process.env.GITHUB_SHA,
+  });
+  const commitStatus =
+    shouldReportCommitStatus(commitStatusMode, eventName) && commitStatusSha
+      ? new CommitStatusReporter(client, commitStatusSha, pipeline.name)
+      : undefined;
+  if (shouldReportCommitStatus(commitStatusMode, eventName) && !commitStatusSha) {
+    core.warning(
+      'commit_status enabled but no target SHA found (set commit_status_sha or run on pull_request)',
+    );
+  }
+
   const appTokenProvider =
     githubAppId && githubAppPrivateKey
       ? new GitHubAppTokenProvider(githubAppId, githubAppPrivateKey.replace(/\\n/g, '\n'))
@@ -64,22 +103,38 @@ async function run(): Promise<void> {
   if (pipeline.smart_rerun && runAttempt === 1) {
     core.info('Smart rerun enabled; state will be saved for workflow re-runs');
   }
-  const results = await runPipeline(pipeline, client, {
-    ref,
-    github: githubContextFromEnv(),
-    defaultOwner: owner,
-    defaultRepo: repo,
-    githubToken: token,
-    repoTokens,
-    appTokenProvider,
-    currentRunId,
-    smartRerun: pipeline.smart_rerun,
-    runAttempt,
-    repoRoot: process.env.GITHUB_WORKSPACE || process.cwd(),
-  });
 
-  core.setOutput('results_json', JSON.stringify(results));
-  core.info(`Pipeline completed (${results.length} stage(s)).`);
+  try {
+    const results = await runPipeline(pipeline, client, {
+      ref,
+      github: githubContextFromEnv(),
+      defaultOwner: owner,
+      defaultRepo: repo,
+      githubToken: token,
+      repoTokens,
+      appTokenProvider,
+      currentRunId,
+      smartRerun: pipeline.smart_rerun,
+      runAttempt,
+      repoRoot: process.env.GITHUB_WORKSPACE || process.cwd(),
+      commitStatus,
+    });
+
+    core.setOutput('results_json', JSON.stringify(results));
+    const reused = results.filter((r) => r.reused).length;
+    if (reused > 0) {
+      core.info(`Smart rerun: reused ${reused} stage(s) on this attempt`);
+    }
+    await commitStatus?.pipelineComplete(
+      true,
+      `Pipeline "${pipeline.name}" completed (${results.length} stage(s))`,
+    );
+    core.info(`Pipeline completed (${results.length} stage(s)).`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await commitStatus?.pipelineComplete(false, message);
+    throw error;
+  }
 }
 
 run().catch((e) => core.setFailed(e instanceof Error ? e.message : String(e)));

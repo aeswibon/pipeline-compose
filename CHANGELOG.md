@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **PR commit statuses** — `pipeline-compose-run` posts per-stage and aggregate commit statuses on the pull request head SHA when `commit_status` is `auto` (default on `pull_request`) or `true`. Cross-repo stages appear as separate checks (e.g. `pipeline-compose/owner/repo/stage-id`). Requires `statuses: write` on the entry workflow.
+
 ### Changed
 
 - **Examples and docs** — action pins updated to `@v1.6.0`; compile codegen default pin `@v1.6.0`.

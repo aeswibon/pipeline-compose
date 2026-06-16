@@ -12,6 +12,7 @@ import {
 } from '@aeswibon/pipeline-compose-core';
 import * as core from '@actions/core';
 import { enforcePipelineConcurrency } from './concurrency-enforce.js';
+import { type CommitStatusReporter } from './commit-status.js';
 import { GitHubAppTokenProvider } from './github-app.js';
 import { resolveStageInputs } from './inputs.js';
 import { resolveStageToken, type RepoTokenMap } from './repo-tokens.js';
@@ -39,6 +40,8 @@ export type OrchestratorOptions = {
   repoRoot?: string;
   /** Inputs forwarded from a parent sub-pipeline stage. */
   subPipelineInputs?: Record<string, string>;
+  /** Optional PR commit status reporter (entry repo). */
+  commitStatus?: CommitStatusReporter;
   timeoutMs?: number;
   pollMs?: number;
 };
@@ -205,11 +208,13 @@ async function runOneStage(
 
   if (hasSkippedDependency(stage, state.skipped)) {
     state.skipped.add(stage.id);
+    await options.commitStatus?.stageSkipped(stage, 'upstream stage skipped');
     return { stageId: stage.id, runId: 0, outputs: {}, skipped: true };
   }
 
   if (!shouldRunStage(stage, evalCtx)) {
     state.skipped.add(stage.id);
+    await options.commitStatus?.stageSkipped(stage, `when: ${stage.when}`);
     return { stageId: stage.id, runId: 0, outputs: {}, skipped: true };
   }
 
@@ -220,82 +225,107 @@ async function runOneStage(
     );
   }
 
-  const stageClient = await clientForStage(repoClients, baseClient, stage, options);
-  const inputs = {
-    ...(options.subPipelineInputs ?? {}),
-    ...resolveStageInputs(stage.inputs, state.context),
-  };
-  const fingerprint = stageFingerprint(stage, inputs, options.ref);
+  try {
+    const stageClient = await clientForStage(repoClients, baseClient, stage, options);
+    const inputs = {
+      ...(options.subPipelineInputs ?? {}),
+      ...resolveStageInputs(stage.inputs, state.context),
+    };
+    const fingerprint = stageFingerprint(stage, inputs, options.ref);
 
-  if (stage.pipeline_file) {
-    if (!options.repoRoot) {
-      throw new Error(`Stage "${stage.id}" uses pipeline_file but repoRoot is not set`);
+    if (stage.pipeline_file) {
+      if (!options.repoRoot) {
+        throw new Error(`Stage "${stage.id}" uses pipeline_file but repoRoot is not set`);
+      }
+      await options.commitStatus?.stagePending(stage);
+      const nested = resolveSubPipeline(options.repoRoot, stage.pipeline_file, stage.pipeline);
+      const nestedResults = await runPipeline(nested, baseClient, {
+        ...options,
+        subPipelineInputs: inputs,
+        commitStatus: undefined,
+      });
+      const outputs = collectSubPipelineOutputs(nestedResults, stage.outputs, stage.id);
+      if (options.smartRerun) {
+        currentRerun.stages[stage.id] = { fingerprint, outputs, runId: 0 };
+      }
+      await options.commitStatus?.stageSuccess(
+        stage,
+        options.defaultOwner,
+        options.defaultRepo,
+        0,
+      );
+      return { stageId: stage.id, runId: 0, outputs };
     }
-    const nested = resolveSubPipeline(options.repoRoot, stage.pipeline_file, stage.pipeline);
-    const nestedResults = await runPipeline(nested, baseClient, {
-      ...options,
-      subPipelineInputs: inputs,
-    });
-    const outputs = collectSubPipelineOutputs(nestedResults, stage.outputs, stage.id);
-    if (options.smartRerun) {
-      currentRerun.stages[stage.id] = { fingerprint, outputs, runId: 0 };
+
+    if (options.smartRerun && previousRerun && (options.runAttempt ?? 1) > 1) {
+      const previous = previousRerun.stages[stage.id];
+      if (canReuseStage(previous, fingerprint, stage.outputs)) {
+        core.info(`Smart rerun: reusing stage "${stage.id}" from attempt ${(options.runAttempt ?? 1) - 1}`);
+        currentRerun.stages[stage.id] = {
+          fingerprint: previous!.fingerprint,
+          outputs: previous!.outputs,
+          runId: previous!.runId,
+        };
+        const { owner, repo } = stage.repo
+          ? parseRepoSlug(stage.repo)
+          : { owner: options.defaultOwner, repo: options.defaultRepo };
+        await options.commitStatus?.stageSuccess(stage, owner, repo, previous!.runId, true);
+        return {
+          stageId: stage.id,
+          runId: previous!.runId,
+          outputs: previous!.outputs,
+          reused: true,
+        };
+      }
     }
-    return { stageId: stage.id, runId: 0, outputs };
-  }
 
-  if (options.smartRerun && previousRerun && (options.runAttempt ?? 1) > 1) {
-    const previous = previousRerun.stages[stage.id];
-    if (canReuseStage(previous, fingerprint, stage.outputs)) {
-      core.info(`Smart rerun: reusing stage "${stage.id}" from attempt ${(options.runAttempt ?? 1) - 1}`);
-      currentRerun.stages[stage.id] = {
-        fingerprint: previous!.fingerprint,
-        outputs: previous!.outputs,
-        runId: previous!.runId,
-      };
-      return {
-        stageId: stage.id,
-        runId: previous!.runId,
-        outputs: previous!.outputs,
-        reused: true,
-      };
-    }
-  }
+    await options.commitStatus?.stagePending(stage);
 
-  const workflow = await stageClient.getWorkflowByPath(stage.workflow!);
-  const dispatchAt = Date.now();
+    const workflow = await stageClient.getWorkflowByPath(stage.workflow!);
+    const dispatchAt = Date.now();
 
-  await stageClient.dispatchWorkflow(workflow.id, options.ref, inputs);
+    await stageClient.dispatchWorkflow(workflow.id, options.ref, inputs);
 
-  let run = await stageClient.waitForRun(
-    workflow.id,
-    options.ref,
-    dispatchAt,
-    timeoutMs,
-    pollMs,
-  );
-
-  run = await stageClient.waitForRunCompletion(run.id, timeoutMs, pollMs);
-
-  if (run.conclusion !== 'success') {
-    throw new Error(
-      `Stage "${stage.id}" failed (${workflow.path}, run ${run.id}, conclusion=${run.conclusion})`,
+    let run = await stageClient.waitForRun(
+      workflow.id,
+      options.ref,
+      dispatchAt,
+      timeoutMs,
+      pollMs,
     );
+
+    run = await stageClient.waitForRunCompletion(run.id, timeoutMs, pollMs);
+
+    if (run.conclusion !== 'success') {
+      throw new Error(
+        `Stage "${stage.id}" failed (${workflow.path}, run ${run.id}, conclusion=${run.conclusion})`,
+      );
+    }
+
+    const outputs = await collectStageOutputs(
+      stageClient,
+      run.id,
+      stage.id,
+      stage.outputs,
+      timeoutMs,
+      pollMs,
+    );
+
+    if (options.smartRerun) {
+      currentRerun.stages[stage.id] = { fingerprint, outputs, runId: run.id };
+    }
+
+    const { owner, repo } = stage.repo
+      ? parseRepoSlug(stage.repo)
+      : { owner: options.defaultOwner, repo: options.defaultRepo };
+    await options.commitStatus?.stageSuccess(stage, owner, repo, run.id);
+
+    return { stageId: stage.id, runId: run.id, outputs };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await options.commitStatus?.stageFailure(stage, message);
+    throw error;
   }
-
-  const outputs = await collectStageOutputs(
-    stageClient,
-    run.id,
-    stage.id,
-    stage.outputs,
-    timeoutMs,
-    pollMs,
-  );
-
-  if (options.smartRerun) {
-    currentRerun.stages[stage.id] = { fingerprint, outputs, runId: run.id };
-  }
-
-  return { stageId: stage.id, runId: run.id, outputs };
 }
 
 export async function runPipeline(
@@ -315,6 +345,10 @@ export async function runPipeline(
       ? await loadPreviousRerunState(client, options.currentRunId, runAttempt)
       : null;
   const currentRerun = emptyRerunState();
+
+  if (options.commitStatus) {
+    await options.commitStatus.pipelinePending();
+  }
 
   if (pipeline.concurrency && options.currentRunId) {
     await enforcePipelineConcurrency(client, {

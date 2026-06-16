@@ -288,6 +288,16 @@ Only if you run strict validation and have workflows that aren’t stages (like 
 
 **Cross-repo?** Add **`repo: org/repo`** on the stage and configure either **`repo_tokens_json`** or **`github_app_id` + `github_app_private_key`** on this action. See [export README](https://github.com/aeswibon/pipeline-compose-export) for same-repo setup first.
 
+### PR commit statuses (library → consumer)
+
+On **`pull_request`** workflows, **`commit_status: auto`** (default) posts GitHub commit statuses on the PR head SHA:
+
+- **`pipeline-compose/pipeline`** — aggregate pass/fail
+- **`pipeline-compose/<stage-id>`** — same-repo stages
+- **`pipeline-compose/<owner>/<repo>/<stage-id>`** — cross-repo stages (consumer E2E shows on the library PR)
+
+Entry workflow needs **`permissions: statuses: write`** (and existing `actions: write`). Set **`commit_status: false`** on tag/release runs. Override SHA with **`commit_status_sha`** or use **`commit_status: true`** on `push`/`workflow_dispatch`.
+
 ---
 
 ## Troubleshooting
@@ -295,6 +305,7 @@ Only if you run strict validation and have workflows that aren’t stages (like 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | `Resource not accessible by integration` | Missing **`actions: write`** | Add to entry workflow **`permissions`** |
+| PR shows no per-stage checks | Missing **`statuses: write`** or not a `pull_request` event | Add permission; use `commit_status: true` to force |
 | Stage never receives `version` / inputs empty | No export artifact or wrong **`stage_id`** | Add **export**; **`stage_id`** = pipeline **`id`** |
 | `workflow_dispatch` not found | Stage YAML missing trigger | Add **`on: workflow_dispatch:`** |
 | Pipeline skips a stage | **`when:`** evaluated false | Check expression / **`context`** keys |

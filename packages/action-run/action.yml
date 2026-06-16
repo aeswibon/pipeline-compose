@@ -26,6 +26,13 @@ inputs:
   github_app_private_key:
     description: Optional GitHub App private key PEM (supports escaped newlines)
     required: false
+  commit_status:
+    description: Post commit statuses on the PR head SHA — auto (pull_request only), true, or false
+    required: false
+    default: auto
+  commit_status_sha:
+    description: Override commit SHA for status checks (default PR head or GITHUB_SHA)
+    required: false
 outputs:
   results_json:
     description: JSON array of stage results (id, runId, outputs)
