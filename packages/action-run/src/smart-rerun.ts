@@ -56,7 +56,7 @@ export async function persistRerunState(state: RerunState): Promise<void> {
   const client = new DefaultArtifactClient();
   await client.uploadArtifact(
     RERUN_STATE_ARTIFACT,
-    [{ filePath, searchPath: dir }],
+    [filePath],
     dir,
     { retentionDays: RETENTION_DAYS },
   );
