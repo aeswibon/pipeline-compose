@@ -178,7 +178,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose-run@v1.4.0
+      - uses: aeswibon/pipeline-compose-run@v1.5.0
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           github_token: ${{ github.token }}
@@ -227,7 +227,7 @@ jobs:
         run: |
           echo "version=1.2.3" >> "$GITHUB_OUTPUT"
           echo "skip_publish=false" >> "$GITHUB_OUTPUT"
-      - uses: aeswibon/pipeline-compose-export@v1.4.0
+      - uses: aeswibon/pipeline-compose-export@v1.5.0
         if: success()
         with:
           stage_id: version-sync          # must match pipeline id
@@ -240,7 +240,7 @@ Full copy-paste example: [run-tag-release](https://github.com/aeswibon/pipeline-
 
 <!-- start usage -->
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.4.0
+- uses: aeswibon/pipeline-compose-run@v1.5.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}
@@ -306,7 +306,7 @@ Only if you run strict validation and have workflows that aren’t stages (like 
 When a stage sets `repo: other-org/other-repo`, pass tokens GitHub Actions resolves from secrets:
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.4.0
+- uses: aeswibon/pipeline-compose-run@v1.5.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}
