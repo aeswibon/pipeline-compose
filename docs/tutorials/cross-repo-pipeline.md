@@ -1,6 +1,6 @@
 # Cross-repo pipeline tutorial
 
-Run ordered stages across two GitHub repositories using `repo:` and `repo_tokens_json`.
+Run ordered stages across two GitHub repositories using `repo:` with either `repo_tokens_json` or GitHub App credentials.
 
 ## When you need this
 
@@ -14,7 +14,7 @@ Same-repo pipelines only need `github_token: ${{ github.token }}`.
 - Callable `workflow_dispatch` workflow on the **target** repo
 - PAT or GitHub App token with **`actions: write`** on the target (and read access to workflows/runs)
 
-> `GITHUB_TOKEN` in the host repo cannot dispatch workflows in another repo. Map target slugs via `repo_tokens_json`.
+> `GITHUB_TOKEN` in the host repo cannot dispatch workflows in another repo. Use `repo_tokens_json` or a GitHub App installation token path.
 
 ## Step 1 — Target workflow
 
@@ -54,6 +54,17 @@ pipelines:
 
 GitHub resolves `${{ secrets.* }}` before the action runs; the action receives plain JSON.
 
+GitHub App alternative:
+
+```yaml
+- uses: aeswibon/pipeline-compose-run@v1.5.0
+  with:
+    pipeline_file: .github/pipelines/pipeline.yml
+    github_token: ${{ github.token }}
+    github_app_id: ${{ secrets.PIPELINE_APP_ID }}
+    github_app_private_key: ${{ secrets.PIPELINE_APP_PRIVATE_KEY }}
+```
+
 ## Step 4 — Validate locally
 
 ```bash
@@ -82,8 +93,8 @@ Run before tagging a release that touches cross-repo dispatch.
 
 | Symptom | Fix |
 |---------|-----|
-| `repo_tokens_json has no entry for that slug` | Add slug to JSON map in entry workflow |
-| 403 cross-repo error | PAT missing `actions: write` on target |
+| `repo_tokens_json has no entry for that slug` | Add slug to JSON map or configure GitHub App credentials |
+| 403 cross-repo error | PAT missing `actions: write` or app not installed on target repo |
 | Stage skipped unexpectedly | Check `when:` and upstream `needs:` / skipped dependents |
 
 ---

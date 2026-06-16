@@ -279,6 +279,48 @@ describe('runPipeline', () => {
     ).rejects.toThrow(/repo_tokens_json has no entry/);
   });
 
+  it('uses github app token provider when repo_tokens_json has no entry', async () => {
+    const remoteClient = mockClient({
+      workflows: { '.github/workflows/remote.yml': 99 },
+    });
+    const client = mockClient({
+      workflows: { '.github/workflows/remote.yml': 99 },
+    });
+    const constructSpy = vi.spyOn(githubModule, 'GitHubActionsClient');
+    constructSpy.mockImplementationOnce(function (token, owner, repo) {
+      expect(token).toBe('app-install-token');
+      expect(owner).toBe('other-org');
+      expect(repo).toBe('other-repo');
+      return remoteClient as unknown as GitHubActionsClient;
+    });
+    const appTokenProvider = {
+      tokenForRepo: vi.fn(async () => 'app-install-token'),
+    };
+
+    await runPipeline(
+      {
+        name: 'pipeline',
+        version: 1,
+        stages: [
+          {
+            id: 'remote',
+            workflow: '.github/workflows/remote.yml',
+            repo: 'other-org/other-repo',
+          },
+        ],
+      },
+      client,
+      {
+        ...runOptions,
+        appTokenProvider: appTokenProvider as any,
+      },
+    );
+
+    expect(appTokenProvider.tokenForRepo).toHaveBeenCalledWith('other-org', 'other-repo');
+    expect(remoteClient.dispatchWorkflow).toHaveBeenCalled();
+    constructSpy.mockRestore();
+  });
+
   it('throws when required context from a skipped stage is missing', async () => {
     const client = mockClient({
       workflows: { '.github/workflows/publish.yml': 3 },

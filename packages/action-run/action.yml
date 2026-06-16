@@ -20,6 +20,12 @@ inputs:
     description: JSON map of owner/repo slugs to tokens for cross-repo stage dispatch
     required: false
     default: '{}'
+  github_app_id:
+    description: Optional GitHub App ID used for cross-repo stage dispatch token minting
+    required: false
+  github_app_private_key:
+    description: Optional GitHub App private key PEM (supports escaped newlines)
+    required: false
 outputs:
   results_json:
     description: JSON array of stage results (id, runId, outputs)

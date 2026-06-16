@@ -89,7 +89,7 @@ Optional expression. If false, the stage is **skipped** (not dispatched), and st
 
 ### `repo` (stage)
 
-Optional `owner/repo` slug. Dispatch runs in that repository instead of the default repo. Requires a token with `actions: write` on the target — use **`repo_tokens_json`** on the run action for cross-repo PATs.
+Optional `owner/repo` slug. Dispatch runs in that repository instead of the default repo. Requires credentials with `actions: write` on the target — use **`repo_tokens_json`** (PAT map) or GitHub App credentials (`github_app_id`, `github_app_private_key`) on the run action.
 
 ### `companion_workflows`
 

@@ -12,6 +12,7 @@ import {
 } from '@aeswibon/pipeline-compose-core';
 import * as core from '@actions/core';
 import { enforcePipelineConcurrency } from './concurrency-enforce.js';
+import { GitHubAppTokenProvider } from './github-app.js';
 import { resolveStageInputs } from './inputs.js';
 import { resolveStageToken, type RepoTokenMap } from './repo-tokens.js';
 import { GitHubActionsClient, type WorkflowJob } from './github.js';
@@ -28,6 +29,7 @@ export type OrchestratorOptions = {
   defaultRepo: string;
   githubToken: string;
   repoTokens: RepoTokenMap;
+  appTokenProvider?: GitHubAppTokenProvider;
   /** Parent workflow run id (GITHUB_RUN_ID) for concurrency enforcement. */
   currentRunId?: number;
   /** Reuse prior attempt outputs when stage inputs are unchanged. */
@@ -141,12 +143,12 @@ function clientCacheKey(owner: string, repo: string, token: string): string {
   return `${owner}/${repo}#${token.slice(0, 8)}`;
 }
 
-function clientForStage(
+async function clientForStage(
   cache: Map<string, GitHubActionsClient>,
   baseClient: GitHubActionsClient,
   stage: PipelineStage,
   options: OrchestratorOptions,
-): GitHubActionsClient {
+): Promise<GitHubActionsClient> {
   const defaultSlug = `${options.defaultOwner}/${options.defaultRepo}`;
 
   if (!stage.repo) {
@@ -154,12 +156,15 @@ function clientForStage(
   }
 
   const { owner, repo } = parseRepoSlug(stage.repo);
-  const token = resolveStageToken(
-    stage.repo,
-    defaultSlug,
-    options.githubToken,
-    options.repoTokens,
-  );
+  let token: string;
+  try {
+    token = resolveStageToken(stage.repo, defaultSlug, options.githubToken, options.repoTokens);
+  } catch (error) {
+    if (!options.appTokenProvider) {
+      throw error;
+    }
+    token = await options.appTokenProvider.tokenForRepo(owner, repo);
+  }
 
   if (owner === options.defaultOwner && repo === options.defaultRepo) {
     return baseClient;
@@ -215,7 +220,7 @@ async function runOneStage(
     );
   }
 
-  const stageClient = clientForStage(repoClients, baseClient, stage, options);
+  const stageClient = await clientForStage(repoClients, baseClient, stage, options);
   const inputs = {
     ...(options.subPipelineInputs ?? {}),
     ...resolveStageInputs(stage.inputs, state.context),

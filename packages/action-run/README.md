@@ -264,7 +264,7 @@ Full copy-paste example: [run-tag-release](https://github.com/aeswibon/pipeline-
 | **`inputs`** | Values sent into the stage’s `workflow_dispatch`. Use **`${{ context.other-stage.key }}`**. |
 | **`context`** | Memory of all prior stages’ outputs. Built automatically by this action. |
 | **`when`** | Optional condition. If false, stage is skipped (and stages that depend on it skip too). |
-| **`repo`** | Run this stage in another GitHub repo (`owner/name`). Needs a PAT in **`repo_tokens_json`**. |
+| **`repo`** | Run this stage in another GitHub repo (`owner/name`). Needs either `repo_tokens_json` PAT mapping or GitHub App credentials. |
 | **Export artifact** | Each stage with **`outputs`** must upload artifact **`pipeline-compose-<id>`** with file **`outputs.json`**. Use **export** action. |
 
 ---
@@ -286,7 +286,7 @@ Only if you run strict validation and have workflows that aren’t stages (like 
 **v1 or v2 pipeline?**  
 **v2** = one file, `pipelines:` map (good for one repo). **v1** = `name` + `stages` (good for one pipeline per file in a folder).
 
-**Cross-repo?** Add **`repo: org/repo`** on the stage and **`repo_tokens_json`** on this action. See [export README](https://github.com/aeswibon/pipeline-compose-export) for same-repo setup first.
+**Cross-repo?** Add **`repo: org/repo`** on the stage and configure either **`repo_tokens_json`** or **`github_app_id` + `github_app_private_key`** on this action. See [export README](https://github.com/aeswibon/pipeline-compose-export) for same-repo setup first.
 
 ---
 
@@ -299,7 +299,7 @@ Only if you run strict validation and have workflows that aren’t stages (like 
 | `workflow_dispatch` not found | Stage YAML missing trigger | Add **`on: workflow_dispatch:`** |
 | Pipeline skips a stage | **`when:`** evaluated false | Check expression / **`context`** keys |
 | Strict validate: orphan workflow | Entry workflow not listed | Add to **`companion_workflows`** |
-| Cross-repo 403 | Token can’t dispatch target repo | PAT in **`repo_tokens_json`** with **`actions: write`** on target |
+| Cross-repo 403 | Token can’t dispatch target repo | Add `repo_tokens_json` PAT mapping or GitHub App installed on target with workflow permissions |
 
 ### Cross-repo stages
 
@@ -316,6 +316,17 @@ When a stage sets `repo: other-org/other-repo`, pass tokens GitHub Actions resol
 
 Tutorial: [docs/tutorials/cross-repo-pipeline.md](https://github.com/aeswibon/pipeline-compose/blob/master/docs/tutorials/cross-repo-pipeline.md)
 
+Using a GitHub App instead of PAT map:
+
+```yaml
+- uses: aeswibon/pipeline-compose-run@v1.5.0
+  with:
+    pipeline_file: .github/pipelines/pipeline.yml
+    github_token: ${{ github.token }}
+    github_app_id: ${{ secrets.PIPELINE_APP_ID }}
+    github_app_private_key: ${{ secrets.PIPELINE_APP_PRIVATE_KEY }}
+```
+
 ---
 
 ## Inputs
@@ -327,6 +338,8 @@ Tutorial: [docs/tutorials/cross-repo-pipeline.md](https://github.com/aeswibon/pi
 | `ref` | no | current ref | Git ref for dispatches |
 | `github_token` | no | `github.token` | Needs **`actions: write`** |
 | `repo_tokens_json` | no | `{}` | `{"owner/repo":"PAT"}` for **`repo:`** stages |
+| `github_app_id` | no | — | GitHub App ID for cross-repo dispatch token minting |
+| `github_app_private_key` | no | — | GitHub App private key PEM (supports escaped `\n`) |
 
 ## Outputs
 

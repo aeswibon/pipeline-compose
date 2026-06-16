@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **GitHub App cross-repo auth** — `pipeline-compose-run` now accepts `github_app_id` and `github_app_private_key` to mint installation tokens for `repo:` stages when `repo_tokens_json` has no matching slug.
+
 ## [1.5.0] - 2026-06-16
 
 ### Added

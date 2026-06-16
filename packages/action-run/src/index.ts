@@ -3,6 +3,7 @@ import {
   loadPipelineDocumentsFromInputs,
   validatePipelineDocuments,
 } from '@aeswibon/pipeline-compose-core';
+import { GitHubAppTokenProvider } from './github-app.js';
 import { GitHubActionsClient } from './github.js';
 import { runPipeline } from './orchestrator.js';
 import { parseRepoTokensJson } from './repo-tokens.js';
@@ -28,6 +29,8 @@ async function run(): Promise<void> {
     core.getInput('repo_tokens_json') || '{}',
   );
   const repository = process.env.GITHUB_REPOSITORY ?? '';
+  const githubAppId = core.getInput('github_app_id');
+  const githubAppPrivateKey = core.getInput('github_app_private_key');
 
   if (!pipelineFile && !pipelineDir) {
     throw new Error('pipeline_file or pipeline_dir input is required');
@@ -52,6 +55,10 @@ async function run(): Promise<void> {
   core.info(`Running pipeline "${pipeline.name}" on ref ${ref}`);
 
   const client = new GitHubActionsClient(token, owner, repo);
+  const appTokenProvider =
+    githubAppId && githubAppPrivateKey
+      ? new GitHubAppTokenProvider(githubAppId, githubAppPrivateKey.replace(/\\n/g, '\n'))
+      : undefined;
   const currentRunId = Number(process.env.GITHUB_RUN_ID ?? '0') || undefined;
   const runAttempt = Number(process.env.GITHUB_RUN_ATTEMPT ?? '1');
   if (pipeline.smart_rerun && runAttempt === 1) {
@@ -64,6 +71,7 @@ async function run(): Promise<void> {
     defaultRepo: repo,
     githubToken: token,
     repoTokens,
+    appTokenProvider,
     currentRunId,
     smartRerun: pipeline.smart_rerun,
     runAttempt,
