@@ -54,6 +54,15 @@ function mockClient(handlers: {
       created_at: new Date().toISOString(),
       head_branch: 'v1.0.0',
     })),
+    getWorkflowRun: vi.fn(async (runId) => ({
+      id: runId,
+      status: 'completed',
+      conclusion: 'success',
+      created_at: new Date().toISOString(),
+      run_started_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:02:00Z',
+      head_branch: 'v1.0.0',
+    })),
     listRunJobs: vi.fn(async (runId) => jobsByRun.get(runId) ?? []),
     waitForStageArtifact: vi.fn(async (_runId, stageId) => {
       if (stageId === 'artifact-stage') {
@@ -504,6 +513,7 @@ describe('runPipeline', () => {
     expect(results[0]?.reused).toBe(true);
     expect(results[0]?.runId).toBe(42);
     expect(results[0]?.outputs).toEqual({ ok: 'true' });
+    expect(results[0]?.savedSeconds).toBe(120);
     expect(persistSpy).toHaveBeenCalled();
 
     loadSpy.mockRestore();

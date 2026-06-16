@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Smart rerun workflow digest** — same-repo stage fingerprints include a workflow file content hash so workflow edits invalidate reuse.
+- **Estimated CI time saved** — job summary totals prior run duration for reused stages on smart rerun.
+
 ## [1.8.0] - 2026-06-16
 
 ### Added

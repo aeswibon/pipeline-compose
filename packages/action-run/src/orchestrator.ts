@@ -22,6 +22,8 @@ import {
   loadPreviousRerunState,
   persistRerunState,
 } from './smart-rerun.js';
+import { runDurationSeconds } from './run-duration.js';
+import { workflowFileDigest } from './workflow-digest.js';
 
 export type OrchestratorOptions = {
   ref: string;
@@ -52,6 +54,8 @@ export type StageResult = {
   outputs: Record<string, string>;
   skipped?: boolean;
   reused?: boolean;
+  /** Prior run duration when smart rerun skipped re-dispatch. */
+  savedSeconds?: number;
 };
 
 function shouldRunStage(
@@ -66,6 +70,16 @@ function shouldRunStage(
 
 function hasSkippedDependency(stage: PipelineStage, skipped: Set<string>): boolean {
   return (stage.needs ?? []).some((dep) => skipped.has(dep));
+}
+
+function workflowDigestForStage(
+  stage: PipelineStage,
+  options: OrchestratorOptions,
+): string | undefined {
+  if (!stage.workflow || !options.repoRoot || stage.repo) {
+    return undefined;
+  }
+  return workflowFileDigest(options.repoRoot, stage.workflow);
 }
 
 function missingRequiredContext(
@@ -231,7 +245,12 @@ async function runOneStage(
       ...(options.subPipelineInputs ?? {}),
       ...resolveStageInputs(stage.inputs, state.context),
     };
-    const fingerprint = stageFingerprint(stage, inputs, options.ref);
+    const fingerprint = stageFingerprint(
+      stage,
+      inputs,
+      options.ref,
+      workflowDigestForStage(stage, options),
+    );
 
     if (stage.pipeline_file) {
       if (!options.repoRoot) {
@@ -270,11 +289,20 @@ async function runOneStage(
           ? parseRepoSlug(stage.repo)
           : { owner: options.defaultOwner, repo: options.defaultRepo };
         await options.commitStatus?.stageSuccess(stage, owner, repo, previous!.runId, true);
+        let savedSeconds: number | undefined;
+        if (previous!.runId > 0) {
+          try {
+            savedSeconds = runDurationSeconds(await stageClient.getWorkflowRun(previous!.runId));
+          } catch {
+            // ponytail: omit savings line when prior run metadata is unavailable
+          }
+        }
         return {
           stageId: stage.id,
           runId: previous!.runId,
           outputs: previous!.outputs,
           reused: true,
+          savedSeconds,
         };
       }
     }

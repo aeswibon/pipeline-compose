@@ -18,6 +18,7 @@ export function stageFingerprint(
   stage: PipelineStage,
   inputs: Record<string, string>,
   ref: string,
+  workflowDigest?: string,
 ): string {
   const normalizedRef = ref.replace(/^refs\/heads\//, '').replace(/^refs\/tags\//, '');
   const payload = JSON.stringify({
@@ -26,6 +27,7 @@ export function stageFingerprint(
     repo: stage.repo ?? '',
     ref: normalizedRef,
     when: stage.when ?? '',
+    workflow_digest: workflowDigest ?? '',
     inputs: Object.fromEntries(Object.entries(inputs).sort(([a], [b]) => a.localeCompare(b))),
   });
   return createHash('sha256').update(payload).digest('hex').slice(0, 16);

@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import type { StageResult } from './orchestrator.js';
+import { formatSavedDuration } from './run-duration.js';
 
 export function writePipelineRunSummary(
   pipelineName: string,
@@ -32,6 +33,10 @@ export function writePipelineRunSummary(
       '',
       `**Smart rerun:** reused **${reused.length}** of **${results.length}** stage(s) on this attempt (skipped re-dispatch).`,
     );
+    const totalSaved = reused.reduce((sum, result) => sum + (result.savedSeconds ?? 0), 0);
+    if (totalSaved > 0) {
+      lines.push(`**Estimated CI time saved:** ${formatSavedDuration(totalSaved)}.`);
+    }
   }
   if (skipped.length > 0) {
     lines.push(`**Skipped:** ${skipped.length} stage(s) (\`when:\` or blocked upstream).`);

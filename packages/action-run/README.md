@@ -132,9 +132,11 @@ pipelines:
     stages: [...]
 ```
 
-The run action saves a **`pipeline-compose-rerun-state`** artifact after each wave. On re-run, stages whose fingerprint (workflow, ref, resolved inputs, `when`) matches the previous attempt reuse cached outputs instead of dispatching again.
+The run action saves a **`pipeline-compose-rerun-state`** artifact after each wave. On re-run, stages whose fingerprint (workflow, ref, resolved inputs, `when`, and same-repo workflow file hash) matches the previous attempt reuse cached outputs instead of dispatching again.
 
-Stages with changed inputs or missing prior outputs still dispatch normally.
+Stages with changed inputs, edited workflow files, or missing prior outputs still dispatch normally.
+
+The Actions **job summary** lists reused stages and, when available, **estimated CI time saved** from prior run durations.
 
 ### Sub-pipelines
 

@@ -14,6 +14,8 @@ export type WorkflowRun = {
   status: string;
   conclusion: string | null;
   created_at: string;
+  run_started_at?: string | null;
+  updated_at?: string | null;
   head_branch: string | null;
   head_sha?: string | null;
   event?: string;

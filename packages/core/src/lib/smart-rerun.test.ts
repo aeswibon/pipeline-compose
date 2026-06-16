@@ -18,6 +18,12 @@ describe('stageFingerprint', () => {
     const b = stageFingerprint(stage, { phase: 'e2e' }, 'refs/tags/v1.0.0');
     expect(a).not.toBe(b);
   });
+
+  it('changes when workflow digest changes', () => {
+    const a = stageFingerprint(stage, {}, 'refs/tags/v1.0.0', 'digest-a');
+    const b = stageFingerprint(stage, {}, 'refs/tags/v1.0.0', 'digest-b');
+    expect(a).not.toBe(b);
+  });
 });
 
 describe('canReuseStage', () => {

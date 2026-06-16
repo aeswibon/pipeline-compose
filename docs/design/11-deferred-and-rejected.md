@@ -73,7 +73,7 @@ Documented ceilings with upgrade paths—**not bugs** until revisit criteria hit
 | Location | Shortcut | Upgrade path |
 |----------|----------|--------------|
 | `orchestrator.ts` `outputsFromJobs` | Last successful job wins | Named job per stage in schema |
-| `smart-rerun.ts` fingerprint | No workflow file hash | Content-address workflows in fingerprint |
+| `smart-rerun.ts` fingerprint | Same-repo workflow file hash included (v1.9); cross-repo digest deferred |
 | `github-app.ts` cache | Per orchestrator job only | Shared cache with TTL if jobs split |
 | `concurrency-enforce.ts` | Tag ref heuristics | Explicit ref normalization table |
 | Sub-pipeline depth | Max 1 | Configurable `max_nest_depth` |
@@ -92,9 +92,10 @@ From [product growth roadmap](../superpowers/specs/product-growth-roadmap.md) an
 | Item | Why deferred |
 |------|----------------|
 | **Marketplace GitHub App** | Auth plumbing shipped BYO; product needs install UX, support, security review |
-| **PR dry-run bot / App** | `validate --simulate` + mermaid exist; bot is packaging |
-| **Remote stage catalog** | Local `catalog:` proves merge; registry is supply chain + legal |
-| **Mermaid in PR comments (hosted)** | CLI works; hosted bot is ops |
+| **PR dry-run bot / App** | `validate --simulate` + mermaid exist; meta-repo PR bot covers hosted mermaid |
+| **Mermaid in PR comments (hosted)** | Shipped via workflow bot; standalone App still deferred |
+
+**Shipped:** per-stage **PR commit statuses** (v1.7), **remote `catalog_from`** (v1.8), **global concurrency locks** (v1.8).
 
 ### Observability & DX
 
@@ -102,7 +103,7 @@ From [product growth roadmap](../superpowers/specs/product-growth-roadmap.md) an
 |------|----------------|
 | **OpenTelemetry cross-run traces** | High value; large surface; no standard in Actions |
 | **`pipeline-compose local` multi-repo** | act is single-repo; simulate covers most PR needs |
-| **CI minutes saved metric** | Needs counterfactual baseline per stage |
+| **CI minutes saved metric** | Partial: v1.8 job summary counts reused stages; v1.9+ adds estimated duration from prior runs |
 | **Slack/intelligent notifications** | Integration sprawl; users use existing Actions slack actions |
 
 ### Platform expansion
