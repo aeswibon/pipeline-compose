@@ -15,7 +15,7 @@ jobs:
           echo "image=myapp:1.0.0" >> "$GITHUB_OUTPUT"
           echo "Build complete"
 
-      - uses: aeswibon/pipeline-compose-context-merge@v1.6.0
+      - uses: aeswibon/pipeline-compose-context-merge@v1.7.0
         with:
           context_file: .pipeline-context.json
           stage_id: build
@@ -27,7 +27,7 @@ jobs:
           echo "passed=true" >> "$GITHUB_OUTPUT"
           echo "Tests complete"
 
-      - uses: aeswibon/pipeline-compose-context-merge@v1.6.0
+      - uses: aeswibon/pipeline-compose-context-merge@v1.7.0
         with:
           context_file: .pipeline-context.json
           stage_id: test
@@ -54,7 +54,7 @@ jobs:
       - id: load
         run: echo "json=$(jq -c . .pipeline-context.json)" >> "$GITHUB_OUTPUT"
 
-      - uses: aeswibon/pipeline-compose-eval@v1.6.0
+      - uses: aeswibon/pipeline-compose-eval@v1.7.0
         id: eval
         with:
           expression: context.test.passed == 'true'

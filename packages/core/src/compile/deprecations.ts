@@ -34,7 +34,7 @@ export function collectWorkflowFileDeprecations(
     issues.push({
       level: 'error',
       code: 'uses.monorepo-subpath-deprecated',
-      message: `Workflow ${relativePath} uses legacy aeswibon/pipeline-compose/<action> paths; use separate action repos (e.g. aeswibon/pipeline-compose-run@v1.6.0)`,
+      message: `Workflow ${relativePath} uses legacy aeswibon/pipeline-compose/<action> paths; use separate action repos (e.g. aeswibon/pipeline-compose-run@v1.7.0)`,
     });
   }
 
@@ -42,7 +42,7 @@ export function collectWorkflowFileDeprecations(
     issues.push({
       level: 'error',
       code: 'uses.master-pin-deprecated',
-      message: `Workflow ${relativePath} pins actions at @master; use a semver tag (e.g. @v1.6.0)`,
+      message: `Workflow ${relativePath} pins actions at @master; use a semver tag (e.g. @v1.7.0)`,
     });
   }
 

@@ -4,7 +4,7 @@
 
 Native `needs:` stops at repo boundaries. **pipeline-compose-run** dispatches each stage workflow, waits for completion, merges stage outputs into context, and surfaces one pipeline result. No generated workflow to commit unless you choose [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile).
 
-**Stable release:** **v1.6.0** — GitHub App cross-repo auth, stage catalog, plus v1.4 smart rerun, sub-pipelines, and typed context.
+**Stable release:** **v1.7.0** — GitHub App cross-repo auth, stage catalog, plus v1.4 smart rerun, sub-pipelines, and typed context.
 
 ## Actions
 
@@ -39,7 +39,7 @@ pipelines:
 **2. Entry workflow** (e.g. tag push):
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.6.0
+- uses: aeswibon/pipeline-compose-run@v1.7.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
 ```
