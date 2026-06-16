@@ -62,6 +62,7 @@ See [docs/development.md](docs/development.md) for the full command list and rel
 
 | Topic | Location |
 |-------|----------|
+| **Design rationale (series)** | [docs/design/](docs/design/) — why this architecture, per-feature decisions |
 | Run + export setup | [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) |
 | Examples (copy `.github/`) | [examples/](examples/) |
 | Tag release walkthrough | [docs/tutorials/tag-release-pipeline.md](docs/tutorials/tag-release-pipeline.md) |
