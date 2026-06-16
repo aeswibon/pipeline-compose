@@ -87,7 +87,7 @@ jobs:
 jobs:
   sync:
     steps:
-      - uses: aeswibon/pipeline-compose-export@v1.8.0
+      - uses: aeswibon/pipeline-compose-export@v1.9.0
         with:
           stage_id: version-sync
           outputs: '{"version":"1.0.0"}'
