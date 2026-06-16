@@ -37,13 +37,13 @@ This is **local to one workflow run**. It does **not** replace **export** artifa
   id: ci
   run: echo "passed=true" >> "$GITHUB_OUTPUT"
 
-- uses: aeswibon/pipeline-compose-context-merge@v1.8.0
+- uses: aeswibon/pipeline-compose-context-merge@v1.9.0
   with:
     context_file: .pipeline-context.json
     stage_id: ci
     outputs: ${{ toJson(steps.ci.outputs) }}
 
-- uses: aeswibon/pipeline-compose-context-merge@v1.8.0
+- uses: aeswibon/pipeline-compose-context-merge@v1.9.0
   with:
     context_file: .pipeline-context.json
     stage_id: release
@@ -54,7 +54,7 @@ Example: [context-merge-manual](https://github.com/aeswibon/pipeline-compose/tre
 
 <!-- start usage -->
 ```yaml
-- uses: aeswibon/pipeline-compose-context-merge@v1.8.0
+- uses: aeswibon/pipeline-compose-context-merge@v1.9.0
   with:
     context_file: .pipeline-context.json
     stage_id: ci
