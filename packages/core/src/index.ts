@@ -1,5 +1,6 @@
 export type {
   Pipeline,
+  PipelineConcurrency,
   PipelineDefinition,
   PipelineDocument,
   PipelineDocumentV2,
@@ -37,6 +38,7 @@ export {
   V1_UNSUPPORTED_MESSAGE,
 } from './compile/validator.js';
 export { sortStages } from './compile/topo-sort.js';
+export { groupStagesIntoWaves } from './compile/stage-waves.js';
 export { generateWorkflow } from './compile/codegen.js';
 export type { GenerateOptions } from './compile/codegen.js';
 export {
@@ -80,3 +82,7 @@ export type {
   WorkflowSyncResult,
 } from './compile/sync-workflows.js';
 export { evaluateExpression, mergeContext, parseRepoSlug } from './lib/expressions.js';
+export {
+  concurrencyFromCodegen,
+  resolveConcurrencyGroup,
+} from './lib/concurrency.js';

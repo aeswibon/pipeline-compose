@@ -51,6 +51,7 @@ async function run(): Promise<void> {
   core.info(`Running pipeline "${pipeline.name}" on ref ${ref}`);
 
   const client = new GitHubActionsClient(token, owner, repo);
+  const currentRunId = Number(process.env.GITHUB_RUN_ID ?? '0') || undefined;
   const results = await runPipeline(pipeline, client, {
     ref,
     github: githubContextFromEnv(),
@@ -58,6 +59,7 @@ async function run(): Promise<void> {
     defaultRepo: repo,
     githubToken: token,
     repoTokens,
+    currentRunId,
   });
 
   core.setOutput('results_json', JSON.stringify(results));

@@ -1,4 +1,7 @@
 version: 2
+concurrency:
+  group: release-${{ github.ref }}
+  cancel_in_progress: false
 groups:
   release:
     description: Meta-repo tag release chain

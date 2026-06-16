@@ -4,6 +4,11 @@ export interface PipelineGroupMeta {
   description?: string;
 }
 
+export interface PipelineConcurrency {
+  group: string;
+  cancel_in_progress?: boolean;
+}
+
 export interface PipelineStage {
   id: string;
   workflow: string;
@@ -25,6 +30,8 @@ export interface Pipeline {
   groups?: Record<string, PipelineGroupMeta>;
   /** Workflows not driven by stages but intentionally part of the repo (e.g. native release.yml). */
   companion_workflows?: string[];
+  /** Serialize or cancel overlapping runs of the same entry workflow (enforced by run action). */
+  concurrency?: PipelineConcurrency;
   context?: Record<string, string>;
   stages: PipelineStage[];
 }
@@ -40,6 +47,8 @@ export interface PipelineDocumentV2 {
   groups?: Record<string, PipelineGroupMeta>;
   /** Workflows not driven by stages (e.g. tag entry `release.yml`). */
   companion_workflows?: string[];
+  /** Applied to merged pipeline when using pipeline-compose-run. */
+  concurrency?: PipelineConcurrency;
   pipelines: Record<string, PipelineDefinition>;
 }
 

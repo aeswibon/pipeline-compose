@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Parallel stage dispatch** — `pipeline-compose-run` dispatches stages in the same DAG wave concurrently.
+- **Pipeline `concurrency`** — optional `concurrency.group` + `cancel_in_progress` on pipeline YAML; enforced by run action before stages; emitted by compile codegen.
+
+### Changed
+
+- **Concurrency docs** — run vs compile behavior documented in run action README and glossary.
+- **Meta pipeline** — `.github/pipelines/pipeline.yml` declares `concurrency` for release runs.
+- **1.0 contracts** — 1.2 features documented; later backlog listed.
+
 ## [1.1.0] - 2026-06-14
 
 ### Added

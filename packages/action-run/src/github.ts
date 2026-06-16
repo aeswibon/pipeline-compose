@@ -17,6 +17,7 @@ export type WorkflowRun = {
   head_branch: string | null;
   head_sha?: string | null;
   event?: string;
+  workflow_id?: number;
 };
 
 export function matchesDispatchedRun(
@@ -183,6 +184,32 @@ export class GitHubActionsClient {
       await sleep(pollMs);
     }
     throw new Error(`Timed out waiting for workflow run ${runId}`);
+  }
+
+  async getWorkflowRun(runId: number): Promise<WorkflowRun & { workflow_id: number }> {
+    return this.request<WorkflowRun & { workflow_id: number }>(
+      `/repos/${this.owner}/${this.repo}/actions/runs/${runId}`,
+    );
+  }
+
+  async listWorkflowRuns(
+    workflowId: number,
+    opts?: { status?: string },
+  ): Promise<WorkflowRun[]> {
+    const params = new URLSearchParams({ per_page: '30' });
+    if (opts?.status) {
+      params.set('status', opts.status);
+    }
+    const data = await this.request<{ workflow_runs: WorkflowRun[] }>(
+      `/repos/${this.owner}/${this.repo}/actions/workflows/${workflowId}/runs?${params}`,
+    );
+    return data.workflow_runs;
+  }
+
+  async cancelWorkflowRun(runId: number): Promise<void> {
+    await this.request(`/repos/${this.owner}/${this.repo}/actions/runs/${runId}/cancel`, {
+      method: 'POST',
+    });
   }
 
   async getJob(jobId: number): Promise<WorkflowJob> {

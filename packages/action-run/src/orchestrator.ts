@@ -1,5 +1,11 @@
 import type { Pipeline, PipelineStage } from '@aeswibon/pipeline-compose-core';
-import { evaluateExpression, mergeContext, parseRepoSlug } from '@aeswibon/pipeline-compose-core';
+import {
+  evaluateExpression,
+  groupStagesIntoWaves,
+  mergeContext,
+  parseRepoSlug,
+} from '@aeswibon/pipeline-compose-core';
+import { enforcePipelineConcurrency } from './concurrency-enforce.js';
 import { resolveStageInputs } from './inputs.js';
 import { resolveStageToken, type RepoTokenMap } from './repo-tokens.js';
 import { GitHubActionsClient, type WorkflowJob } from './github.js';
@@ -11,6 +17,8 @@ export type OrchestratorOptions = {
   defaultRepo: string;
   githubToken: string;
   repoTokens: RepoTokenMap;
+  /** Parent workflow run id (GITHUB_RUN_ID) for concurrency enforcement. */
+  currentRunId?: number;
   timeoutMs?: number;
   pollMs?: number;
 };
@@ -150,6 +158,77 @@ function clientForStage(
   return scoped;
 }
 
+type StageRunState = {
+  skipped: Set<string>;
+  context: Record<string, Record<string, string>>;
+};
+
+async function runOneStage(
+  stage: PipelineStage,
+  state: StageRunState,
+  options: OrchestratorOptions,
+  baseClient: GitHubActionsClient,
+  repoClients: Map<string, GitHubActionsClient>,
+  timeoutMs: number,
+  pollMs: number,
+): Promise<StageResult> {
+  const evalCtx = {
+    github: options.github,
+    context: state.context as Record<string, unknown>,
+  };
+
+  if (hasSkippedDependency(stage, state.skipped)) {
+    state.skipped.add(stage.id);
+    return { stageId: stage.id, runId: 0, outputs: {}, skipped: true };
+  }
+
+  if (!shouldRunStage(stage, evalCtx)) {
+    state.skipped.add(stage.id);
+    return { stageId: stage.id, runId: 0, outputs: {}, skipped: true };
+  }
+
+  const missing = missingRequiredContext(stage, state.context);
+  if (missing) {
+    throw new Error(
+      `Stage "${stage.id}" requires context.${missing} from a stage that did not run`,
+    );
+  }
+
+  const stageClient = clientForStage(repoClients, baseClient, stage, options);
+  const workflow = await stageClient.getWorkflowByPath(stage.workflow);
+  const inputs = resolveStageInputs(stage.inputs, state.context);
+  const dispatchAt = Date.now();
+
+  await stageClient.dispatchWorkflow(workflow.id, options.ref, inputs);
+
+  let run = await stageClient.waitForRun(
+    workflow.id,
+    options.ref,
+    dispatchAt,
+    timeoutMs,
+    pollMs,
+  );
+
+  run = await stageClient.waitForRunCompletion(run.id, timeoutMs, pollMs);
+
+  if (run.conclusion !== 'success') {
+    throw new Error(
+      `Stage "${stage.id}" failed (${workflow.path}, run ${run.id}, conclusion=${run.conclusion})`,
+    );
+  }
+
+  const outputs = await collectStageOutputs(
+    stageClient,
+    run.id,
+    stage.id,
+    stage.outputs,
+    timeoutMs,
+    pollMs,
+  );
+
+  return { stageId: stage.id, runId: run.id, outputs };
+}
+
 export async function runPipeline(
   pipeline: Pipeline,
   client: GitHubActionsClient,
@@ -158,74 +237,48 @@ export async function runPipeline(
   const timeoutMs = options.timeoutMs ?? 60 * 60 * 1000;
   const pollMs = options.pollMs ?? 10_000;
   const results: StageResult[] = [];
-  const skipped = new Set<string>();
-  let context: Record<string, Record<string, string>> = {};
+  const state: StageRunState = { skipped: new Set<string>(), context: {} };
   const repoClients = new Map<string, GitHubActionsClient>();
 
-  for (const stage of pipeline.stages) {
-    const evalCtx = {
+  if (pipeline.concurrency && options.currentRunId) {
+    await enforcePipelineConcurrency(client, {
+      currentRunId: options.currentRunId,
+      ref: options.ref,
+      concurrency: pipeline.concurrency,
       github: options.github,
-      context: context as Record<string, unknown>,
-    };
-
-    if (hasSkippedDependency(stage, skipped)) {
-      skipped.add(stage.id);
-      results.push({ stageId: stage.id, runId: 0, outputs: {}, skipped: true });
-      continue;
-    }
-
-    if (!shouldRunStage(stage, evalCtx)) {
-      skipped.add(stage.id);
-      results.push({ stageId: stage.id, runId: 0, outputs: {}, skipped: true });
-      continue;
-    }
-
-    const missing = missingRequiredContext(stage, context);
-    if (missing) {
-      throw new Error(
-        `Stage "${stage.id}" requires context.${missing} from a stage that did not run`,
-      );
-    }
-
-    const stageClient = clientForStage(repoClients, client, stage, options);
-
-    const workflow = await stageClient.getWorkflowByPath(stage.workflow);
-    const inputs = resolveStageInputs(stage.inputs, context);
-    const dispatchAt = Date.now();
-
-    await stageClient.dispatchWorkflow(workflow.id, options.ref, inputs);
-
-    let run = await stageClient.waitForRun(
-      workflow.id,
-      options.ref,
-      dispatchAt,
-      timeoutMs,
       pollMs,
+      timeoutMs: Math.min(timeoutMs, 5 * 60 * 1000),
+    });
+  }
+
+  const waves = groupStagesIntoWaves(pipeline.stages);
+
+  for (const wave of waves) {
+    const waveResults = await Promise.all(
+      wave.map((stage) =>
+        runOneStage(
+          stage,
+          state,
+          options,
+          client,
+          repoClients,
+          timeoutMs,
+          pollMs,
+        ),
+      ),
     );
 
-    run = await stageClient.waitForRunCompletion(run.id, timeoutMs, pollMs);
-
-    if (run.conclusion !== 'success') {
-      throw new Error(
-        `Stage "${stage.id}" failed (${workflow.path}, run ${run.id}, conclusion=${run.conclusion})`,
-      );
+    for (const result of waveResults) {
+      if (result.skipped) {
+        state.skipped.add(result.stageId);
+      } else {
+        state.context = mergeContext(state.context, result.stageId, result.outputs) as Record<
+          string,
+          Record<string, string>
+        >;
+      }
+      results.push(result);
     }
-
-    const outputs = await collectStageOutputs(
-      stageClient,
-      run.id,
-      stage.id,
-      stage.outputs,
-      timeoutMs,
-      pollMs,
-    );
-
-    context = mergeContext(context, stage.id, outputs) as Record<
-      string,
-      Record<string, string>
-    >;
-
-    results.push({ stageId: stage.id, runId: run.id, outputs });
   }
 
   return results;

@@ -1,5 +1,6 @@
 import { stringify as stringifyYaml } from 'yaml';
 import type { Pipeline, PipelineStage } from './parser.js';
+import { concurrencyFromCodegen } from '../lib/concurrency.js';
 
 export interface GenerateOptions {
   /** Path to pipeline source (used in header and compile-check). */
@@ -133,10 +134,10 @@ export function generateWorkflow(pipeline: Pipeline, opts: GenerateOptions = {})
       contents: 'write',
       actions: 'write',
     },
-    concurrency: {
-      group: 'pipeline-${{ github.ref }}',
-      'cancel-in-progress': false,
-    },
+    concurrency: concurrencyFromCodegen(
+      pipeline.concurrency,
+      'pipeline-${{ github.ref }}',
+    ),
     jobs,
   };
 

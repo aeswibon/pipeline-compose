@@ -28,6 +28,7 @@
       "items": { "type": "string", "minLength": 1 },
       "maxItems": 10
     },
+    "concurrency": { "$ref": "#/$defs/concurrency" },
     "context": {
       "type": "object",
       "additionalProperties": { "type": "string" }
@@ -40,6 +41,15 @@
     }
   },
   "$defs": {
+    "concurrency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["group"],
+      "properties": {
+        "group": { "type": "string", "minLength": 1 },
+        "cancel_in_progress": { "type": "boolean" }
+      }
+    },
     "stage": {
       "type": "object",
       "required": ["id", "workflow"],

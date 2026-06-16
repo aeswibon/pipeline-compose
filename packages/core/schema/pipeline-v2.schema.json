@@ -22,6 +22,7 @@
       "items": { "type": "string", "minLength": 1 },
       "maxItems": 10
     },
+    "concurrency": { "$ref": "pipeline-v1.schema.json#/$defs/concurrency" },
     "pipelines": {
       "type": "object",
       "minProperties": 1,

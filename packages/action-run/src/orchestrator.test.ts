@@ -372,4 +372,59 @@ describe('runPipeline', () => {
     expect(constructSpy).toHaveBeenCalledTimes(1);
     constructSpy.mockRestore();
   });
+
+  it('dispatches independent stages in the same wave concurrently', async () => {
+    const dispatchOrder: string[] = [];
+    let releaseResolve: (() => void) | undefined;
+    const releaseGate = new Promise<void>((resolve) => {
+      releaseResolve = resolve;
+    });
+
+    const client = mockClient({
+      workflows: {
+        '.github/workflows/ci.yml': 1,
+        '.github/workflows/lint.yml': 2,
+        '.github/workflows/test.yml': 3,
+      },
+    });
+
+    vi.mocked(client.dispatchWorkflow).mockImplementation(async (workflowId) => {
+      const paths: Record<number, string> = {
+        1: '.github/workflows/ci.yml',
+        2: '.github/workflows/lint.yml',
+        3: '.github/workflows/test.yml',
+      };
+      const path = paths[workflowId] ?? String(workflowId);
+      dispatchOrder.push(path);
+      if (path.endsWith('lint.yml')) {
+        await releaseGate;
+      }
+    });
+
+    const parallelPipeline: Pipeline = {
+      name: 'pipeline',
+      version: 1,
+      stages: [
+        { id: 'ci', workflow: '.github/workflows/ci.yml' },
+        { id: 'lint', workflow: '.github/workflows/lint.yml', needs: ['ci'] },
+        { id: 'test', workflow: '.github/workflows/test.yml', needs: ['ci'] },
+      ],
+    };
+
+    const runPromise = runPipeline(parallelPipeline, client, runOptions);
+    await vi.waitFor(() => {
+      expect(dispatchOrder).toContain('.github/workflows/lint.yml');
+      expect(dispatchOrder).toContain('.github/workflows/test.yml');
+    });
+    releaseResolve?.();
+    const results = await runPromise;
+
+    expect(results).toHaveLength(3);
+    expect(client.dispatchWorkflow).toHaveBeenCalledTimes(3);
+    const lintIndex = dispatchOrder.indexOf('.github/workflows/lint.yml');
+    const testIndex = dispatchOrder.indexOf('.github/workflows/test.yml');
+    expect(lintIndex).toBeGreaterThanOrEqual(0);
+    expect(testIndex).toBeGreaterThanOrEqual(0);
+    expect(testIndex).toBeLessThan(lintIndex + 2);
+  });
 });

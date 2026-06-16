@@ -4,7 +4,7 @@
 
 Native `needs:` stops at repo boundaries. **pipeline-compose-run** dispatches each stage workflow, waits for completion, merges stage outputs into context, and surfaces one pipeline result. No generated workflow to commit unless you choose [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile).
 
-**Stable release:** **v1.0.0** — pipeline schema v2 only; semver action pins; export action required for stage outputs.
+**Stable release:** **v1.1.0** — pipeline schema v2; `validate --simulate`; semver action pins; export action required for stage outputs.
 
 ## Actions
 

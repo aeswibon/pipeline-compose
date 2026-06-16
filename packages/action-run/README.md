@@ -55,6 +55,41 @@ Your existing workflow **files** stay separate. The pipeline file only answers: 
 
 ---
 
+## Concurrency
+
+Two different ideas — both are supported.
+
+### Overlapping pipeline runs (e.g. two tag pushes)
+
+Add **`concurrency`** to your pipeline file (v2 root or v1 document):
+
+```yaml
+version: 2
+concurrency:
+  group: release-${{ github.ref }}
+  cancel_in_progress: true   # cancel older runs; false = wait
+pipelines:
+  release:
+    stages: [...]
+```
+
+**pipeline-compose-run** enforces this before dispatching stages: it finds other in-progress runs of the **same entry workflow** on the **same ref** and either cancels them (`cancel_in_progress: true`) or waits until they finish.
+
+You can also add `concurrency` on the entry workflow (belt-and-suspenders); values should match.
+
+### Parallel stages (siblings with no `needs` between them)
+
+**Run action: parallel by wave.** Stages whose `needs` are all satisfied run **concurrently** (same DAG level). The next wave starts only after the current wave finishes.
+
+**Compile action: parallel when GitHub can.** [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile) emits native `needs:` jobs; GitHub runs independent jobs in parallel.
+
+| Path | Parallel sibling stages | Overlapping runs |
+|------|-------------------------|------------------|
+| **run** (dispatch) | Yes — same wave dispatches together | `concurrency` in pipeline YAML |
+| **compile** (generated YAML) | Yes — native GHA DAG | `concurrency` in pipeline YAML → generated workflow |
+
+---
+
 ## First-time setup checklist
 
 Copy this list when adding pipeline-compose to a repo:

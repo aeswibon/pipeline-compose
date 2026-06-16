@@ -27,7 +27,15 @@ A normal GitHub workflow (e.g. `.github/workflows/release.yml`) that **starts** 
 
 **pipeline-compose-run** — reads the pipeline file, evaluates `when:`, dispatches stages in order, merges outputs into `context`, and fails the job if a stage fails.
 
+### Concurrency
+
+| Concern | Behavior |
+|---------|----------|
+| **Overlapping runs** | Optional `concurrency` on pipeline YAML — run action cancels or waits for other in-progress runs of the same entry workflow on the same ref |
+| **Parallel stages** (siblings in the DAG) | **Run:** same-wave concurrent dispatch. **Compile:** native GitHub `needs:` |
+
 ---
+
 
 ## Pipeline fields
 

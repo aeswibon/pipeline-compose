@@ -41,7 +41,7 @@ export function pipelineDocumentToList(doc: PipelineDocument): Pipeline[] {
     return [doc];
   }
   return Object.entries(doc.pipelines).map(([key, def]) =>
-    definitionToPipeline(key, def, doc.groups),
+    definitionToPipeline(key, def, doc.groups, doc.concurrency),
   );
 }
 
@@ -49,6 +49,7 @@ function definitionToPipeline(
   key: string,
   def: PipelineDefinition,
   groups?: PipelineDocumentV2['groups'],
+  concurrency?: PipelineDocumentV2['concurrency'],
 ): Pipeline {
   return {
     name: key,
@@ -56,6 +57,7 @@ function definitionToPipeline(
     group: def.group ?? key,
     needs: def.needs,
     groups,
+    concurrency,
     stages: def.stages,
   };
 }
@@ -87,12 +89,14 @@ export function mergePipelines(pipelines: Pipeline[], options: { lenientNeeds?: 
   const companion = [
     ...new Set(ordered.flatMap((pipeline) => pipeline.companion_workflows ?? [])),
   ];
+  const concurrency = ordered.find((p) => p.concurrency)?.concurrency;
   return {
     name: ordered.length === 1 ? primary.name : 'combined',
     version: 1,
     group: primary.group,
     groups: primary.groups,
     context: primary.context,
+    concurrency,
     companion_workflows: companion.length > 0 ? companion : undefined,
     stages,
   };
