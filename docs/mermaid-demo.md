@@ -2,7 +2,7 @@
 
 `validate --mermaid` prints a [Mermaid](https://mermaid.js.org/) flowchart of stage topology: one node per stage (id, group, optional cross-repo target) and edges from `needs:`.
 
-On pull requests that change `.github/pipelines/**`, the [**Pipeline PR comment**](../.github/workflows/pipeline-pr-comment.yml) workflow posts the same diagram plus validate status and issues.
+On pull requests that change `.github/pipelines/**`, the [**Pipeline PR comment**](../.github/workflows/pipeline-pr-comment.yml) workflow posts the same diagram plus validate status and issues. Design rationale: [docs/design/12-validation-simulate-and-pr-bot.md](design/12-validation-simulate-and-pr-bot.md).
 
 ## Local CLI
 

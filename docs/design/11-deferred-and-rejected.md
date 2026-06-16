@@ -1,6 +1,6 @@
 # 11 — Deferred and rejected
 
-**Series:** [Design rationale](README.md) · **Prev:** [10 — Cross-repo authentication](10-cross-repo-authentication.md)
+**Series:** [Design rationale](README.md) · **Prev:** [10 — Cross-repo authentication](10-cross-repo-authentication.md) · **Next:** [12 — Validation, simulate, and PR bot](12-validation-simulate-and-pr-bot.md)
 
 ## Executive summary
 
