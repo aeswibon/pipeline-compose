@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Examples and docs** — action pins updated to `@v1.3.0`; compile codegen default pin `@v1.3.0`.
+
 ## [1.3.0] - 2026-06-16
 
 ### Added

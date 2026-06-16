@@ -39,7 +39,7 @@ pipelines:
 **2. Entry workflow** (e.g. tag push):
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.0.0
+- uses: aeswibon/pipeline-compose-run@v1.3.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
 ```
