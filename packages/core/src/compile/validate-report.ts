@@ -4,7 +4,14 @@ import type { ResolvedPipeline, ResolvedStage } from './parser.js';
 import { resolveStageGroup } from './parser.js';
 import { parseRepoSlug } from '../lib/expressions.js';
 import { parseContextInputRefs } from '../lib/context-refs.js';
+import { collectContextSchemaIssues } from '../lib/context-schema.js';
 import { collectDeprecationIssues } from './deprecations.js';
+import {
+  isSubPipelineStage,
+  listWorkflowPaths,
+  nestedDeclaredOutputs,
+  resolveSubPipeline,
+} from './sub-pipeline.js';
 
 export type ValidationIssueLevel = 'warn' | 'error';
 
@@ -72,7 +79,7 @@ export function collectPipelineIssues(
       ungrouped += 1;
     }
 
-    if (group && !workflowMatchesGroupConvention(stage.workflow, group, stage.id)) {
+    if (group && stage.workflow && !workflowMatchesGroupConvention(stage.workflow, group, stage.id)) {
       issues.push({
         level: 'warn',
         code: 'group.path-prefix',
@@ -80,7 +87,36 @@ export function collectPipelineIssues(
       });
     }
 
-    if (repoRoot) {
+    if (isSubPipelineStage(stage)) {
+      if (!repoRoot) {
+        continue;
+      }
+      try {
+        const nested = resolveSubPipeline(repoRoot, stage.pipeline_file!, stage.pipeline);
+        const nestedOutputs = nestedDeclaredOutputs(nested);
+        for (const outputKey of stage.outputs ?? []) {
+          if (!nestedOutputs.has(outputKey)) {
+            issues.push({
+              level: 'error',
+              code: 'subpipeline.unknown-output',
+              message: `Sub-pipeline stage "${stage.id}" declares output "${outputKey}" but nested pipeline does not produce it`,
+            });
+          }
+        }
+      } catch (error) {
+        issues.push({
+          level: 'error',
+          code: 'subpipeline.invalid',
+          message:
+            error instanceof Error
+              ? error.message
+              : `Invalid sub-pipeline for stage "${stage.id}"`,
+        });
+      }
+      continue;
+    }
+
+    if (repoRoot && stage.workflow) {
       const workflowPath = path.resolve(repoRoot, stage.workflow);
       if (!fs.existsSync(workflowPath)) {
         issues.push({
@@ -193,14 +229,25 @@ export function findOrphanWorkflows(
     return [];
   }
 
-  const referenced = new Set([
-    ...pipeline.stages.map((stage) =>
-      path.normalize(path.resolve(root, stage.workflow)),
-    ),
-    ...(pipeline.companion_workflows ?? []).map((workflow) =>
-      path.normalize(path.resolve(root, workflow)),
-    ),
-  ]);
+  const referenced = new Set<string>();
+  for (const stage of pipeline.stages) {
+    if (stage.workflow) {
+      referenced.add(path.normalize(path.resolve(root, stage.workflow)));
+    }
+    if (isSubPipelineStage(stage) && fs.existsSync(path.resolve(root, stage.pipeline_file!))) {
+      try {
+        const nested = resolveSubPipeline(root, stage.pipeline_file!, stage.pipeline);
+        for (const workflowPath of listWorkflowPaths(nested, root)) {
+          referenced.add(workflowPath);
+        }
+      } catch {
+        // resolveSubPipeline issues are reported elsewhere
+      }
+    }
+  }
+  for (const workflow of pipeline.companion_workflows ?? []) {
+    referenced.add(path.normalize(path.resolve(root, workflow)));
+  }
 
   const entries = fs.readdirSync(workflowsDir, { withFileTypes: true });
   const orphans: string[] = [];
@@ -228,6 +275,7 @@ export function buildValidateReport(
   const issues = collectPipelineIssues(pipeline, options);
   issues.push(...collectNeedsIssues(pipeline.stages));
   issues.push(...collectContextIssues(pipeline.stages));
+  issues.push(...collectContextSchemaIssues(pipeline));
 
   if (options.repoRoot) {
     issues.push(...collectDeprecationIssues(pipeline, options.repoRoot));
@@ -284,7 +332,7 @@ export function formatPipelineTree(pipeline: ResolvedPipeline): string {
     for (const stage of stages) {
       const pipelineLabel = stage.pipelineKey ? ` (${stage.pipelineKey})` : '';
       lines.push(
-        `    ${stage.id}${pipelineLabel} → ${stage.workflow}`,
+        `    ${stage.id}${pipelineLabel} → ${stage.workflow ?? stage.pipeline_file}`,
       );
     }
   }
@@ -293,7 +341,7 @@ export function formatPipelineTree(pipeline: ResolvedPipeline): string {
     lines.push('');
     lines.push('  [ungrouped]');
     for (const stage of ungrouped) {
-      lines.push(`    ${stage.id} → ${stage.workflow}`);
+      lines.push(`    ${stage.id} → ${stage.workflow ?? stage.pipeline_file}`);
     }
   }
 
@@ -333,7 +381,7 @@ export function serializeValidateReport(
         stageCount: report.pipeline.stages.length,
         stages: report.pipeline.stages.map((stage) => ({
           id: stage.id,
-          workflow: stage.workflow,
+          workflow: stage.workflow ?? stage.pipeline_file,
           repo: stage.repo,
           group: stage.resolvedGroup ?? resolveStageGroup(stage, report.pipeline.group),
           pipelineKey: stage.pipelineKey,

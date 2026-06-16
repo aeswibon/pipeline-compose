@@ -22,7 +22,7 @@ export function stageFingerprint(
   const normalizedRef = ref.replace(/^refs\/heads\//, '').replace(/^refs\/tags\//, '');
   const payload = JSON.stringify({
     id: stage.id,
-    workflow: stage.workflow,
+    workflow: stage.workflow ?? stage.pipeline_file ?? '',
     repo: stage.repo ?? '',
     ref: normalizedRef,
     when: stage.when ?? '',

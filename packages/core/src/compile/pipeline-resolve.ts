@@ -41,7 +41,7 @@ export function pipelineDocumentToList(doc: PipelineDocument): Pipeline[] {
     return [doc];
   }
   return Object.entries(doc.pipelines).map(([key, def]) =>
-    definitionToPipeline(key, def, doc.groups, doc.concurrency, doc.smart_rerun),
+    definitionToPipeline(key, def, doc.groups, doc.concurrency, doc.smart_rerun, def.context_schema),
   );
 }
 
@@ -51,6 +51,7 @@ function definitionToPipeline(
   groups?: PipelineDocumentV2['groups'],
   concurrency?: PipelineDocumentV2['concurrency'],
   smartRerun?: boolean,
+  contextSchema?: PipelineDefinition['context_schema'],
 ): Pipeline {
   return {
     name: key,
@@ -60,6 +61,7 @@ function definitionToPipeline(
     groups,
     concurrency,
     smart_rerun: smartRerun,
+    context_schema: contextSchema,
     stages: def.stages,
   };
 }
@@ -93,6 +95,7 @@ export function mergePipelines(pipelines: Pipeline[], options: { lenientNeeds?: 
   ];
   const concurrency = ordered.find((p) => p.concurrency)?.concurrency;
   const smartRerun = ordered.find((p) => p.smart_rerun)?.smart_rerun;
+  const contextSchema = ordered.find((p) => p.context_schema)?.context_schema;
   return {
     name: ordered.length === 1 ? primary.name : 'combined',
     version: 1,
@@ -101,6 +104,7 @@ export function mergePipelines(pipelines: Pipeline[], options: { lenientNeeds?: 
     context: primary.context,
     concurrency,
     smart_rerun: smartRerun,
+    context_schema: contextSchema,
     companion_workflows: companion.length > 0 ? companion : undefined,
     stages,
   };
@@ -117,6 +121,12 @@ export function resolvePipelineDocumentForReport(doc: PipelineDocument): Resolve
   if (isPipelineV2(doc) && doc.smart_rerun) {
     merged.smart_rerun = doc.smart_rerun;
   }
+  const contextSchema = isPipelineV2(doc)
+    ? Object.values(doc.pipelines).find((p) => p.context_schema)?.context_schema
+    : undefined;
+  if (contextSchema) {
+    merged.context_schema = contextSchema;
+  }
   return merged;
 }
 
@@ -130,6 +140,12 @@ export function resolvePipelineDocument(doc: PipelineDocument): ResolvedPipeline
   }
   if (isPipelineV2(doc) && doc.smart_rerun) {
     merged.smart_rerun = doc.smart_rerun;
+  }
+  const contextSchemaResolved = isPipelineV2(doc)
+    ? Object.values(doc.pipelines).find((p) => p.context_schema)?.context_schema
+    : undefined;
+  if (contextSchemaResolved) {
+    merged.context_schema = contextSchemaResolved;
   }
   return merged;
 }

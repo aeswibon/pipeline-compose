@@ -1,13 +1,15 @@
 import type { ResolvedPipeline, ResolvedStage } from './parser.js';
 import { evaluateExpression, mergeContext } from '../lib/expressions.js';
 import { groupStagesIntoWaves } from './stage-waves.js';
+import { resolveSubPipeline } from './sub-pipeline.js';
 
 export type SimulateStageStatus = 'run' | 'skip' | 'blocked';
 
 export interface SimulateStageResult {
   id: string;
   status: SimulateStageStatus;
-  workflow: string;
+  workflow?: string;
+  pipeline_file?: string;
   repo?: string;
   reason?: string;
   /** 1-based DAG wave (parallel stages share a wave). */
@@ -16,6 +18,7 @@ export interface SimulateStageResult {
 
 export interface SimulatePipelineOptions {
   github?: Record<string, unknown>;
+  repoRoot?: string;
 }
 
 function hasSkippedDependency(stage: ResolvedStage, skipped: Set<string>): boolean {
@@ -48,10 +51,12 @@ function simulateStage(
   skipped: Set<string>,
   github: Record<string, unknown>,
   context: Record<string, Record<string, string>>,
+  options: SimulatePipelineOptions,
 ): { result: SimulateStageResult; nextContext: Record<string, Record<string, string>> } {
   const base = {
     id: stage.id,
     workflow: stage.workflow,
+    pipeline_file: stage.pipeline_file,
     repo: stage.repo,
     wave,
   };
@@ -86,6 +91,37 @@ function simulateStage(
   }
 
   let nextContext = context;
+  if (stage.pipeline_file && options.repoRoot) {
+    try {
+      const nested = resolveSubPipeline(options.repoRoot, stage.pipeline_file, stage.pipeline);
+      const nestedResults = simulatePipeline(nested, { github, repoRoot: options.repoRoot });
+      const failed = nestedResults.find(
+        (row) => row.status === 'blocked' || row.status === 'skip',
+      );
+      if (failed) {
+        skipped.add(stage.id);
+        return {
+          result: {
+            ...base,
+            status: 'blocked',
+            reason: `sub-pipeline ${failed.id} ${failed.status}`,
+          },
+          nextContext: context,
+        };
+      }
+    } catch (error) {
+      skipped.add(stage.id);
+      return {
+        result: {
+          ...base,
+          status: 'blocked',
+          reason: error instanceof Error ? error.message : 'invalid sub-pipeline',
+        },
+        nextContext: context,
+      };
+    }
+  }
+
   if (stage.outputs?.length) {
     nextContext = mergeContext(
       context,
@@ -114,7 +150,14 @@ export function simulatePipeline(
     const wave = waves[waveIndex];
     const waveNum = waveIndex + 1;
     for (const stage of wave) {
-      const { result, nextContext } = simulateStage(stage, waveNum, skipped, github, context);
+      const { result, nextContext } = simulateStage(
+        stage,
+        waveNum,
+        skipped,
+        github,
+        context,
+        options,
+      );
       context = nextContext;
       results.push(result);
     }
@@ -132,7 +175,9 @@ export function formatSimulateReport(results: SimulateStageResult[]): string {
       currentWave = stage.wave;
       lines.push(`  Wave ${currentWave}`);
     }
-    const target = stage.repo ? `${stage.repo} → ${stage.workflow}` : stage.workflow;
+    const target = stage.repo
+      ? `${stage.repo} → ${stage.workflow ?? stage.pipeline_file}`
+      : (stage.workflow ?? stage.pipeline_file ?? stage.id);
     const suffix = stage.reason ? ` — ${stage.reason}` : '';
     lines.push(`    ${stage.status.padEnd(7)} ${stage.id} → ${target}${suffix}`);
   }

@@ -90,6 +90,17 @@ export {
 export { parseContextInputRefs, CONTEXT_INPUT_REF_RE } from './lib/context-refs.js';
 export type { ContextInputRef } from './lib/context-refs.js';
 export {
+  isSubPipelineStage,
+  collectSubPipelineOutputs,
+  nestedDeclaredOutputs,
+  resolveSubPipeline,
+  listWorkflowPaths,
+} from './compile/sub-pipeline.js';
+export {
+  collectContextSchemaIssues,
+  validateContextSchemaDocument,
+} from './lib/context-schema.js';
+export {
   RERUN_STATE_ARTIFACT,
   canReuseStage,
   parseRerunState,

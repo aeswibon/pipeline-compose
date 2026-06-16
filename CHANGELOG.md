@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sub-pipelines** — stage may use `pipeline_file` (+ optional `pipeline` key) instead of `workflow`; run action executes nested pipeline inline and surfaces declared outputs on the parent stage id.
+- **Typed context** — optional `context_schema` (JSON Schema) on each pipeline; `validate` checks declared outputs and `context.*` input refs against schema paths.
 - **Smart rerun** — optional `smart_rerun: true` on pipeline v2 YAML; on workflow re-run, stages with unchanged inputs reuse outputs from the previous attempt (fingerprint over workflow, ref, inputs, and `when`).
 
 ### Changed

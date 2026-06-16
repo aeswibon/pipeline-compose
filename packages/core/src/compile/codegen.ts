@@ -34,8 +34,13 @@ function resolveInput(value: string): string {
 }
 
 function stageJob(stage: PipelineStage): Record<string, unknown> {
+  if (stage.pipeline_file) {
+    throw new Error(
+      `Stage "${stage.id}" uses pipeline_file; compile codegen only supports workflow stages (use pipeline-compose-run)`,
+    );
+  }
   const job: Record<string, unknown> = {
-    uses: normalizeWorkflowPath(stage.workflow),
+    uses: normalizeWorkflowPath(stage.workflow!),
     secrets: 'inherit',
   };
 

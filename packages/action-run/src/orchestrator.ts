@@ -1,10 +1,12 @@
 import type { Pipeline, PipelineStage } from '@aeswibon/pipeline-compose-core';
 import {
   canReuseStage,
+  collectSubPipelineOutputs,
   evaluateExpression,
   groupStagesIntoWaves,
   mergeContext,
   parseRepoSlug,
+  resolveSubPipeline,
   stageFingerprint,
   type RerunState,
 } from '@aeswibon/pipeline-compose-core';
@@ -32,6 +34,9 @@ export type OrchestratorOptions = {
   smartRerun?: boolean;
   /** GITHUB_RUN_ATTEMPT (1 on first run). */
   runAttempt?: number;
+  repoRoot?: string;
+  /** Inputs forwarded from a parent sub-pipeline stage. */
+  subPipelineInputs?: Record<string, string>;
   timeoutMs?: number;
   pollMs?: number;
 };
@@ -211,8 +216,27 @@ async function runOneStage(
   }
 
   const stageClient = clientForStage(repoClients, baseClient, stage, options);
-  const inputs = resolveStageInputs(stage.inputs, state.context);
+  const inputs = {
+    ...(options.subPipelineInputs ?? {}),
+    ...resolveStageInputs(stage.inputs, state.context),
+  };
   const fingerprint = stageFingerprint(stage, inputs, options.ref);
+
+  if (stage.pipeline_file) {
+    if (!options.repoRoot) {
+      throw new Error(`Stage "${stage.id}" uses pipeline_file but repoRoot is not set`);
+    }
+    const nested = resolveSubPipeline(options.repoRoot, stage.pipeline_file, stage.pipeline);
+    const nestedResults = await runPipeline(nested, baseClient, {
+      ...options,
+      subPipelineInputs: inputs,
+    });
+    const outputs = collectSubPipelineOutputs(nestedResults, stage.outputs, stage.id);
+    if (options.smartRerun) {
+      currentRerun.stages[stage.id] = { fingerprint, outputs, runId: 0 };
+    }
+    return { stageId: stage.id, runId: 0, outputs };
+  }
 
   if (options.smartRerun && previousRerun && (options.runAttempt ?? 1) > 1) {
     const previous = previousRerun.stages[stage.id];
@@ -232,7 +256,7 @@ async function runOneStage(
     }
   }
 
-  const workflow = await stageClient.getWorkflowByPath(stage.workflow);
+  const workflow = await stageClient.getWorkflowByPath(stage.workflow!);
   const dispatchAt = Date.now();
 
   await stageClient.dispatchWorkflow(workflow.id, options.ref, inputs);

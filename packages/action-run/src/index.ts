@@ -67,6 +67,7 @@ async function run(): Promise<void> {
     currentRunId,
     smartRerun: pipeline.smart_rerun,
     runAttempt,
+    repoRoot: process.env.GITHUB_WORKSPACE || process.cwd(),
   });
 
   core.setOutput('results_json', JSON.stringify(results));

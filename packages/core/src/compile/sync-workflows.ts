@@ -64,7 +64,11 @@ export function buildSyncPlan(
   }
 
   for (const stage of pipeline.stages) {
-    const target = path.normalize(path.resolve(repoRoot, stage.workflow));
+    const workflow = stage.workflow;
+    if (!workflow) {
+      continue;
+    }
+    const target = path.normalize(path.resolve(repoRoot, workflow));
     if (seenTargets.has(target)) {
       continue;
     }
@@ -75,7 +79,7 @@ export function buildSyncPlan(
     );
     mappings.push({
       from: path.relative(repoRoot, source),
-      to: stage.workflow,
+      to: workflow,
     });
     seenTargets.add(target);
   }

@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { ResolvedPipeline, ResolvedStage } from './parser.js';
 import type { ValidationIssue } from './validate-report.js';
+import { isSubPipelineStage } from './sub-pipeline.js';
 
 const MONOREPO_SUBPATH_USES =
   /uses:\s*['"]?aeswibon\/pipeline-compose\/(run|compile|eval|export|context-merge)/;
@@ -52,7 +53,7 @@ export function collectStageExportDeprecations(
   repoRoot: string,
   stage: ResolvedStage,
 ): ValidationIssue[] {
-  if (!stage.outputs || stage.outputs.length === 0) {
+  if (!stage.outputs || stage.outputs.length === 0 || isSubPipelineStage(stage) || !stage.workflow) {
     return [];
   }
 
@@ -101,10 +102,11 @@ export function collectDeprecationIssues(
 
   for (const stage of pipeline.stages) {
     issues.push(...collectStageExportDeprecations(repoRoot, stage));
-    if (!scannedWorkflows.has(stage.workflow)) {
-      scannedWorkflows.add(stage.workflow);
-      issues.push(...collectWorkflowFileDeprecations(repoRoot, stage.workflow));
+    if (!stage.workflow || scannedWorkflows.has(stage.workflow)) {
+      continue;
     }
+    scannedWorkflows.add(stage.workflow);
+    issues.push(...collectWorkflowFileDeprecations(repoRoot, stage.workflow));
   }
 
   for (const companion of pipeline.companion_workflows ?? []) {

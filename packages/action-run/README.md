@@ -104,6 +104,41 @@ The run action saves a **`pipeline-compose-rerun-state`** artifact after each wa
 
 Stages with changed inputs or missing prior outputs still dispatch normally.
 
+### Sub-pipelines
+
+A stage can run another pipeline file inline instead of a single workflow:
+
+```yaml
+- id: full-ci
+  pipeline_file: .github/pipelines/pr.yml
+  pipeline: pr
+  outputs:
+    - snapshot_tag
+```
+
+The nested pipeline runs inside the parent stage. Declared `outputs` on the parent stage are collected from nested stage results. **ponytail:** nesting is limited to **one level** (no `pipeline_file` inside a nested pipeline).
+
+Parent stage `inputs` are forwarded to every nested stage dispatch (nested stage inputs win on conflict).
+
+### Typed context (`context_schema`)
+
+Declare expected context shapes per pipeline:
+
+```yaml
+pipelines:
+  release:
+    context_schema:
+      type: object
+      properties:
+        version-sync:
+          type: object
+          properties:
+            version: { type: string }
+    stages: [...]
+```
+
+`pipeline-compose validate` checks that declared stage `outputs` and `context.*` input references match paths in the schema.
+
 ---
 
 ## First-time setup checklist

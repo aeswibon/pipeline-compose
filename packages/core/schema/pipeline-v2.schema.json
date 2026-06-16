@@ -41,6 +41,10 @@
             "type": "array",
             "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
           },
+          "context_schema": {
+            "type": "object",
+            "description": "JSON Schema for stage context outputs (stage id → output keys)"
+          },
           "stages": {
             "type": "array",
             "minItems": 1,

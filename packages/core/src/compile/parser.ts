@@ -11,7 +11,11 @@ export interface PipelineConcurrency {
 
 export interface PipelineStage {
   id: string;
-  workflow: string;
+  workflow?: string;
+  /** Nested pipeline YAML (mutually exclusive with workflow). */
+  pipeline_file?: string;
+  /** Pipeline key inside a v2 file (required when the file defines multiple pipelines). */
+  pipeline?: string;
   /** Target repository for cross-repo dispatch (owner/repo). Defaults to GITHUB_REPOSITORY. */
   repo?: string;
   group?: string;
@@ -35,12 +39,16 @@ export interface Pipeline {
   /** Reuse prior attempt stage outputs on workflow re-run when inputs are unchanged. */
   smart_rerun?: boolean;
   context?: Record<string, string>;
+  /** JSON Schema describing expected context.<stage>.<output> shapes. */
+  context_schema?: Record<string, unknown>;
   stages: PipelineStage[];
 }
 
 export interface PipelineDefinition {
   group?: string;
   needs?: string[];
+  /** JSON Schema describing expected context.<stage>.<output> shapes. */
+  context_schema?: Record<string, unknown>;
   stages: PipelineStage[];
 }
 

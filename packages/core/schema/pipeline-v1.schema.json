@@ -52,13 +52,15 @@
     },
     "stage": {
       "type": "object",
-      "required": ["id", "workflow"],
+      "required": ["id"],
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
         "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
         "group": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
         "workflow": { "type": "string", "minLength": 1 },
+        "pipeline_file": { "type": "string", "minLength": 1 },
+        "pipeline": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
         "when": { "type": "string" },
         "needs": {
           "type": "array",
@@ -73,7 +75,11 @@
           "type": "array",
           "items": { "type": "string" }
         }
-      }
+      },
+      "oneOf": [
+        { "required": ["workflow"], "not": { "required": ["pipeline_file"] } },
+        { "required": ["pipeline_file"], "not": { "required": ["workflow"] } }
+      ]
     }
   }
 }
