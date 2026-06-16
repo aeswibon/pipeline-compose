@@ -1,6 +1,6 @@
 {
   "name": "@aeswibon/pipeline-compose-action-export",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "private": true,
   "type": "module",
   "description": "Upload pipeline-compose stage outputs artifact",
