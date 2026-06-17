@@ -42,7 +42,7 @@ Same expression language as stage **`when:`** in pipeline YAML.
 
 ```yaml
 - id: gate
-  uses: aeswibon/pipeline-compose-eval@v1.17.0
+  uses: aeswibon/pipeline-compose-eval@v1.17.1
   with:
     expression: startsWith(github.ref, 'refs/tags/v')
     github: ${{ toJson(github) }}
@@ -59,7 +59,7 @@ Same expression language as stage **`when:`** in pipeline YAML.
 #   when: context.ci.passed == 'true'
 
 - id: gate
-  uses: aeswibon/pipeline-compose-eval@v1.17.0
+  uses: aeswibon/pipeline-compose-eval@v1.17.1
   with:
     expression: context.ci.passed == 'true'
     context: '{"ci":{"passed":"true"}}'
@@ -69,7 +69,7 @@ Example: [eval-conditional](https://github.com/aeswibon/pipeline-compose/tree/ma
 
 <!-- start usage -->
 ```yaml
-- uses: aeswibon/pipeline-compose-eval@v1.17.0
+- uses: aeswibon/pipeline-compose-eval@v1.17.1
   with:
     expression: startsWith(github.ref, 'refs/tags/v')
 ```
