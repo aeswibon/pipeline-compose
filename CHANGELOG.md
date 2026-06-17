@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-06-16
+
 ### Added
 
 - **Meta pipeline global concurrency** — release pipeline sets `concurrency.global: true` (dogfood).
