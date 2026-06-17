@@ -13,6 +13,7 @@ import {
   generateWorkflow,
   loadPipelineDocumentFromFile,
   loadPipelineDocumentsFromInputs,
+  parseRerunState,
   previewWorkflowSync,
   renderPipelineMermaid,
   runWorkflowSync,
@@ -30,6 +31,7 @@ import {
   renderImportedPipelineYaml,
   stagesFromMonorepoTaskGraph,
   type ResolvedPipeline,
+  type SimulatePipelineOptions,
 } from '@aeswibon/pipeline-compose-core';
 
 function compileUsage(): never {
@@ -48,7 +50,7 @@ function evalUsage(): never {
 
 function validateUsage(): never {
   console.error(
-    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict] [--json] [--mermaid] [--simulate] [--github <json>] [--repo-tokens-file <path>] [--check-repo-access]',
+    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict] [--json] [--mermaid] [--simulate] [--github <json>] [--repo-tokens-file <path>] [--check-repo-access] [--rerun-state <path>]',
   );
   process.exit(1);
 }
@@ -245,6 +247,7 @@ async function runValidateAsync(args: string[]): Promise<void> {
   let githubJson = '';
   let repoTokensFile = '';
   let checkRepoAccess = false;
+  let rerunStateFile = '';
   const positional: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -266,6 +269,8 @@ async function runValidateAsync(args: string[]): Promise<void> {
       repoTokensFile = args[++i] ?? '';
     } else if (args[i] === '--check-repo-access') {
       checkRepoAccess = true;
+    } else if (args[i] === '--rerun-state') {
+      rerunStateFile = args[++i] ?? '';
     } else {
       positional.push(args[i]);
     }
@@ -312,9 +317,30 @@ async function runValidateAsync(args: string[]): Promise<void> {
     };
   }
 
+  const github = githubJson ? parseJsonObject('github', githubJson) : undefined;
+
+  let smartRerun: SimulatePipelineOptions['smartRerun'];
+  if (rerunStateFile) {
+    if (!simulate) {
+      throw new Error('--rerun-state requires --simulate');
+    }
+    const raw = fs.readFileSync(path.resolve(rerunStateFile), 'utf8');
+    const previousState = parseRerunState(raw);
+    if (!previousState) {
+      throw new Error(`Invalid rerun state JSON: ${rerunStateFile}`);
+    }
+    smartRerun = {
+      previousState,
+      ref: typeof github?.ref === 'string' ? github.ref : undefined,
+      runAttempt: 2,
+    };
+  }
+
   const simulation = simulate
     ? simulatePipeline(report.pipeline, {
-        github: githubJson ? parseJsonObject('github', githubJson) : undefined,
+        github,
+        repoRoot: resolvedRoot || undefined,
+        smartRerun,
       })
     : undefined;
 

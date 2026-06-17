@@ -87,12 +87,12 @@ With `--repo-root` + `--workflows`, validate scans `.github/workflows/` and flag
 | `skip` | `when:` false | Skipped, in `skipped` set |
 | `blocked` | Upstream skipped or missing context | Blocked downstream |
 
-Simulate **does not** call GitHub. It merges **empty string** placeholders for declared outputs so downstream context refs can resolve in the table.
+Simulate **does not** call GitHub. It merges **empty string** placeholders for declared outputs so downstream context refs can resolve in the table (or prior attempt outputs when `--rerun-state` is set).
 
 **Limits (documented):**
 
 - Does not evaluate whether export step exists at runtime (static scan separate).
-- Does not model smart rerun reuse.
+- Smart rerun simulation uses same-repo workflow/`pipeline_file` digests only when `--repo-root` is set; cross-repo Contents API omitted.
 - Sub-pipeline failure bubbles as `blocked` on parent.
 
 Pass `--github '{"ref":"refs/tags/v1.0.0",...}'` to test tag-only `when:` expressions—PR bot passes full `toJson(github)`.
@@ -195,7 +195,7 @@ pnpm run validate examples/cross-repo-dispatch/.github/pipelines/pipeline.yml \
 ## Revisit criteria
 
 - ~~**Single CLI pass** outputs mermaid + json together (UX).~~ Shipped v1.14 (`mermaid` field in JSON report).
-- **Simulate includes smart rerun** column when flag set.
+- ~~**Simulate includes smart rerun** column when flag set.~~ Shipped v1.15 (`--rerun-state` with `smart_rerun: true`).
 - **Policy-as-code** layer maps issue codes to allow/deny per repo (platform request).
 
 ---

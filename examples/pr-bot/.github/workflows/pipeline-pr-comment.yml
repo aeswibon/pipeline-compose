@@ -52,12 +52,23 @@ jobs:
               .map((issue) => `- **${issue.level}**: ${issue.message}`)
               .join('\n');
             const simulation = report.simulation ?? [];
+            const showRerun = simulation.some((stage) => stage.rerun);
             const simRows = simulation
-              .map(
-                (stage) =>
-                  `| \`${stage.id}\` | ${stage.status} | ${stage.reason ?? '—'} |`,
-              )
+              .map((stage) => {
+                const cols = [`\`${stage.id}\``, stage.status];
+                if (showRerun) {
+                  cols.push(stage.rerun ?? '—');
+                }
+                cols.push(stage.reason ?? '—');
+                return `| ${cols.join(' | ')} |`;
+              })
               .join('\n');
+            const simHeader = showRerun
+              ? '| Stage | Status | Rerun | Reason |'
+              : '| Stage | Status | Reason |';
+            const simSep = showRerun
+              ? '| --- | --- | --- | --- |'
+              : '| --- | --- | --- |';
             const body = [
               marker,
               '## Pipeline Compose validation',
@@ -73,7 +84,7 @@ jobs:
               '### Simulation (dry-run)',
               '',
               simulation.length
-                ? ['| Stage | Status | Reason |', '| --- | --- | --- |', simRows].join('\n')
+                ? [simHeader, simSep, simRows].join('\n')
                 : '_No stages._',
               '',
               '### Issues',

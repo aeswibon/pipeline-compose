@@ -57,7 +57,13 @@ export {
 } from './compile/validate-report.js';
 export { collectDeprecationIssues } from './compile/deprecations.js';
 export { simulatePipeline, formatSimulateReport } from './compile/simulate.js';
-export type { SimulatePipelineOptions, SimulateStageResult, SimulateStageStatus } from './compile/simulate.js';
+export type {
+  SimulatePipelineOptions,
+  SimulateSmartRerunOptions,
+  SimulateStageResult,
+  SimulateStageStatus,
+  SimulateRerunAction,
+} from './compile/simulate.js';
 export { renderPipelineMermaid } from './compile/mermaid.js';
 export type { RenderPipelineMermaidOptions } from './compile/mermaid.js';
 export {

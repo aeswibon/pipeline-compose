@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { simulatePipeline, formatSimulateReport } from './simulate.js';
+import { stageFingerprint } from '../lib/smart-rerun.js';
 import type { ResolvedPipeline } from './parser.js';
 
 describe('simulatePipeline', () => {
@@ -84,5 +85,50 @@ describe('simulatePipeline', () => {
       ['lint', 2],
       ['test', 2],
     ]);
+  });
+
+  it('predicts smart rerun reuse vs dispatch from prior state', () => {
+    const stage = { id: 'ci', workflow: '.github/workflows/ci.yml', outputs: ['tag'] };
+    const fingerprint = stageFingerprint(stage, {}, 'refs/tags/v1.0.0');
+    const pipeline: ResolvedPipeline = {
+      name: 'release',
+      version: 2,
+      schemaVersion: 2,
+      smart_rerun: true,
+      stages: [
+        stage,
+        {
+          id: 'deploy',
+          workflow: '.github/workflows/deploy.yml',
+          needs: ['ci'],
+        },
+      ],
+    };
+
+    const results = simulatePipeline(pipeline, {
+      github: { ref: 'refs/tags/v1.0.0' },
+      smartRerun: {
+        previousState: {
+          version: 1,
+          stages: {
+            ci: { fingerprint, outputs: { tag: 'v1.0.0' }, runId: 42 },
+          },
+        },
+        ref: 'refs/tags/v1.0.0',
+        runAttempt: 2,
+      },
+    });
+
+    expect(results[0]).toMatchObject({ id: 'ci', status: 'run', rerun: 'reuse' });
+    expect(results[1]).toMatchObject({ id: 'deploy', status: 'run', rerun: 'dispatch' });
+  });
+
+  it('formats rerun column when smart rerun simulation is enabled', () => {
+    const text = formatSimulateReport([
+      { id: 'ci', status: 'run', workflow: '.github/workflows/ci.yml', wave: 1, rerun: 'reuse' },
+      { id: 'deploy', status: 'run', workflow: '.github/workflows/deploy.yml', wave: 2, rerun: 'dispatch' },
+    ]);
+    expect(text).toContain('reuse');
+    expect(text).toContain('dispatch');
   });
 });
