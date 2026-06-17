@@ -1,10 +1,54 @@
 # pipeline-compose
 
-**Cross-repo orchestration for GitHub Actions** — one pipeline YAML, ordered stages, optional dispatch to other repositories.
+**Cross-repo CI orchestration that stays inside GitHub Actions.**
 
-Native `needs:` stops at repo boundaries. **pipeline-compose-run** dispatches each stage workflow, waits for completion, merges stage outputs into context, and surfaces one pipeline result. No generated workflow to commit unless you choose [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile).
+`needs:` works great inside one repo. When your release spans a service repo, a QA repo, and an infra repo, you're back to `repository_dispatch`, PAT gymnastics, and tab-hopping across Actions runs with no shared context.
 
-**Stable release:** **v1.11.0** — GitHub App cross-repo auth, stage catalog, plus v1.4 smart rerun, sub-pipelines, and typed context.
+Pipeline Compose gives you one `pipeline.yml`: ordered stages, wait-for-completion, and `context.*` wiring across repos — without Jenkins, without custom polling scripts, without leaving Actions.
+
+**Stable release:** **v1.11.0** — Turbo/Nx import, `pipeline_file` smart-rerun digest, export schema validation, global concurrency. Cross-repo [GitHub App auth](docs/tutorials/cross-repo-pipeline.md) since v1.6; stage catalog, smart rerun, and sub-pipelines in earlier releases.
+
+## The problem
+
+| What you have today | What breaks |
+|---------------------|-------------|
+| `repository_dispatch` | Fire-and-forget. No wait. No outputs back. |
+| `workflow_call` | Same repo only. |
+| PAT maps per target repo | Rotations, least-privilege pain, brittle local tokens. |
+| Bash + `gh run view` polling | Nobody wants to maintain that. |
+
+You don't need a second CI platform. You need **one pipeline graph** that Actions can actually execute.
+
+## What you get
+
+```yaml
+# .github/pipelines/pipeline.yml
+version: 2
+pipelines:
+  release:
+    stages:
+      - id: ci
+        workflow: .github/workflows/ci.yml
+
+      - id: e2e
+        workflow: .github/workflows/e2e.yml
+        repo: my-org/qa-repo
+        needs: [ci]
+        inputs:
+          image_tag: ${{ context.ci.image_tag }}
+
+      - id: deploy
+        workflow: .github/workflows/deploy.yml
+        needs: [e2e]
+```
+
+**[pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run)** dispatches each stage, polls until done, downloads `pipeline-compose-<stage>` artifacts, and builds `context` for the next stage. One workflow run. One result.
+
+- **Synchronous** — unlike raw dispatch, the orchestrator waits and fails the pipeline if a stage fails.
+- **Context merge** — stage workflows export JSON via [pipeline-compose-export](https://github.com/aeswibon/pipeline-compose-export); downstream stages read `context.<stage>.<key>`.
+- **Declarative** — graph, `when:`, `needs:`, and cross-repo `repo:` live in YAML, not shell.
+
+No generated workflow to commit unless you choose [pipeline-compose-compile](https://github.com/aeswibon/pipeline-compose-compile).
 
 ## Actions
 
@@ -20,7 +64,7 @@ Each action README includes a self-contained glossary.
 
 ## Quick start
 
-**1. Pipeline file** (`.github/pipelines/pipeline.yml`, schema v2):
+**1. Pipeline file** — `pnpm run init` scans workflows and writes starter v2 YAML (`.github/pipelines/pipeline.yml`):
 
 ```yaml
 version: 2
@@ -36,7 +80,17 @@ pipelines:
         needs: [ci]
 ```
 
-**2. Entry workflow** (e.g. tag push):
+**2. Export** in any stage workflow that declares `outputs:`:
+
+```yaml
+- uses: aeswibon/pipeline-compose-export@v1.11.0
+  if: success()
+  with:
+    stage_id: ci
+    outputs: '{"image_tag":"${{ steps.build.outputs.tag }}"}'
+```
+
+**3. Entry workflow** (e.g. tag push):
 
 ```yaml
 - uses: aeswibon/pipeline-compose-run@v1.11.0
@@ -44,9 +98,37 @@ pipelines:
     pipeline_file: .github/pipelines/pipeline.yml
 ```
 
-**3. Stage with downstream outputs** — add [pipeline-compose-export](https://github.com/aeswibon/pipeline-compose-export) as the last step in that stage’s workflow.
+**Cross-repo?** Add `repo: org/repo` on the stage and configure a [GitHub App](docs/tutorials/cross-repo-pipeline.md) (`github_app_id` + `github_app_private_key`) or `repo_tokens_json` on the run action.
 
 Copy-paste examples: [examples/](examples/) · Tutorial: [docs/tutorials/tag-release-pipeline.md](docs/tutorials/tag-release-pipeline.md)
+
+## Developer ergonomics
+
+| Tool | What it does |
+|------|----------------|
+| `validate --strict --workflows` | Schema, DAG, orphans, cross-repo token gaps — fail CI before merge |
+| `validate --simulate` | Dry-run stage table: skips, waves, missing context |
+| `validate --mermaid` | Topology graph for PRs and docs |
+| `catalog` / `catalog_from` | Reuse stage templates; pull catalog from another repo |
+| `import turbo` / `import nx` | Generate pipeline YAML from monorepo task graphs |
+| `smart_rerun` | Re-run failed pipelines; reuse unchanged stages |
+| `context_schema` | JSON Schema for wiring; optional runtime check on export |
+
+PRs that touch pipeline YAML can get a mermaid + simulate + issues comment (see `.github/workflows/pipeline-pr-comment.yml` in this repo).
+
+## Mental model
+
+```text
+pipeline.yml  →  run action  →  dispatch stage workflows
+                      ↓
+              export artifacts (outputs.json)
+                      ↓
+              context merged  →  next stage inputs
+```
+
+**Good fit:** poly-repo release trains, platform-owned stage catalogs, validate-before-merge DAGs.
+
+**Probably not:** single-repo linear CI (native `needs:` is enough), or full deployment-platform features (Spinnaker, Argo CD, etc.).
 
 ## CLI (monorepo / local)
 
