@@ -22,10 +22,14 @@ Part of [pipeline-compose](https://github.com/aeswibon/pipeline-compose).
 
 ## How it works
 
-```text
-expression + context + github  →  eval action  →  result: "true" | "false"
-                                                      ↓
-                                            if: steps.id.outputs.result == 'true'
+```mermaid
+flowchart LR
+  expr["expression + context + github"]
+  eval["pipeline-compose-eval"]
+  result["result: true | false"]
+  gate["if: steps.*.outputs.result"]
+
+  expr --> eval --> result --> gate
 ```
 
 Same expression language as stage **`when:`** in pipeline YAML.

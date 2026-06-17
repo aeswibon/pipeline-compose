@@ -21,14 +21,14 @@ You typically pick **run OR compile**, not both for the same pipeline.
 
 ## How it works
 
-```text
-.github/pipelines/pipeline.yml   (you edit this — order + stages)
-              ↓
-    pipeline-compose-compile
-              ↓
-.github/workflows/pipeline-generated.yml   (generated jobs + needs:)
-              ↓
-    GitHub runs the generated file like any workflow
+```mermaid
+flowchart TD
+  src[".github/pipelines/pipeline.yml<br/>(you edit)"]
+  compile["pipeline-compose-compile"]
+  gen[".github/workflows/pipeline-generated.yml<br/>(jobs + needs:)"]
+  gha["GitHub Actions"]
+
+  src --> compile --> gen --> gha
 ```
 
 With **`check: true`**, CI fails if someone edits the generated file without recompiling — keeps YAML in sync.

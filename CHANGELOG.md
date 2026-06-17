@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-06-17
+
 ### Added
 
 - **`validate --policy`** — per-repo JSON allow/deny lists for stable validation issue codes (`allow` waives; `deny` promotes warns to errors).
+- **Rush import** — `pipeline-compose import rush` generates v2 pipeline YAML from `common/config/rush/command-line.json` phase graphs (bulk commands when phases are absent).
+
+### Changed
+
+- **README diagrams** — main repo and action READMEs use Mermaid flowcharts for architecture explanations (renders on GitHub).
 
 ## [1.15.0] - 2026-06-17
 

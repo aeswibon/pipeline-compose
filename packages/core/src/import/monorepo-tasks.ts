@@ -83,3 +83,56 @@ export function parseNxTargetDefaults(raw: unknown): MonorepoTaskGraph {
   }
   return defaults;
 }
+
+type RushPhase = {
+  name: string;
+  dependencies?: {
+    self?: string[];
+    upstream?: string[];
+  };
+};
+
+/** Strip Rush `_phase:` prefix for pipeline stage ids. */
+function rushPhaseToStageId(phaseName: string): string {
+  return phaseName.replace(/^_phase:/, '');
+}
+
+/**
+ * Parse Rush `common/config/rush/command-line.json`.
+ * ponytail: uses phase `dependencies.self` only (same-repo phase order); upstream project deps are out of scope.
+ */
+export function parseRushCommandLine(raw: unknown): MonorepoTaskGraph {
+  if (raw == null || typeof raw !== 'object') {
+    throw new Error('command-line.json must be a JSON object');
+  }
+  const doc = raw as { phases?: RushPhase[]; commands?: Array<{ commandKind?: string; name?: string }> };
+  const phases = doc.phases;
+  if (Array.isArray(phases) && phases.length > 0) {
+    const graph: MonorepoTaskGraph = {};
+    for (const phase of phases) {
+      if (!phase?.name || typeof phase.name !== 'string') {
+        throw new Error('each Rush phase must have a name');
+      }
+      const id = rushPhaseToStageId(phase.name);
+      const selfDeps = phase.dependencies?.self ?? [];
+      const dependsOn = normalizeDependsOn(
+        selfDeps.map(rushPhaseToStageId).filter((dep) => dep !== id),
+      );
+      graph[id] = dependsOn?.length ? { dependsOn } : {};
+    }
+    return graph;
+  }
+
+  const bulk = (doc.commands ?? []).filter(
+    (cmd): cmd is { name: string } =>
+      cmd?.commandKind === 'bulk' && typeof cmd.name === 'string' && cmd.name.length > 0,
+  );
+  if (bulk.length === 0) {
+    throw new Error('command-line.json must include phases or bulk commands');
+  }
+  const graph: MonorepoTaskGraph = {};
+  for (const cmd of bulk) {
+    graph[cmd.name] = {};
+  }
+  return graph;
+}

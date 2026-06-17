@@ -110,7 +110,7 @@ From [product growth roadmap](../superpowers/specs/product-growth-roadmap.md) an
 
 | Item | Why deferred |
 |------|----------------|
-| **Turbo/Nx/Rush import** | **Turbo + Nx shipped** v1.11 (`pipeline-compose import`); Rush deferred |
+| **Turbo/Nx/Rush import** | **Shipped** v1.11 turbo/nx; Rush phased `command-line.json` import added unreleased |
 | **Global approval gates** | Needs durable listener or GitHub Environment integration design |
 | **Global pipeline state store** | Artifacts + context suffice for DAG |
 | **AI autoremediation** | Non-deterministic; core must stay boring |

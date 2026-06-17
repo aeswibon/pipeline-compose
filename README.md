@@ -6,7 +6,7 @@
 
 Pipeline Compose gives you one `pipeline.yml`: ordered stages, wait-for-completion, and `context.*` wiring across repos — without Jenkins, without custom polling scripts, without leaving Actions.
 
-**Stable release:** **v1.15.0** — simulate smart-rerun column via `--rerun-state`. Cross-repo [GitHub App auth](docs/tutorials/github-app-setup.md) since v1.6.
+**Stable release:** **v1.16.0** — `validate --policy`, Rush import, Mermaid README diagrams. Cross-repo [GitHub App auth](docs/tutorials/github-app-setup.md) since v1.6.
 
 ## The problem
 
@@ -40,6 +40,15 @@ pipelines:
       - id: deploy
         workflow: .github/workflows/deploy.yml
         needs: [e2e]
+```
+
+```mermaid
+flowchart TD
+  ci["ci"]
+  e2e["e2e<br/>my-org/qa-repo"]
+  deploy["deploy"]
+  ci --> e2e
+  e2e --> deploy
 ```
 
 **[pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run)** dispatches each stage, polls until done, downloads `pipeline-compose-<stage>` artifacts, and builds `context` for the next stage. One workflow run. One result.
@@ -110,7 +119,7 @@ Copy-paste examples: [examples/](examples/) · Tutorial: [docs/tutorials/tag-rel
 | `validate --simulate` | Dry-run stage table: skips, waves, missing context |
 | `validate --mermaid` | Topology graph for PRs and docs |
 | `catalog` / `catalog_from` | Reuse stage templates; pull catalog from another repo |
-| `import turbo` / `import nx` | Generate pipeline YAML from monorepo task graphs |
+| `import turbo` / `import nx` / `import rush` | Generate pipeline YAML from monorepo task graphs |
 | `smart_rerun` | Re-run failed pipelines; reuse unchanged stages |
 | `context_schema` | JSON Schema for wiring; optional runtime check on export |
 
@@ -118,12 +127,21 @@ PRs that touch pipeline YAML can get a mermaid + simulate + issues comment (see 
 
 ## Mental model
 
-```text
-pipeline.yml  →  run action  →  dispatch stage workflows
-                      ↓
-              export artifacts (outputs.json)
-                      ↓
-              context merged  →  next stage inputs
+```mermaid
+flowchart TD
+  py["pipeline.yml"]
+  run["pipeline-compose-run"]
+  sw["Stage workflows"]
+  ex["export artifacts<br/>outputs.json"]
+  ctx["context merged"]
+  inp["next stage inputs"]
+
+  py --> run
+  run --> sw
+  sw --> ex
+  ex --> ctx
+  ctx --> inp
+  inp --> run
 ```
 
 **Good fit:** poly-repo release trains, platform-owned stage catalogs, validate-before-merge DAGs.
@@ -134,7 +152,7 @@ pipeline.yml  →  run action  →  dispatch stage workflows
 
 ```bash
 pnpm run init          # scan workflows → starter pipeline.yml; infers outputs + context_schema from export steps
-pnpm run import turbo  # turbo.json → .github/pipelines/imported.yml (or import nx)
+pnpm run import turbo  # turbo.json → .github/pipelines/imported.yml (or import nx / import rush)
 pnpm run validate .github/pipelines/pipeline.yml --repo-root . --workflows --strict --mermaid
 pnpm run compile .github/pipelines/pipeline.yml -o .github/workflows/pipeline-generated.yml
 ```

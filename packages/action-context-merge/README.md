@@ -18,12 +18,18 @@ Part of [pipeline-compose](https://github.com/aeswibon/pipeline-compose).
 
 ## How it works
 
-```text
-Job 1  →  context-merge (stage_id: ci,      outputs: { passed: true })
-              ↓ writes/updates .pipeline-context.json
-Job 2  →  context-merge (stage_id: build,  outputs: { version: "1.2" })
-              ↓ same file, new key added
-Later  →  read file or pass to pipeline-compose-eval
+```mermaid
+flowchart TD
+  j1["Job 1"]
+  m1["context-merge<br/>stage_id: ci"]
+  file[".pipeline-context.json"]
+  j2["Job 2"]
+  m2["context-merge<br/>stage_id: build"]
+  later["eval or read file"]
+
+  j1 --> m1 --> file
+  j2 --> m2 --> file
+  file --> later
 ```
 
 This is **local to one workflow run**. It does **not** replace **export** artifacts for **run**.

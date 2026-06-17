@@ -26,12 +26,15 @@ You do **not** need compile, eval, or context-merge to get started. You **do** n
 
 Think of **two layers**:
 
-```text
-1. Entry workflow (e.g. release.yml)
-   └── one job that runs THIS action once
-
-2. Pipeline file (.github/pipelines/pipeline.yml)
-   └── list of STAGES = existing workflow files + order + wiring
+```mermaid
+flowchart TD
+  subgraph layer1["Layer 1 — Entry workflow"]
+    rw["release.yml<br/>one job → run action"]
+  end
+  subgraph layer2["Layer 2 — Pipeline file"]
+    py[".github/pipelines/pipeline.yml<br/>stages + needs + wiring"]
+  end
+  rw --> py
 ```
 
 On each run, this action:
@@ -43,12 +46,18 @@ On each run, this action:
 5. Downloads **`outputs.json`** from the stage artifact → adds to **`context`**  
 6. Passes **`context`** into the next stage’s **`inputs`**
 
-```text
-release.yml  →  run action  →  dispatch ci.yml
-                              →  wait ✓
-                              →  dispatch version-sync.yml  (gets version from context)
-                              →  wait ✓
-                              →  …
+```mermaid
+sequenceDiagram
+  participant Entry as release.yml
+  participant Run as pipeline-compose-run
+  participant CI as ci.yml
+  participant VS as version-sync.yml
+
+  Entry->>Run: pipeline_file
+  Run->>CI: workflow_dispatch
+  CI-->>Run: complete + export artifact
+  Run->>VS: workflow_dispatch (context)
+  VS-->>Run: complete + export artifact
 ```
 
 Your existing workflow **files** stay separate. The pipeline file only answers: *what order* and *what connects to what*.

@@ -28,6 +28,7 @@ import {
   writeInitPipeline,
   collectDocumentCatalogIssues,
   parseNxTargetDefaults,
+  parseRushCommandLine,
   parseTurboTaskGraph,
   renderImportedPipelineYaml,
   stagesFromMonorepoTaskGraph,
@@ -77,7 +78,7 @@ function rootUsage(): never {
 
 function importUsage(): never {
   console.error(
-    'Usage: pipeline-compose import <turbo|nx> [--config <path>] [--output <path>] [--name <pipeline>] [--workflow-pattern <path>]',
+    'Usage: pipeline-compose import <turbo|nx|rush> [--config <path>] [--output <path>] [--name <pipeline>] [--workflow-pattern <path>]',
   );
   process.exit(1);
 }
@@ -480,7 +481,7 @@ function runSync(args: string[]): void {
 
 function runImport(args: string[]): void {
   const tool = args[0];
-  if (tool !== 'turbo' && tool !== 'nx') {
+  if (tool !== 'turbo' && tool !== 'nx' && tool !== 'rush') {
     importUsage();
   }
 
@@ -504,7 +505,13 @@ function runImport(args: string[]): void {
     }
   }
 
-  const configPath = path.resolve(config || (tool === 'turbo' ? 'turbo.json' : 'nx.json'));
+  const defaultConfig =
+    tool === 'turbo'
+      ? 'turbo.json'
+      : tool === 'nx'
+        ? 'nx.json'
+        : 'common/config/rush/command-line.json';
+  const configPath = path.resolve(config || defaultConfig);
   if (!fs.existsSync(configPath)) {
     console.error(`Config not found: ${configPath}`);
     process.exit(1);
@@ -512,7 +519,11 @@ function runImport(args: string[]): void {
 
   const raw = JSON.parse(fs.readFileSync(configPath, 'utf8')) as unknown;
   const graph =
-    tool === 'turbo' ? parseTurboTaskGraph(raw) : parseNxTargetDefaults(raw);
+    tool === 'turbo'
+      ? parseTurboTaskGraph(raw)
+      : tool === 'nx'
+        ? parseNxTargetDefaults(raw)
+        : parseRushCommandLine(raw);
   const stages = stagesFromMonorepoTaskGraph(graph, {
     workflowPattern: workflowPattern || undefined,
   });

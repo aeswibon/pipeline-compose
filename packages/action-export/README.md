@@ -20,18 +20,15 @@ You need **one export step per stage** that declares **`outputs`** — usually a
 
 ## How it works
 
-```text
-pipeline.yml says:  version-sync exports [version, skip_publish]
-        ↓
-stage workflow runs (tests, scripts, …)
-        ↓
-THIS ACTION uploads:
-  artifact name:  pipeline-compose-version-sync
-  file inside:    outputs.json  →  {"version":"1.2.3","skip_publish":"false"}
-        ↓
-pipeline-compose-run downloads it → context.version-sync.version = "1.2.3"
-        ↓
-next stage gets inputs.version from context
+```mermaid
+flowchart TD
+  spec["pipeline.yml<br/>outputs: [version, …]"]
+  stage["Stage workflow runs"]
+  export["pipeline-compose-export<br/>artifact: pipeline-compose-{id}<br/>outputs.json"]
+  run["pipeline-compose-run<br/>context.{stage}.{key}"]
+  next["Next stage inputs"]
+
+  spec --> stage --> export --> run --> next
 ```
 
 GitHub does **not** let you read another workflow run’s job **`outputs`**. This artifact is the bridge.

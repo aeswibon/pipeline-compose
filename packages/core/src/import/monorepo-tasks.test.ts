@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   normalizeDependsOn,
   parseNxTargetDefaults,
+  parseRushCommandLine,
   parseTurboTaskGraph,
   stagesFromMonorepoTaskGraph,
   topoSortTaskIds,
@@ -43,6 +44,41 @@ describe('parseNxTargetDefaults', () => {
       targetDefaults: { build: { dependsOn: ['^build'] } },
     });
     expect(graph.build).toBeDefined();
+  });
+});
+
+describe('parseRushCommandLine', () => {
+  it('reads phased command-line.json self dependencies', () => {
+    const graph = parseRushCommandLine({
+      phases: [
+        { name: '_phase:lite-build' },
+        {
+          name: '_phase:build',
+          dependencies: { self: ['_phase:lite-build'] },
+        },
+        {
+          name: '_phase:test',
+          dependencies: { self: ['_phase:lite-build', '_phase:build'] },
+        },
+      ],
+    });
+    const stages = stagesFromMonorepoTaskGraph(graph);
+    expect(stages.map((stage) => stage.id)).toEqual(['lite-build', 'build', 'test']);
+    expect(stages.find((stage) => stage.id === 'test')?.needs).toEqual(['lite-build', 'build']);
+  });
+
+  it('falls back to bulk commands when phases are absent', () => {
+    const graph = parseRushCommandLine({
+      commands: [
+        { commandKind: 'global', name: 'prettier' },
+        { commandKind: 'bulk', name: 'my-bulk-command' },
+      ],
+    });
+    expect(Object.keys(graph)).toEqual(['my-bulk-command']);
+  });
+
+  it('requires phases or bulk commands', () => {
+    expect(() => parseRushCommandLine({ commands: [] })).toThrow(/phases or bulk commands/);
   });
 });
 

@@ -150,6 +150,7 @@ export type { RerunStageState, RerunState } from './lib/smart-rerun.js';
 export {
   normalizeDependsOn,
   parseNxTargetDefaults,
+  parseRushCommandLine,
   parseTurboTaskGraph,
   stagesFromMonorepoTaskGraph,
   topoSortTaskIds,
