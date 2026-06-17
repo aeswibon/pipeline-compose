@@ -12,6 +12,7 @@ export interface LocalStageResult {
   status: 'success' | 'failure' | 'skipped';
   outputs: Record<string, string>;
   durationMs: number;
+  attempts?: number;
 }
 
 export interface LocalRunResult {
@@ -84,29 +85,18 @@ function checkWhen(stage: ResolvedStage, context: Record<string, Record<string, 
   });
 }
 
-function runActStage(
+function runActStageOnce(
   stage: ResolvedStage,
   context: Record<string, Record<string, string>>,
   opts: LocalRunOpts,
-): LocalStageResult {
+): { status: 'success' | 'failure'; outputs: Record<string, string>; durationMs: number } {
   const startTime = Date.now();
   const repoDir = resolveRepoDir(stage, opts);
   const workflowPath = stage.workflow ?? stage.pipeline_file;
   const workflowFile = workflowPath ? path.join(repoDir, workflowPath) : null;
 
   if (!workflowFile || !fs.existsSync(workflowFile)) {
-    return {
-      id: stage.id,
-      workflow: workflowPath ?? 'unknown',
-      repo: stage.repo,
-      status: 'failure',
-      outputs: {},
-      durationMs: Date.now() - startTime,
-    };
-  }
-
-  if (!checkWhen(stage, context)) {
-    return { id: stage.id, workflow: workflowPath ?? '', repo: stage.repo, status: 'skipped', outputs: {}, durationMs: 0 };
+    return { status: 'failure', outputs: {}, durationMs: Date.now() - startTime };
   }
 
   const resolvedInputs = resolveStageInputs(stage.inputs, context);
@@ -134,33 +124,20 @@ function runActStage(
   if (proc.status !== 0) {
     const stderr = proc.stderr?.toString().trim() ?? '';
     console.error(`  act failed for stage "${stage.id}": ${stderr || 'exit code ' + proc.status}`);
-    return { id: stage.id, workflow: workflowPath ?? '', repo: stage.repo, status: 'failure', outputs: {}, durationMs };
+    return { status: 'failure', outputs: {}, durationMs };
   }
 
   const outputs = readArtifactOutput(opts.artifactDir, stage.id) ?? {};
-  return { id: stage.id, workflow: workflowPath ?? '', repo: stage.repo, status: 'success', outputs, durationMs };
+  return { status: 'success', outputs, durationMs };
 }
 
-function resolveContextRefs(cmd: string, context: Record<string, Record<string, string>>): string {
-  return cmd.replace(
-    /\$\{\{\s*context\.([a-z0-9-]+)\.([a-z0-9_]+)\s*\}\}/gi,
-    (_, stageId, key) => context[stageId]?.[key] ?? '',
-  );
-}
-
-function runShellStage(
+function runShellStageOnce(
   stage: ResolvedStage,
   context: Record<string, Record<string, string>>,
   opts: LocalRunOpts,
-): LocalStageResult {
+): { status: 'success' | 'failure'; outputs: Record<string, string>; durationMs: number } {
   const startTime = Date.now();
-  const runCmd = stage.run!;
-
-  if (!checkWhen(stage, context)) {
-    return { id: stage.id, workflow: runCmd, repo: stage.repo, status: 'skipped', outputs: {}, durationMs: 0 };
-  }
-
-  const resolvedCmd = resolveContextRefs(runCmd, context);
+  const resolvedCmd = resolveContextRefs(stage.run!, context);
   const outputsPath = path.join(opts.artifactDir, `${stage.id}-outputs.json`);
   fs.mkdirSync(opts.artifactDir, { recursive: true });
 
@@ -189,13 +166,55 @@ function runShellStage(
   }
 
   return {
-    id: stage.id,
-    workflow: runCmd,
-    repo: stage.repo,
     status: proc.status === 0 ? 'success' : 'failure',
     outputs,
     durationMs,
   };
+}
+
+type StageOnceFn = () => { status: 'success' | 'failure'; outputs: Record<string, string>; durationMs: number };
+
+function runStageWithRetry(
+  stageId: string,
+  workflowLabel: string,
+  repo: string | undefined,
+  skipCheck: () => boolean,
+  onceFn: StageOnceFn,
+  retry: number = 3,
+  retryOn: 'failure' | 'always' = 'failure',
+): LocalStageResult {
+  if (skipCheck()) {
+    return { id: stageId, workflow: workflowLabel, repo, status: 'skipped', outputs: {}, durationMs: 0, attempts: 0 };
+  }
+
+  const maxAttempts = Math.max(1, (retry ?? 3) + 1);
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (attempt > 1) {
+      console.log(`  Retrying stage "${stageId}" (attempt ${attempt}/${maxAttempts})...`);
+    }
+    const { status, outputs, durationMs } = onceFn();
+    if (status === 'success' && retryOn === 'failure') {
+      return { id: stageId, workflow: workflowLabel, repo, status, outputs, durationMs, attempts: attempt };
+    }
+    if (status === 'success' && retryOn === 'always' && attempt >= maxAttempts) {
+      return { id: stageId, workflow: workflowLabel, repo, status, outputs, durationMs, attempts: attempt };
+    }
+    if (status === 'failure' && attempt >= maxAttempts) {
+      return { id: stageId, workflow: workflowLabel, repo, status, outputs, durationMs, attempts: attempt };
+    }
+    // continue to next retry
+  }
+
+  // ponytail: retry_on=failed (selective job retry) requires GitHub API job-level rerun; not implemented yet
+  return { id: stageId, workflow: workflowLabel, repo, status: 'failure', outputs: {}, durationMs: 0, attempts: maxAttempts };
+}
+
+function resolveContextRefs(cmd: string, context: Record<string, Record<string, string>>): string {
+  return cmd.replace(
+    /\$\{\{\s*context\.([a-z0-9-]+)\.([a-z0-9_]+)\s*\}\}/gi,
+    (_, stageId, key) => context[stageId]?.[key] ?? '',
+  );
 }
 
 export function formatLocalRunResult(result: LocalRunResult): string {
@@ -211,7 +230,8 @@ export function formatLocalRunResult(result: LocalRunResult): string {
     lines.push(`  ${icon}  ${stage.id}`);
     lines.push(`       action: ${stage.workflow}`);
     if (stage.repo) lines.push(`       repo: ${stage.repo}`);
-    lines.push(`       status: ${stage.status}`);
+    const retries = stage.attempts != null && stage.attempts > 0 ? ` (${stage.attempts} attempt${stage.attempts > 1 ? 's' : ''})` : '';
+    lines.push(`       status: ${stage.status}${retries}`);
     lines.push(`       duration: ${formatDuration(stage.durationMs)}`);
     const keys = Object.keys(stage.outputs);
     if (keys.length > 0) {
@@ -263,9 +283,17 @@ export function runPipelineLocal(
 
   for (const wave of waves) {
     for (const stage of wave) {
-      const result = stage.run
-        ? runShellStage(stage, context, opts)
-        : runActStage(stage, context, opts);
+      const result = runStageWithRetry(
+        stage.id,
+        stage.run ?? stage.workflow ?? stage.pipeline_file ?? stage.id,
+        stage.repo,
+        () => !checkWhen(stage, context),
+        stage.run
+          ? () => runShellStageOnce(stage, context, opts)
+          : () => runActStageOnce(stage, context, opts),
+        stage.retry,
+        stage.retry_on,
+      );
       results.push(result);
       if (result.status === 'success' && Object.keys(result.outputs).length > 0) {
         context = mergeContext(context, stage.id, result.outputs) as Record<string, Record<string, string>>;

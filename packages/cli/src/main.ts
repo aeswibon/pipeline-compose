@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { execSync } from 'node:child_process';
 import {
   buildValidateReport,
   buildSyncPlan,
@@ -37,11 +38,14 @@ import {
   parseRushCommandLine,
   parseTurboTaskGraph,
   renderImportedPipelineYaml,
+  renderPipelineHtml,
+  buildVisualizeState,
   stagesFromMonorepoTaskGraph,
   type LocalRunResult,
   type PipelineStateRecord,
   type ResolvedPipeline,
   type SimulatePipelineOptions,
+  type StageState,
 } from '@aeswibon/pipeline-compose-core';
 
 function compileUsage(): never {
@@ -80,7 +84,7 @@ function syncUsage(): never {
 }
 
 function rootUsage(): never {
-  console.error('Usage: pipeline-compose <compile|eval|validate|sync|init|import|local|state> ...');
+  console.error('Usage: pipeline-compose <compile|eval|validate|sync|init|import|local|state|visualize> ...');
   process.exit(1);
 }
 
@@ -93,7 +97,14 @@ function importUsage(): never {
 
 function localUsage(): never {
   console.error(
-    'Usage: pipeline-compose local <pipeline.yml> [--repo-root <path>] [--act <path>] [--workspace <path>] [--artifact-dir <path>] [--container-image <name>] [--state-dir <path>]',
+    'Usage: pipeline-compose local <pipeline.yml> [--repo-root <path>] [--act <path>] [--workspace <path>] [--artifact-dir <path>] [--container-image <name>] [--state-dir <path>] [--retry <number>]',
+  );
+  process.exit(1);
+}
+
+function visualizeUsage(): never {
+  console.error(
+    'Usage: pipeline-compose visualize <pipeline.yml> [--output <path>] [--state-dir <path>] [--run-id <id>] [--open] [--github-summary] [--live]',
   );
   process.exit(1);
 }
@@ -678,6 +689,150 @@ function runState(args: string[]): void {
   }
 }
 
+function fetchLiveState(
+  pipeline: ResolvedPipeline,
+): Record<string, StageState> {
+  const state: Record<string, StageState> = {};
+
+  // ponytail: per-(repo,workflow) API call, cached in-memory to avoid duplicates
+  const byRepo = new Map<string, Map<string, string>>();
+  for (const stage of pipeline.stages) {
+    if (!stage.repo || !stage.workflow) continue;
+    if (!byRepo.has(stage.repo)) byRepo.set(stage.repo, new Map());
+    byRepo.get(stage.repo)!.set(stage.workflow, stage.id);
+  }
+
+  const cache = new Map<string, 'success' | 'failure' | 'running' | 'skipped' | undefined>();
+
+  for (const [repo, workflows] of byRepo) {
+    for (const [workflow, stageId] of workflows) {
+      const cacheKey = `${repo}::${workflow}`;
+      if (cache.has(cacheKey)) {
+        const status = cache.get(cacheKey);
+        if (status) state[stageId] = { status };
+        continue;
+      }
+
+      try {
+        const raw = execSync(
+          `gh api /repos/${repo}/actions/workflows/${encodeURIComponent(workflow)}/runs?per_page=1 --jq '.workflow_runs[0] | {conclusion, status}'`,
+          { encoding: 'utf8', timeout: 10_000, stdio: ['pipe', 'pipe', 'ignore'] },
+        );
+        const data = JSON.parse(raw.trim() || '{}');
+        const conclusion = data.conclusion ?? data.status;
+        const status: 'success' | 'failure' | 'running' | 'skipped' =
+          conclusion === 'success' ? 'success'
+            : conclusion === 'failure' ? 'failure'
+              : conclusion === 'cancelled' ? 'skipped'
+                : 'running';
+        cache.set(cacheKey, status);
+        state[stageId] = { status };
+      } catch {
+        cache.set(cacheKey, undefined);
+      }
+    }
+  }
+
+  const cached = cache.size;
+  const fetched = [...cache.entries()].filter(([_, v]) => v !== undefined).length;
+  if (fetched > 0) {
+    console.error(`  Live state: ${fetched} workflows fetched (${cache.size - fetched} cached)${cached > 0 ? '' : ''}`);
+  }
+
+  return state;
+}
+
+function runVisualize(args: string[]): void {
+  let outputPath = '';
+  let stateDir = '';
+  let runId = '';
+  let openBrowser = false;
+  let githubSummary = false;
+  let live = false;
+  const positional: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--output') {
+      outputPath = args[++i] ?? '';
+    } else if (args[i] === '--state-dir') {
+      stateDir = args[++i] ?? '';
+    } else if (args[i] === '--run-id') {
+      runId = args[++i] ?? '';
+    } else if (args[i] === '--open') {
+      openBrowser = true;
+    } else if (args[i] === '--github-summary') {
+      githubSummary = true;
+    } else if (args[i] === '--live') {
+      live = true;
+    } else {
+      positional.push(args[i]);
+    }
+  }
+
+  const target = positional[0];
+  if (!target) {
+    visualizeUsage();
+  }
+
+  const absoluteTarget = path.resolve(target);
+  if (!fs.existsSync(absoluteTarget)) {
+    console.error(`Pipeline file not found: ${target}`);
+    process.exit(1);
+  }
+
+  const pipeline = loadPipelineDocumentFromFile(absoluteTarget);
+  const resolved = validatePipelineDocument(pipeline);
+  const resolvedStateDir = stateDir ? path.resolve(stateDir) : undefined;
+
+  let state;
+  if (resolvedStateDir) {
+    const records = listPipelineStates(resolvedStateDir, resolved.name);
+    state = buildVisualizeState(resolved, records, runId || undefined);
+  }
+
+  if (live) {
+    const liveState = fetchLiveState(resolved);
+    state = { ...liveState, ...state };
+  }
+
+  const html = renderPipelineHtml(resolved, { state, title: resolved.name });
+
+  const outPath = path.resolve(outputPath || 'pipeline-visualization.html');
+
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, html);
+  console.log(`Wrote ${outPath}`);
+
+  if (githubSummary) {
+    const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+    if (!summaryPath) {
+      console.error('GITHUB_STEP_SUMMARY not set — not running in GitHub Actions');
+      process.exit(1);
+    }
+
+    const summary = ['### Pipeline visualizer', '', `Pipeline: **${resolved.name}** — ${resolved.stages.length} stages`, '', ''];
+    for (const stage of resolved.stages) {
+      const s = state?.[stage.id];
+      const icon = s?.status === 'success' ? ':white_check_mark:' : s?.status === 'failure' ? ':x:' : s?.status === 'skipped' ? ':heavy_minus_sign:' : s?.status === 'running' ? ':arrows_counterclockwise:' : ':hourglass:';
+      const label = stage.workflow ?? stage.run ?? stage.pipeline_file ?? '';
+      summary.push(`| ${icon} | **${stage.id}** | \`${label}\` | ${s?.status ?? 'pending'} |`);
+    }
+    if (summary.length > 3) {
+      summary.splice(3, 0, '| | Stage | Workflow | Status |');
+      summary.splice(4, 0, '|---|---|---|---|');
+    }
+    summary.push('');
+    summary.push(`[Open full visualization](${process.env.GITHUB_SERVER_URL ?? 'https://github.com'}/${process.env.GITHUB_REPOSITORY ?? ''}/actions/runs/${process.env.GITHUB_RUN_ID ?? ''}) — download the *pipeline-viz* artifact`);
+    fs.appendFileSync(summaryPath, '\n' + summary.join('\n') + '\n');
+  }
+
+  if (openBrowser) {
+    const platform = process.platform;
+    const cmd = platform === 'darwin' ? 'open' : platform === 'win32' ? 'start' : 'xdg-open';
+    execSync(`${cmd} "${outPath}"`);
+  }
+}
+
 const [command, ...rest] = process.argv.slice(2);
 
 if (command === 'compile') {
@@ -696,6 +851,8 @@ if (command === 'compile') {
   runLocal(rest);
 } else if (command === 'state') {
   runState(rest);
+} else if (command === 'visualize') {
+  runVisualize(rest);
 } else {
   rootUsage();
 }

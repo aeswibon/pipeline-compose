@@ -167,3 +167,5 @@ export {
   STATE_DIR,
 } from './lib/pipeline-state.js';
 export type { PipelineStateRecord, StageStateRecord } from './lib/pipeline-state.js';
+export { renderPipelineHtml, buildVisualizeState } from './compile/visualize.js';
+export type { StageState, VisualizeOptions } from './compile/visualize.js';

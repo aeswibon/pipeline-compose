@@ -18,6 +18,8 @@ function withResolvedStages(
   lenientNeeds = false,
 ): Pipeline & { stages: ResolvedStage[] } {
   const defaultGroup = pipeline.group ?? pipelineKey;
+  const pipelineRetry = pipeline.retry;
+  const pipelineRetryOn = pipeline.retry_on;
   const ordered = lenientNeeds ? sortStagesLenient(pipeline.stages) : sortStages(pipeline.stages);
   return {
     ...pipeline,
@@ -25,6 +27,8 @@ function withResolvedStages(
       ...stage,
       resolvedGroup: resolveStageGroup(stage, defaultGroup, pipelineKey),
       pipelineKey,
+      retry: stage.retry ?? pipelineRetry,
+      retry_on: stage.retry_on ?? pipelineRetryOn,
     })),
   };
 }

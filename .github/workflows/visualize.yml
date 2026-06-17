@@ -1,0 +1,39 @@
+name: Pipeline Visualizer
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  visualize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+
+      - name: Generate pipeline visualization
+        run: |
+          pnpm exec tsx packages/cli/src/main.ts visualize .github/pipelines/pipeline.yml \
+            --live \
+            --output pipeline-visualization.html \
+            --github-summary
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-viz
+          path: pipeline-visualization.html
+          retention-days: 30

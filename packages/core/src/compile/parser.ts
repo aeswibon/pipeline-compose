@@ -32,6 +32,10 @@ export interface PipelineStage {
   environment?: string;
   inputs?: Record<string, string>;
   outputs?: string[];
+  /** Number of retry attempts on failure (default: pipeline-level retry, or 0 if unset). */
+  retry?: number;
+  /** When to retry: 'failure' (default, retry only on failure) or 'always' (retry regardless). */
+  retry_on?: 'failure' | 'always';
 }
 
 export interface Pipeline {
@@ -51,6 +55,10 @@ export interface Pipeline {
   context_schema?: Record<string, unknown>;
   /** Reusable stage templates referenced by stage `use`. */
   catalog?: Record<string, Omit<PipelineStage, 'id' | 'use'>>;
+  /** Default retry count for all stages (stage-level retry overrides). */
+  retry?: number;
+  /** Default retry mode for all stages. */
+  retry_on?: 'failure' | 'always';
   stages: PipelineStage[];
 }
 
@@ -60,6 +68,10 @@ export interface PipelineDefinition {
   /** JSON Schema describing expected context.<stage>.<output> shapes. */
   context_schema?: Record<string, unknown>;
   stages: PipelineStage[];
+  /** Default retry count for all stages (stage-level retry overrides). */
+  retry?: number;
+  /** Default retry mode for all stages. */
+  retry_on?: 'failure' | 'always';
 }
 
 export interface PipelineDocumentV2 {
