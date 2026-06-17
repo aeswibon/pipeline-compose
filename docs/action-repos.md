@@ -89,7 +89,7 @@ bash scripts/ci/render-action-release-notes.sh 0.3.0 pipeline-compose-run notes.
 gh release edit v0.3.0 --repo aeswibon/pipeline-compose-run --notes-file notes.md
 ```
 
-Do not move or recreate the tag — consumers pin `@v1.10.0` (or another semver tag) to that commit.
+Do not move or recreate the tag — consumers pin `@v1.11.0` (or another semver tag) to that commit.
 
 ## GitHub Marketplace
 
@@ -98,7 +98,7 @@ Publish from each action repo’s **Releases** page (check **Publish this Action
 ## Consumer refs
 
 ```yaml
-uses: aeswibon/pipeline-compose-run@v1.10.0
+uses: aeswibon/pipeline-compose-run@v1.11.0
 ```
 
 | Action | Ref |
@@ -115,7 +115,7 @@ uses: aeswibon/pipeline-compose-run@v1.10.0
 uses: aeswibon/pipeline-compose/run@v1.0.0
 
 # after
-uses: aeswibon/pipeline-compose-run@v1.10.0
+uses: aeswibon/pipeline-compose-run@v1.11.0
 ```
 
 Legacy split with sibling directories (`../pipeline-compose-run`, etc.) is no longer used — edit and publish from this monorepo only.
