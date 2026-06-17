@@ -11,6 +11,7 @@ Copy-paste templates for each [pipeline-compose](https://github.com/aeswibon/pip
 | [eval-conditional](eval-conditional/) | [pipeline-compose-eval](https://github.com/aeswibon/pipeline-compose-eval) | Gate jobs with `when:` expressions |
 | [context-merge-manual](context-merge-manual/) | [pipeline-compose-context-merge](https://github.com/aeswibon/pipeline-compose-context-merge) | Build pipeline context JSON across steps |
 | [catalog-global](catalog-global/) | [pipeline-compose-run](https://github.com/aeswibon/pipeline-compose-run) | `catalog_from`, local `catalog`, and `concurrency.global` (validate-only fixture) |
+| [pr-bot](pr-bot/) | (workflow only) | PR comment with Mermaid + validate/simulate (portable copy of meta PR bot) |
 
 ```bash
 # Quick copy (from a clone of pipeline-compose)

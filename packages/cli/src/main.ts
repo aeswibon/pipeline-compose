@@ -4,6 +4,8 @@ import * as path from 'node:path';
 import {
   buildValidateReport,
   buildSyncPlan,
+  collectCrossRepoSlugs,
+  collectRepoAccessIssues,
   evaluateExpression,
   formatSimulateReport,
   formatValidateReport,
@@ -46,7 +48,7 @@ function evalUsage(): never {
 
 function validateUsage(): never {
   console.error(
-    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict] [--json] [--mermaid] [--simulate] [--github <json>] [--repo-tokens-file <path>]',
+    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict] [--json] [--mermaid] [--simulate] [--github <json>] [--repo-tokens-file <path>] [--check-repo-access]',
   );
   process.exit(1);
 }
@@ -227,6 +229,13 @@ function runEval(args: string[]): void {
 }
 
 function runValidate(args: string[]): void {
+  void runValidateAsync(args).catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}
+
+async function runValidateAsync(args: string[]): Promise<void> {
   let repoRoot = '';
   let workflows = false;
   let strict = false;
@@ -235,6 +244,7 @@ function runValidate(args: string[]): void {
   let simulate = false;
   let githubJson = '';
   let repoTokensFile = '';
+  let checkRepoAccess = false;
   const positional: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -254,6 +264,8 @@ function runValidate(args: string[]): void {
       githubJson = args[++i] ?? '';
     } else if (args[i] === '--repo-tokens-file') {
       repoTokensFile = args[++i] ?? '';
+    } else if (args[i] === '--check-repo-access') {
+      checkRepoAccess = true;
     } else {
       positional.push(args[i]);
     }
@@ -275,7 +287,7 @@ function runValidate(args: string[]): void {
     repoTokenSlugs = new Set(Object.keys(parsed));
   }
 
-  const report = buildValidateReport(pipeline, {
+  let report = buildValidateReport(pipeline, {
     repoRoot: resolvedRoot,
     workflows,
     strict,
@@ -284,6 +296,21 @@ function runValidate(args: string[]): void {
     extraIssues: catalogIssues,
     documents,
   });
+
+  if (checkRepoAccess) {
+    const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+    if (!token) {
+      throw new Error('GITHUB_TOKEN or GH_TOKEN is required for --check-repo-access');
+    }
+    const accessIssues = await collectRepoAccessIssues(
+      collectCrossRepoSlugs(report.pipeline, resolvedRoot),
+      token,
+    );
+    report = {
+      pipeline: report.pipeline,
+      issues: [...report.issues, ...accessIssues],
+    };
+  }
 
   const simulation = simulate
     ? simulatePipeline(report.pipeline, {

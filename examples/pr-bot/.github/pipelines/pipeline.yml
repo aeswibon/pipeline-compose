@@ -1,0 +1,9 @@
+version: 2
+companion_workflows:
+  - .github/workflows/ci.yml
+  - .github/workflows/pipeline-pr-comment.yml
+pipelines:
+  pipeline:
+    stages:
+      - id: ci
+        workflow: .github/workflows/ci.yml

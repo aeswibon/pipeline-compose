@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`validate --check-repo-access`** — verifies `GITHUB_TOKEN` can read each `repo:` slug (including nested `pipeline_file` bundles).
+- **GitHub App setup tutorial** — [docs/tutorials/github-app-setup.md](docs/tutorials/github-app-setup.md).
+- **`examples/pr-bot/`** — portable PR validation comment workflow (checks out pipeline-compose at a release tag).
+
 ## [1.12.0] - 2026-06-16
 
 ### Added

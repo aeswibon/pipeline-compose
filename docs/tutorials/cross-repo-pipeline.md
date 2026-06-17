@@ -65,6 +65,8 @@ GitHub App alternative:
     github_app_private_key: ${{ secrets.PIPELINE_APP_PRIVATE_KEY }}
 ```
 
+Step-by-step App creation: [github-app-setup.md](./github-app-setup.md).
+
 ## Step 4 — Validate locally
 
 ```bash

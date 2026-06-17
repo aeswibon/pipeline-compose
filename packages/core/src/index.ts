@@ -125,6 +125,10 @@ export {
 } from './compile/catalog-remote.js';
 export type { CatalogFromRef } from './compile/catalog-remote.js';
 export {
+  collectCrossRepoSlugs,
+  collectRepoAccessIssues,
+} from './lib/repo-access-check.js';
+export {
   RERUN_STATE_ARTIFACT,
   canReuseStage,
   parseRerunState,

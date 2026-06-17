@@ -1,0 +1,109 @@
+name: Pipeline PR comment
+
+on:
+  pull_request:
+    paths:
+      - '.github/pipelines/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  pipeline-comment:
+    name: Post pipeline validation comment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
+        with:
+          repository: aeswibon/pipeline-compose
+          ref: v1.12.0
+          path: _pipeline-compose
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache-dependency-path: _pipeline-compose/pnpm-lock.yaml
+      - name: Build pipeline-compose CLI
+        working-directory: _pipeline-compose
+        run: pnpm install --frozen-lockfile && pnpm run build
+      - name: Validate pipeline
+        id: validate
+        continue-on-error: true
+        env:
+          SIMULATE_GITHUB: ${{ toJson(github) }}
+        run: |
+          set +e
+          pnpm exec tsx _pipeline-compose/packages/cli/src/main.ts validate .github/pipelines/pipeline.yml \
+            --repo-root . --workflows --strict --mermaid > /tmp/pipeline-mermaid.txt
+          echo "mermaid_exit=$?" >> "$GITHUB_OUTPUT"
+          pnpm exec tsx _pipeline-compose/packages/cli/src/main.ts validate .github/pipelines/pipeline.yml \
+            --repo-root . --workflows --strict --json --simulate --github "$SIMULATE_GITHUB" \
+            > /tmp/pipeline-report.json
+          echo "report_exit=$?" >> "$GITHUB_OUTPUT"
+      - name: Post PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs');
+            const marker = '<!-- pipeline-compose-pr-bot -->';
+            const mermaid = fs.readFileSync('/tmp/pipeline-mermaid.txt', 'utf8').trim();
+            const report = JSON.parse(fs.readFileSync('/tmp/pipeline-report.json', 'utf8'));
+            const ok = report.ok;
+            const issues = (report.issues ?? [])
+              .map((issue) => `- **${issue.level}**: ${issue.message}`)
+              .join('\n');
+            const simulation = report.simulation ?? [];
+            const simRows = simulation
+              .map(
+                (stage) =>
+                  `| \`${stage.id}\` | ${stage.status} | ${stage.reason ?? '—'} |`,
+              )
+              .join('\n');
+            const body = [
+              marker,
+              '## Pipeline Compose validation',
+              '',
+              `**Status:** ${ok ? '✅ OK' : '❌ Failed'}`,
+              '',
+              '### Topology',
+              '',
+              '```mermaid',
+              mermaid,
+              '```',
+              '',
+              '### Simulation (dry-run)',
+              '',
+              simulation.length
+                ? ['| Stage | Status | Reason |', '| --- | --- | --- |', simRows].join('\n')
+                : '_No stages._',
+              '',
+              '### Issues',
+              '',
+              issues || '_No issues._',
+            ].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number,
+            });
+            const existing = comments.find((comment) => comment.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
