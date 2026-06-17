@@ -11,7 +11,7 @@ jobs:
   echo:
     runs-on: ubuntu-latest
     steps:
-      - uses: aeswibon/pipeline-compose-export@v1.11.0
+      - uses: aeswibon/pipeline-compose-export@v1.12.0
         with:
           stage_id: echo
           outputs_json: '{"message":"hello"}'

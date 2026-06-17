@@ -6,7 +6,7 @@
 
 Pipeline Compose gives you one `pipeline.yml`: ordered stages, wait-for-completion, and `context.*` wiring across repos — without Jenkins, without custom polling scripts, without leaving Actions.
 
-**Stable release:** **v1.11.0** — Turbo/Nx import, `pipeline_file` smart-rerun digest, export schema validation, global concurrency. Cross-repo [GitHub App auth](docs/tutorials/cross-repo-pipeline.md) since v1.6; stage catalog, smart rerun, and sub-pipelines in earlier releases.
+**Stable release:** **v1.12.0** — smarter `init`, cross-repo `pipeline_file` digest, Turbo/Nx import. Cross-repo [GitHub App auth](docs/tutorials/github-app-setup.md) since v1.6.
 
 ## The problem
 
@@ -83,7 +83,7 @@ pipelines:
 **2. Export** in any stage workflow that declares `outputs:`:
 
 ```yaml
-- uses: aeswibon/pipeline-compose-export@v1.11.0
+- uses: aeswibon/pipeline-compose-export@v1.12.0
   if: success()
   with:
     stage_id: ci
@@ -93,7 +93,7 @@ pipelines:
 **3. Entry workflow** (e.g. tag push):
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.11.0
+- uses: aeswibon/pipeline-compose-run@v1.12.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
 ```
