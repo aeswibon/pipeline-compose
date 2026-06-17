@@ -196,7 +196,7 @@ pnpm run validate examples/cross-repo-dispatch/.github/pipelines/pipeline.yml \
 
 - ~~**Single CLI pass** outputs mermaid + json together (UX).~~ Shipped v1.14 (`mermaid` field in JSON report).
 - ~~**Simulate includes smart rerun** column when flag set.~~ Shipped v1.15 (`--rerun-state` with `smart_rerun: true`).
-- **Policy-as-code** layer maps issue codes to allow/deny per repo (platform request).
+- ~~**Policy-as-code** layer maps issue codes to allow/deny per repo (platform request).~~ Shipped v1.16 (`validate --policy`).
 
 ---
 

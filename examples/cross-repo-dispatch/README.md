@@ -23,8 +23,11 @@ pnpm run validate .github/pipelines/pipeline.yml \
   --repo-root examples/cross-repo-dispatch \
   --workflows \
   --strict \
-  --repo-tokens-file examples/cross-repo-dispatch/repo-tokens.example.json
+  --repo-tokens-file examples/cross-repo-dispatch/repo-tokens.example.json \
+  --policy examples/cross-repo-dispatch/validate-policy.json
 ```
+
+`validate-policy.json` waives cross-repo advisory codes when running `--strict` locally.
 
 The host repo includes `.github/workflows/cross-repo-echo.yml` as a **validate stub** (same shape as `target/.github/workflows/cross-repo-echo.yml`). Install the target copy in the remote repository for real dispatch.
 

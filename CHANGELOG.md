@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`validate --policy`** — per-repo JSON allow/deny lists for stable validation issue codes (`allow` waives; `deny` promotes warns to errors).
+
 ## [1.15.0] - 2026-06-17
 
 ### Added

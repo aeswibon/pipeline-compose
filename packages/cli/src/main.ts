@@ -13,6 +13,7 @@ import {
   generateWorkflow,
   loadPipelineDocumentFromFile,
   loadPipelineDocumentsFromInputs,
+  loadValidatePolicyFromFile,
   parseRerunState,
   previewWorkflowSync,
   renderPipelineMermaid,
@@ -50,7 +51,7 @@ function evalUsage(): never {
 
 function validateUsage(): never {
   console.error(
-    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict] [--json] [--mermaid] [--simulate] [--github <json>] [--repo-tokens-file <path>] [--check-repo-access] [--rerun-state <path>]',
+    'Usage: pipeline-compose validate <pipeline.yml|pipeline-dir> [--repo-root <path>] [--workflows] [--strict] [--json] [--mermaid] [--simulate] [--github <json>] [--repo-tokens-file <path>] [--check-repo-access] [--rerun-state <path>] [--policy <path>]',
   );
   process.exit(1);
 }
@@ -248,6 +249,7 @@ async function runValidateAsync(args: string[]): Promise<void> {
   let repoTokensFile = '';
   let checkRepoAccess = false;
   let rerunStateFile = '';
+  let policyFile = '';
   const positional: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -271,6 +273,8 @@ async function runValidateAsync(args: string[]): Promise<void> {
       checkRepoAccess = true;
     } else if (args[i] === '--rerun-state') {
       rerunStateFile = args[++i] ?? '';
+    } else if (args[i] === '--policy') {
+      policyFile = args[++i] ?? '';
     } else {
       positional.push(args[i]);
     }
@@ -300,6 +304,7 @@ async function runValidateAsync(args: string[]): Promise<void> {
     repoTokenSlugs,
     extraIssues: catalogIssues,
     documents,
+    policy: policyFile ? loadValidatePolicyFromFile(path.resolve(policyFile)) : undefined,
   });
 
   if (checkRepoAccess) {

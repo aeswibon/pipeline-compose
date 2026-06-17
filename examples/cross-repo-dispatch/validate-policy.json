@@ -1,0 +1,3 @@
+{
+  "allow": ["stage.cross-repo", "stage.cross-repo-token"]
+}

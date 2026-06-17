@@ -55,6 +55,12 @@ export {
   serializeValidateReport,
   workflowMatchesGroupConvention,
 } from './compile/validate-report.js';
+export {
+  applyValidatePolicy,
+  loadValidatePolicyFromFile,
+  parseValidatePolicy,
+} from './compile/validate-policy.js';
+export type { ValidatePolicy } from './compile/validate-policy.js';
 export { collectDeprecationIssues } from './compile/deprecations.js';
 export { simulatePipeline, formatSimulateReport } from './compile/simulate.js';
 export type {

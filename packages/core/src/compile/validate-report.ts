@@ -13,6 +13,7 @@ import {
   nestedDeclaredOutputs,
   resolveSubPipeline,
 } from './sub-pipeline.js';
+import { applyValidatePolicy, type ValidatePolicy } from './validate-policy.js';
 
 export type ValidationIssueLevel = 'warn' | 'error';
 
@@ -31,6 +32,8 @@ export interface ValidateReportOptions {
   extraIssues?: ValidationIssue[];
   /** Source documents for catalog_from and similar root-level checks. */
   documents?: PipelineDocument[];
+  /** Per-repo allow/deny lists for validation issue codes. */
+  policy?: ValidatePolicy;
 }
 
 export interface ValidateReport {
@@ -365,8 +368,13 @@ export function buildValidateReport(
     }
   }
 
+  let filtered = issues;
+  if (options.policy) {
+    filtered = applyValidatePolicy(filtered, options.policy);
+  }
+
   if (options.strict) {
-    for (const issue of issues) {
+    for (const issue of filtered) {
       // ponytail: informational global-lock reminder; not a graph defect
       if (issue.level === 'warn' && issue.code !== 'concurrency.global') {
         issue.level = 'error';
@@ -374,7 +382,7 @@ export function buildValidateReport(
     }
   }
 
-  return { pipeline, issues };
+  return { pipeline, issues: filtered };
 }
 
 export function formatPipelineTree(pipeline: ResolvedPipeline): string {
