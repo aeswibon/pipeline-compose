@@ -52,6 +52,7 @@ Copy-paste examples: [examples/](examples/) · Tutorial: [docs/tutorials/tag-rel
 
 ```bash
 pnpm run init          # scan workflows → starter pipeline.yml (v2)
+pnpm run import turbo  # turbo.json → .github/pipelines/imported.yml (or import nx)
 pnpm run validate .github/pipelines/pipeline.yml --repo-root . --workflows --strict --mermaid
 pnpm run compile .github/pipelines/pipeline.yml -o .github/workflows/pipeline-generated.yml
 ```

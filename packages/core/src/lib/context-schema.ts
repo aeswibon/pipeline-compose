@@ -99,3 +99,24 @@ export function collectContextSchemaIssues(
 
   return issues;
 }
+
+/** Runtime check: stage outputs match context_schema slice for stageId (optional export action). */
+export function validateStageOutputsAgainstSchema(
+  stageId: string,
+  outputs: Record<string, unknown>,
+  schema: Record<string, unknown>,
+): string | null {
+  const schemaError = validateContextSchemaDocument(schema);
+  if (schemaError) {
+    return `Invalid context_schema: ${schemaError}`;
+  }
+  const stage = stageSchema(schema, stageId);
+  if (!stage) {
+    return `context_schema has no properties.${stageId}`;
+  }
+  const validate = ajv.compile(stage);
+  if (!validate(outputs)) {
+    return ajv.errorsText(validate.errors);
+  }
+  return null;
+}

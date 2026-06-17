@@ -59,19 +59,18 @@ Convention: top-level keys match **stage ids**; nested properties match **output
 
 **What validate does NOT check:**
 
-- Runtime values match `type` / `pattern` (export could still lie).
+- Runtime values match `type` / `pattern` unless export sets `validate_schema: true`.
 - Stages without `outputs:` but mutating external state.
 - Keys present in export but omitted from schema (allowed—schema is minimum contract).
 
-### Validate-time only
+### Validate-time and optional runtime
 
-| Runtime validation | Validate-only (our choice) |
-|--------------------|----------------------------|
-| Catches bad data on deploy | Catches bad wiring on PR |
-| Needs schema in run action bundle | Fails fast in `validate --strict` |
-| Couples export action to Ajv | Export stays tiny |
+| Layer | Behavior |
+|-------|----------|
+| `validate --strict` | `collectContextSchemaIssues` — wiring + declared outputs vs schema paths |
+| Export action (`validate_schema: true`) | `validateStageOutputsAgainstSchema` — Ajv on published JSON before artifact upload |
 
-**Rationale:** cross-repo stages often **do not run** on library PRs; static wiring errors are the highest ROI. Runtime type enforcement would require export to validate against schema (future optional hardening).
+**Shipped runtime path:** v1.11+ export action with `context_schema_json` input (meta `version-sync` dogfoods semver pattern on `version`). Validate-time checks remain the default; runtime enforcement is opt-in per export step.
 
 ---
 
@@ -107,7 +106,7 @@ A stage can declare `outputs: [version]` without schema; adding schema is strict
 | **Custom DSL** | Rejected — JSON Schema is standard; avoid new language |
 | **Required for all pipelines** | Rejected — adoption friction |
 | **Protobuf / Avro** | Heavy for YAML-centric Actions users |
-| **Runtime validate in export action** | Good v2; would add Ajv to export bundle and fail stage early |
+| **Runtime validate in export action** | **Shipped** v1.11 — optional `validate_schema` + Ajv in export bundle |
 | **Infer schema from export JSON** | Backwards; schema should lead for API-first teams |
 
 ---
@@ -117,7 +116,7 @@ A stage can declare `outputs: [version]` without schema; adding schema is strict
 1. Start with `outputs:` + context ref validation (v1.3).
 2. Add `context_schema` with `type: string` only (documentation).
 3. Tighten with `pattern`, `enum`, `required` on stage objects as teams mature.
-4. Optional future: export action `validate_schema: true` on publish.
+4. Optional: export action `validate_schema: true` on publish (**shipped** v1.11).
 
 ---
 
@@ -145,6 +144,7 @@ Validation codes (stable):
 | Piece | Path |
 |-------|------|
 | Schema validation | `packages/core/src/lib/context-schema.ts` |
+| Export runtime validate | `packages/action-export/src/index.ts` |
 | Context ref parse | `packages/core/src/lib/context-refs.ts` |
 
 ---

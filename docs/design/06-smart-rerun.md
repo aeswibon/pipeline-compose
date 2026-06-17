@@ -46,17 +46,9 @@ All must hold:
 
 `stageFingerprint` hashes (`packages/core/src/lib/smart-rerun.ts`):
 
-- `id`, `workflow` or `pipeline_file`, `repo`, normalized `ref`, `when`, sorted `inputs` key/value map.
+- `id`, `workflow` or `pipeline_file`, `repo`, normalized `ref`, `when`, sorted `inputs` key/value map, optional **content digest** (`workflow_digest` in payload).
 
-**Explicitly not in fingerprint (ponytail):**
-
-- Target workflow file SHA at dispatch time
-- Stage workflow’s `actions/checkout` ref
-- Environment secrets versioning
-
-**Consequence:** if you change stage **logic** without changing fingerprint inputs, rerun may **incorrectly reuse** old outputs. Operators must bump an input or disable smart rerun for that pipeline when shipping breaking stage changes.
-
-**Upgrade path:** include workflow file hash or composite version input in fingerprint.
+**Content digest (v1.9+ workflows, v1.11+ `pipeline_file`):** same-repo file hash via `workflowFileDigest`; cross-repo workflow via Contents API. Cross-repo `pipeline_file` digest deferred.
 
 ### State artifact
 

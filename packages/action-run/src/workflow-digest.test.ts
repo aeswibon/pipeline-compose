@@ -21,6 +21,14 @@ describe('workflowFileDigest', () => {
     expect(workflowFileDigest(root, '.github/workflows/ci.yml')).toBe(digest);
   });
 
+  it('hashes pipeline yaml files the same way as workflows', () => {
+    const root = mkdtempSync(join(tmpdir(), 'pc-pipe-'));
+    mkdirSync(join(root, '.github/pipelines'), { recursive: true });
+    writeFileSync(join(root, '.github/pipelines/pr.yml'), 'version: 2\n');
+    const digest = workflowFileDigest(root, '.github/pipelines/pr.yml');
+    expect(digest).toHaveLength(16);
+  });
+
   it('returns undefined for missing files', () => {
     expect(workflowFileDigest('/tmp/missing', '.github/workflows/none.yml')).toBeUndefined();
   });

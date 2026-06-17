@@ -6,11 +6,13 @@
   "description": "Upload pipeline-compose stage outputs artifact",
   "scripts": {
     "build": "tsc --noEmit",
-    "bundle": "ncc build src/index.ts -o dist -s"
+    "bundle": "pnpm --filter @aeswibon/pipeline-compose-core run build && ncc build src/index.ts -o dist -s",
+    "test": "vitest run --dir src"
   },
   "dependencies": {
     "@actions/artifact": "^6.2.1",
-    "@actions/core": "^3.0.1"
+    "@actions/core": "^3.0.1",
+    "@aeswibon/pipeline-compose-core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

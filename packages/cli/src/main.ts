@@ -23,6 +23,10 @@ import {
   validateReportExitCode,
   writeInitPipeline,
   collectDocumentCatalogIssues,
+  parseNxTargetDefaults,
+  parseTurboTaskGraph,
+  renderImportedPipelineYaml,
+  stagesFromMonorepoTaskGraph,
   type ResolvedPipeline,
 } from '@aeswibon/pipeline-compose-core';
 
@@ -62,7 +66,14 @@ function syncUsage(): never {
 }
 
 function rootUsage(): never {
-  console.error('Usage: pipeline-compose <compile|eval|validate|sync|init> ...');
+  console.error('Usage: pipeline-compose <compile|eval|validate|sync|init|import> ...');
+  process.exit(1);
+}
+
+function importUsage(): never {
+  console.error(
+    'Usage: pipeline-compose import <turbo|nx> [--config <path>] [--output <path>] [--name <pipeline>] [--workflow-pattern <path>]',
+  );
   process.exit(1);
 }
 
@@ -403,6 +414,53 @@ function runSync(args: string[]): void {
   }
 }
 
+function runImport(args: string[]): void {
+  const tool = args[0];
+  if (tool !== 'turbo' && tool !== 'nx') {
+    importUsage();
+  }
+
+  let config = '';
+  let output = '';
+  let pipelineName = 'monorepo';
+  let workflowPattern = '';
+  const rest = args.slice(1);
+
+  for (let i = 0; i < rest.length; i++) {
+    if (rest[i] === '--config') {
+      config = rest[++i] ?? '';
+    } else if (rest[i] === '--output') {
+      output = rest[++i] ?? '';
+    } else if (rest[i] === '--name') {
+      pipelineName = rest[++i] ?? 'monorepo';
+    } else if (rest[i] === '--workflow-pattern') {
+      workflowPattern = rest[++i] ?? '';
+    } else {
+      importUsage();
+    }
+  }
+
+  const configPath = path.resolve(config || (tool === 'turbo' ? 'turbo.json' : 'nx.json'));
+  if (!fs.existsSync(configPath)) {
+    console.error(`Config not found: ${configPath}`);
+    process.exit(1);
+  }
+
+  const raw = JSON.parse(fs.readFileSync(configPath, 'utf8')) as unknown;
+  const graph =
+    tool === 'turbo' ? parseTurboTaskGraph(raw) : parseNxTargetDefaults(raw);
+  const stages = stagesFromMonorepoTaskGraph(graph, {
+    workflowPattern: workflowPattern || undefined,
+  });
+  const yaml = renderImportedPipelineYaml(pipelineName, stages);
+  const outputPath = path.resolve(output || '.github/pipelines/imported.yml');
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, yaml);
+  console.log(`Wrote ${outputPath} (${stages.length} stage(s) from ${tool})`);
+  console.log('ponytail: workflow paths are placeholders; add workflows or re-point stages.');
+}
+
 const [command, ...rest] = process.argv.slice(2);
 
 if (command === 'compile') {
@@ -415,6 +473,8 @@ if (command === 'compile') {
   runSync(rest);
 } else if (command === 'init') {
   runInit(rest);
+} else if (command === 'import') {
+  runImport(rest);
 } else {
   rootUsage();
 }

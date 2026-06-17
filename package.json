@@ -13,6 +13,7 @@
     "eval": "pnpm exec tsx packages/cli/src/main.ts eval",
     "validate": "pnpm exec tsx packages/cli/src/main.ts validate",
     "init": "pnpm exec tsx packages/cli/src/main.ts init",
+    "import": "pnpm exec tsx packages/cli/src/main.ts import",
     "sync:workflows": "pnpm exec tsx packages/cli/src/main.ts sync",
     "act:ci": "bash scripts/act-test.sh ci",
     "act:compile": "bash scripts/act-test.sh compile",

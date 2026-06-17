@@ -108,6 +108,7 @@ export type { CatalogEntry } from './compile/catalog.js';
 export {
   collectContextSchemaIssues,
   validateContextSchemaDocument,
+  validateStageOutputsAgainstSchema,
 } from './lib/context-schema.js';
 export {
   globalLockPath,
@@ -130,3 +131,12 @@ export {
   stageFingerprint,
 } from './lib/smart-rerun.js';
 export type { RerunStageState, RerunState } from './lib/smart-rerun.js';
+export {
+  normalizeDependsOn,
+  parseNxTargetDefaults,
+  parseTurboTaskGraph,
+  stagesFromMonorepoTaskGraph,
+  topoSortTaskIds,
+} from './import/monorepo-tasks.js';
+export type { ImportMonorepoOptions, MonorepoTaskGraph } from './import/monorepo-tasks.js';
+export { renderImportedPipelineYaml } from './import/render-import.js';

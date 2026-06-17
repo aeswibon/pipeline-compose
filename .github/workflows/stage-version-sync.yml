@@ -110,6 +110,9 @@ jobs:
         if: success()
         with:
           stage_id: version-sync
+          validate_schema: true
+          context_schema_json: >-
+            {"type":"object","properties":{"version-sync":{"type":"object","properties":{"version":{"type":"string","pattern":"^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$"},"skip_publish":{"type":"string","enum":["true","false"]}}}}}
           outputs: >-
             {"version":"${{ steps.tag.outputs.version }}",
              "skip_publish":"${{ steps.git-state.outputs.skip_publish }}"}

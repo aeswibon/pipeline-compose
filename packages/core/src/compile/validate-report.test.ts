@@ -137,6 +137,20 @@ describe('buildValidateReport', () => {
       ),
     ).toBe(true);
   });
+
+  it('keeps concurrency.global advisory as warn in strict mode', () => {
+    const report = buildValidateReport(
+      {
+        name: 'p',
+        version: 1,
+        concurrency: { group: 'g', global: true, lock_repo: 'org/repo' },
+        stages: [{ id: 'ci', workflow: '.github/workflows/ci.yml' }],
+      },
+      { strict: true },
+    );
+    const issue = report.issues.find((item) => item.code === 'concurrency.global');
+    expect(issue?.level).toBe('warn');
+  });
 });
 
 describe('collectNeedsIssues', () => {

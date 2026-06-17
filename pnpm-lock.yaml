@@ -92,6 +92,9 @@ importers:
       '@actions/core':
         specifier: ^3.0.1
         version: 3.0.1
+      '@aeswibon/pipeline-compose-core':
+        specifier: workspace:*
+        version: link:../core
     devDependencies:
       '@types/node':
         specifier: ^24.0.0

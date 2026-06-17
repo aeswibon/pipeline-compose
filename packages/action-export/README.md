@@ -136,6 +136,8 @@ Yes — same artifact name and **`outputs.json`** path. Export just avoids copy-
 |-------|----------|-------------|
 | `stage_id` | yes | Pipeline stage **`id`** |
 | `outputs` | yes | JSON object string |
+| `validate_schema` | no | When `true`, validate `outputs` against `context_schema_json` before upload |
+| `context_schema_json` | no | Full pipeline `context_schema` object (required when `validate_schema` is true) |
 
 ## What it creates
 

@@ -83,10 +83,12 @@ inputs:
 ```yaml
 concurrency:
   group: release-${{ github.ref }}
+  global: true
+  lock_repo: aeswibon/pipeline-compose
   cancel_in_progress: false
 ```
 
-**Rationale:** one release per tag ref; do not cancel in-flight release if someone retags (rare). Run action enforces via [concurrency emulation](02-orchestration-model.md).
+**Rationale:** one release per tag ref; do not cancel in-flight release if someone retags (rare). Run action enforces via [concurrency emulation](02-orchestration-model.md). **`global: true`** dogfoods [14 — Global concurrency](14-global-concurrency.md): lock file under `.pipeline-compose/locks/` in this repo so overlapping release dispatches serialize on the same group.
 
 ### 4. `companion_workflows`
 

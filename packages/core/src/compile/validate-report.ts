@@ -367,7 +367,8 @@ export function buildValidateReport(
 
   if (options.strict) {
     for (const issue of issues) {
-      if (issue.level === 'warn') {
+      // ponytail: informational global-lock reminder; not a graph defect
+      if (issue.level === 'warn' && issue.code !== 'concurrency.global') {
         issue.level = 'error';
       }
     }

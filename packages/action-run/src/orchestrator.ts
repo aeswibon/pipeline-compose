@@ -78,15 +78,20 @@ async function workflowDigestForStage(
   baseClient: GitHubActionsClient,
   repoClients: Map<string, GitHubActionsClient>,
 ): Promise<string | undefined> {
-  if (!stage.workflow) {
+  const contentPath = stage.workflow ?? stage.pipeline_file;
+  if (!contentPath) {
     return undefined;
   }
   if (stage.repo) {
+    // ponytail: cross-repo pipeline_file digest deferred (Contents API path TBD)
+    if (stage.pipeline_file && !stage.workflow) {
+      return undefined;
+    }
     const client = await clientForStage(repoClients, baseClient, stage, options);
-    return workflowRemoteDigest(client, stage.workflow, options.ref);
+    return workflowRemoteDigest(client, contentPath, options.ref);
   }
   if (options.repoRoot) {
-    return workflowFileDigest(options.repoRoot, stage.workflow);
+    return workflowFileDigest(options.repoRoot, contentPath);
   }
   return undefined;
 }

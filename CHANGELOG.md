@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Meta pipeline global concurrency** — release pipeline sets `concurrency.global: true` (dogfood).
+- **Turbo/Nx import** — `pipeline-compose import turbo|nx` generates v2 pipeline YAML from `turbo.json` / `nx.json` task graphs.
+- **Smart rerun `pipeline_file` digest** — same-repo sub-pipeline stages include nested pipeline file content in fingerprints.
+- **Export runtime schema validation** — `pipeline-compose-export` accepts `validate_schema` + `context_schema_json` to fail the stage before upload when outputs violate the contract.
+
 ## [1.10.0] - 2026-06-16
 
 ### Added

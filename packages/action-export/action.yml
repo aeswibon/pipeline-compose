@@ -10,6 +10,13 @@ inputs:
   outputs:
     description: JSON object of stage output keys and values
     required: true
+  validate_schema:
+    description: When true, validate outputs against context_schema_json before upload
+    required: false
+    default: 'false'
+  context_schema_json:
+    description: JSON Schema object (root type object with per-stage properties)
+    required: false
 runs:
   using: node24
   main: dist/index.js

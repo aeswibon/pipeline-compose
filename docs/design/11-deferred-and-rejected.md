@@ -38,7 +38,7 @@ Not every good idea ships. This document lists **rejected** directions (with rea
 
 ### Runtime JSON Schema enforcement (v1.4)
 
-**Decision:** `context_schema` is validate-time only ([09](09-typed-context-schema.md)).
+**Decision:** `context_schema` is validate-time by default; optional runtime enforcement via export action `validate_schema` ([09](09-typed-context-schema.md)).
 
 **Revisit:** optional export-action flag with semver minor.
 
@@ -110,7 +110,7 @@ From [product growth roadmap](../superpowers/specs/product-growth-roadmap.md) an
 
 | Item | Why deferred |
 |------|----------------|
-| **Turbo/Nx/Rush import** | High value adapters; each tool is a project |
+| **Turbo/Nx/Rush import** | **Turbo + Nx shipped** v1.11 (`pipeline-compose import`); Rush deferred |
 | **Global approval gates** | Needs durable listener or GitHub Environment integration design |
 | **Global pipeline state store** | Artifacts + context suffice for DAG |
 | **AI autoremediation** | Non-deterministic; core must stay boring |

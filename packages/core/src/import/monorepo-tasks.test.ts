@@ -1,0 +1,58 @@
+import { describe, expect, it } from 'vitest';
+import {
+  normalizeDependsOn,
+  parseNxTargetDefaults,
+  parseTurboTaskGraph,
+  stagesFromMonorepoTaskGraph,
+  topoSortTaskIds,
+} from './monorepo-tasks.js';
+
+describe('normalizeDependsOn', () => {
+  it('ignores caret upstream refs', () => {
+    expect(normalizeDependsOn(['^build', 'lint'])).toEqual(['lint']);
+  });
+});
+
+describe('stagesFromMonorepoTaskGraph', () => {
+  it('builds stages in dependency order', () => {
+    const stages = stagesFromMonorepoTaskGraph({
+      build: { dependsOn: ['^build'] },
+      test: { dependsOn: ['build'] },
+      lint: {},
+    });
+    expect(stages.map((stage) => stage.id)).toEqual(['build', 'lint', 'test']);
+    expect(stages.find((stage) => stage.id === 'test')?.needs).toEqual(['build']);
+  });
+});
+
+describe('parseTurboTaskGraph', () => {
+  it('reads tasks (turbo 2)', () => {
+    const graph = parseTurboTaskGraph({ tasks: { build: { dependsOn: ['^build'] } } });
+    expect(graph.build).toBeDefined();
+  });
+
+  it('reads pipeline (turbo 1)', () => {
+    const graph = parseTurboTaskGraph({ pipeline: { ci: {} } });
+    expect(graph.ci).toBeDefined();
+  });
+});
+
+describe('parseNxTargetDefaults', () => {
+  it('reads targetDefaults', () => {
+    const graph = parseNxTargetDefaults({
+      targetDefaults: { build: { dependsOn: ['^build'] } },
+    });
+    expect(graph.build).toBeDefined();
+  });
+});
+
+describe('topoSortTaskIds', () => {
+  it('detects cycles', () => {
+    expect(() =>
+      topoSortTaskIds({
+        a: { dependsOn: ['b'] },
+        b: { dependsOn: ['a'] },
+      }),
+    ).toThrow(/cycle/);
+  });
+});
