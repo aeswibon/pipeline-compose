@@ -820,7 +820,7 @@ function runVisualize(args: string[]): void {
       summary.push(`| ${icon} | **${stage.id}** | \`${label}\` | ${s?.status ?? 'pending'} |`);
     }
     summary.push('');
-    summary.push(`[Open full visualization](${process.env.GITHUB_SERVER_URL ?? 'https://github.com'}/${process.env.GITHUB_REPOSITORY ?? ''}/actions/runs/${process.env.GITHUB_RUN_ID ?? ''}) — download the *pipeline-viz* artifact`);
+    summary.push(`See the *pipeline-viz* artifact in this run for the full interactive visualization.`);
     fs.appendFileSync(summaryPath, '\n' + summary.join('\n') + '\n');
   }
 
