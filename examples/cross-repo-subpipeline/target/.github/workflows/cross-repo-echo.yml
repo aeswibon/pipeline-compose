@@ -1,0 +1,25 @@
+name: Cross-repo echo
+on:
+  workflow_call:
+    outputs:
+      message:
+        description: Echo message
+        value: ${{ jobs.echo.outputs.message }}
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  echo:
+    runs-on: ubuntu-latest
+    outputs:
+      message: ${{ steps.out.outputs.message }}
+    steps:
+      - id: out
+        run: echo "message=hello-from-target" >> "$GITHUB_OUTPUT"
+      - uses: aeswibon/pipeline-compose-export@v1.11.0
+        if: success()
+        with:
+          stage_id: remote-echo
+          outputs: '{"message":"${{ steps.out.outputs.message }}"}'

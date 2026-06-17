@@ -1,0 +1,18 @@
+version: 2
+companion_workflows:
+  - .github/workflows/release.yml
+pipelines:
+  cross-repo:
+    context_schema:
+      type: object
+      properties:
+        remote-bundle:
+          type: object
+          properties:
+            message:
+              type: string
+    stages:
+      - id: remote-bundle
+        pipeline_file: .github/pipelines/inner.yml
+        outputs:
+          - message

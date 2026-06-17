@@ -24,5 +24,7 @@ validate_pipeline examples/compile-check/.github/pipelines/pipeline.yml examples
 validate_pipeline_loose examples/catalog-global/.github/pipelines/pipeline.yml examples/catalog-global
 validate_pipeline_loose examples/cross-repo-dispatch/.github/pipelines/pipeline.yml examples/cross-repo-dispatch \
   --repo-tokens-file examples/cross-repo-dispatch/repo-tokens.example.json
+validate_pipeline_loose examples/cross-repo-subpipeline/.github/pipelines/pipeline.yml examples/cross-repo-subpipeline \
+  --repo-tokens-file examples/cross-repo-subpipeline/repo-tokens.example.json
 
 echo "All pipeline examples validated (workflows; strict except cross-repo dispatch and catalog-global)."

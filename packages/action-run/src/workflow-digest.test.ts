@@ -54,4 +54,20 @@ describe('workflowRemoteDigest', () => {
       'refs/heads/main',
     );
   });
+
+  it('hashes remote pipeline yaml paths the same as workflows', async () => {
+    const client = {
+      getRepositoryContent: vi.fn(async () => ({
+        sha: 'abc',
+        encoding: 'base64',
+        content: Buffer.from('version: 2\n', 'utf8').toString('base64'),
+      })),
+    };
+    const digest = await workflowRemoteDigest(
+      client as never,
+      '.github/pipelines/inner.yml',
+      'refs/heads/main',
+    );
+    expect(digest).toBe(contentDigest('version: 2\n'));
+  });
 });

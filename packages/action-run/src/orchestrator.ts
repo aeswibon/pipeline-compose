@@ -83,10 +83,6 @@ async function workflowDigestForStage(
     return undefined;
   }
   if (stage.repo) {
-    // ponytail: cross-repo pipeline_file digest deferred (Contents API path TBD)
-    if (stage.pipeline_file && !stage.workflow) {
-      return undefined;
-    }
     const client = await clientForStage(repoClients, baseClient, stage, options);
     return workflowRemoteDigest(client, contentPath, options.ref);
   }

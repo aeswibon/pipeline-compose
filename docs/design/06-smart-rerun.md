@@ -48,7 +48,7 @@ All must hold:
 
 - `id`, `workflow` or `pipeline_file`, `repo`, normalized `ref`, `when`, sorted `inputs` key/value map, optional **content digest** (`workflow_digest` in payload).
 
-**Content digest (v1.9+ workflows, v1.11+ `pipeline_file`):** same-repo file hash via `workflowFileDigest`; cross-repo workflow via Contents API. Cross-repo `pipeline_file` digest deferred.
+**Content digest (v1.9+ workflows, v1.11+ `pipeline_file`):** same-repo file hash via `workflowFileDigest`; cross-repo workflow and `pipeline_file` paths via Contents API.
 
 ### State artifact
 

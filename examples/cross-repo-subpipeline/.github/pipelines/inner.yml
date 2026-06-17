@@ -1,0 +1,9 @@
+version: 2
+pipelines:
+  inner:
+    stages:
+      - id: remote-echo
+        repo: your-org/your-target-repo
+        workflow: .github/workflows/cross-repo-echo.yml
+        outputs:
+          - message

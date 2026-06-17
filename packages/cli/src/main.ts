@@ -355,6 +355,13 @@ function runInit(args: string[]): void {
         console.log(`  - ${entry}`);
       }
     }
+    if (result.dispatchHints.length > 0) {
+      console.log('');
+      console.log('repository_dispatch migration hints:');
+      for (const hint of result.dispatchHints) {
+        console.log(`  - ${hint}`);
+      }
+    }
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);

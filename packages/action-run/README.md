@@ -132,7 +132,7 @@ pipelines:
     stages: [...]
 ```
 
-The run action saves a **`pipeline-compose-rerun-state`** artifact after each wave. On re-run, stages whose fingerprint (workflow or `pipeline_file` path, ref, resolved inputs, `when`, and file content hash) matches the previous attempt reuse cached outputs instead of dispatching again. Cross-repo `workflow:` stages hash remote files via the GitHub Contents API; same-repo `pipeline_file` stages hash the nested pipeline YAML locally.
+The run action saves a **`pipeline-compose-rerun-state`** artifact after each wave. On re-run, stages whose fingerprint (workflow or `pipeline_file` path, ref, resolved inputs, `when`, and file content hash) matches the previous attempt reuse cached outputs instead of dispatching again. Cross-repo stages hash remote workflow and nested pipeline YAML via the GitHub Contents API; same-repo `pipeline_file` stages hash locally.
 
 Stages with changed inputs, edited workflow files, or missing prior outputs still dispatch normally.
 

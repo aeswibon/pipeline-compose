@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Cross-repo `pipeline_file` digest** — smart-rerun fingerprints hash remote nested pipeline YAML via the GitHub Contents API.
+- **Smarter `init`** — detects `pipeline-compose-export` outputs, emits `context_schema` stub, and surfaces `repository_dispatch` migration hints.
+- **`cross-repo-subpipeline` example** — `pipeline_file` bundle with nested cross-repo stage.
+
 ## [1.11.0] - 2026-06-16
 
 ### Added

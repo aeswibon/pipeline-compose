@@ -3,6 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, it, expect, afterEach } from 'vitest';
 import {
+  buildContextSchemaStub,
   renderInitPipelineYaml,
   scanWorkflowsForInit,
   writeInitPipeline,
@@ -61,5 +62,40 @@ describe('workflow-init', () => {
     expect(yaml).toContain('pipelines:');
     expect(yaml).toContain('needs:');
     expect(yaml).toContain('- ci');
+  });
+
+  it('detects export outputs and emits context_schema stub', () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pc-init-export-'));
+    writeWorkflow(
+      'version-sync.yml',
+      `name: Version\non:\n  workflow_dispatch:\njobs:\n  sync:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: aeswibon/pipeline-compose-export@v1.11.0\n        with:\n          stage_id: version-sync\n          outputs: '{"version":"1.0.0","skip_publish":"false"}'\n`,
+    );
+
+    const result = scanWorkflowsForInit(tmpDir);
+    expect(result.stages[0].outputs).toEqual(['skip_publish', 'version']);
+    const yaml = renderInitPipelineYaml(
+      result.stages,
+      'release',
+      buildContextSchemaStub(result.stages),
+    );
+    expect(yaml).toContain('context_schema:');
+    expect(yaml).toContain('version-sync:');
+    expect(yaml).toContain('outputs:');
+  });
+
+  it('reports repository_dispatch migration hints', () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pc-init-dispatch-'));
+    writeWorkflow(
+      'notify.yml',
+      `name: Notify\non: push\njobs:\n  dispatch:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: peter-evans/repository-dispatch@v3\n`,
+    );
+    writeWorkflow(
+      'ci.yml',
+      `name: CI\non: workflow_dispatch\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo ok\n`,
+    );
+
+    const result = scanWorkflowsForInit(tmpDir);
+    expect(result.dispatchHints.length).toBe(1);
+    expect(result.dispatchHints[0]).toContain('notify.yml');
   });
 });
