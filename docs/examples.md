@@ -62,7 +62,7 @@ jobs:
       actions: write
     steps:
       - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose-run@v1.12.0
+      - uses: aeswibon/pipeline-compose-run@v1.13.0
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           github_token: ${{ github.token }}
@@ -153,7 +153,7 @@ GitHub's REST API does not return job outputs for dispatched workflows. Upload:
 - **File:** `outputs.json` with your output keys
 
 ```yaml
-- uses: aeswibon/pipeline-compose-export@v1.12.0
+- uses: aeswibon/pipeline-compose-export@v1.13.0
   if: success()
   with:
     stage_id: my-stage

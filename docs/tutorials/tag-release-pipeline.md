@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose-run@v1.12.0
+      - uses: aeswibon/pipeline-compose-run@v1.13.0
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           github_token: ${{ github.token }}
@@ -148,7 +148,7 @@ jobs:
             exit 1
           fi
 
-      - uses: aeswibon/pipeline-compose-export@v1.12.0
+      - uses: aeswibon/pipeline-compose-export@v1.13.0
         if: success()
         with:
           stage_id: version-sync

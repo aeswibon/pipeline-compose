@@ -30,7 +30,7 @@ The installation token is scoped per repo; the action resolves the correct insta
 ## 4. Wire `pipeline-compose-run`
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.12.0
+- uses: aeswibon/pipeline-compose-run@v1.13.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}
