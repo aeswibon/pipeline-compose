@@ -15,18 +15,11 @@ export function collectCatalogStageIssues(
   }
 
   for (const [key, entry] of Object.entries(catalog)) {
-    if (!entry.workflow && !entry.pipeline_file) {
+    if (!entry.workflow && !entry.pipeline_file && !entry.run) {
       issues.push({
         level: 'error',
         code: 'catalog.invalid-entry',
-        message: `Catalog entry "${key}" must set workflow or pipeline_file`,
-      });
-    }
-    if (entry.workflow && entry.pipeline_file) {
-      issues.push({
-        level: 'error',
-        code: 'catalog.invalid-entry',
-        message: `Catalog entry "${key}" cannot set both workflow and pipeline_file`,
+        message: `Catalog entry "${key}" must set workflow, pipeline_file, or run`,
       });
     }
     if ('use' in entry && (entry as PipelineStage).use) {

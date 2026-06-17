@@ -10,3 +10,6 @@ coverage/
 
 # Local agent docs — not published
 docs/superpowers/
+
+# IDE/editor
+.cursor/

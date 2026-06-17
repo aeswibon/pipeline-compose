@@ -6,7 +6,7 @@
 
 Pipeline Compose gives you one `pipeline.yml`: ordered stages, wait-for-completion, and `context.*` wiring across repos — without Jenkins, without custom polling scripts, without leaving Actions.
 
-**Stable release:** **v1.16.0** — `validate --policy`, Rush import, Mermaid README diagrams. Cross-repo [GitHub App auth](docs/tutorials/github-app-setup.md) since v1.6.
+**Stable release:** **v1.17.0** — `pipeline-compose local`, standalone `run:` executor, pipeline state store. Cross-repo [GitHub App auth](docs/tutorials/github-app-setup.md) since v1.6.
 
 ## The problem
 
@@ -92,7 +92,7 @@ pipelines:
 **2. Export** in any stage workflow that declares `outputs:`:
 
 ```yaml
-- uses: aeswibon/pipeline-compose-export@v1.16.0
+- uses: aeswibon/pipeline-compose-export@v1.17.0
   if: success()
   with:
     stage_id: ci
@@ -102,7 +102,7 @@ pipelines:
 **3. Entry workflow** (e.g. tag push):
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.16.0
+- uses: aeswibon/pipeline-compose-run@v1.17.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
 ```

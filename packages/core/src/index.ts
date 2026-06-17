@@ -157,3 +157,13 @@ export {
 } from './import/monorepo-tasks.js';
 export type { ImportMonorepoOptions, MonorepoTaskGraph } from './import/monorepo-tasks.js';
 export { renderImportedPipelineYaml } from './import/render-import.js';
+export { formatLocalRunResult, runPipelineLocal } from './compile/local.js';
+export type { LocalRunResult, LocalStageResult } from './compile/local.js';
+export {
+  formatPipelineState,
+  listPipelineStates,
+  loadPipelineState,
+  savePipelineState,
+  STATE_DIR,
+} from './lib/pipeline-state.js';
+export type { PipelineStateRecord, StageStateRecord } from './lib/pipeline-state.js';

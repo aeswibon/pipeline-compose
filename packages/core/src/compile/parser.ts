@@ -20,6 +20,8 @@ export interface PipelineStage {
   workflow?: string;
   /** Nested pipeline YAML (mutually exclusive with workflow). */
   pipeline_file?: string;
+  /** Shell command to execute directly (alternative to workflow/pipeline_file for local/standalone). */
+  run?: string;
   /** Pipeline key inside a v2 file (required when the file defines multiple pipelines). */
   pipeline?: string;
   /** Target repository for cross-repo dispatch (owner/repo). Defaults to GITHUB_REPOSITORY. */

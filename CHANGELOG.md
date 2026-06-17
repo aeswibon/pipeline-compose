@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-06-17
+
+### Added
+
+- **`pipeline-compose local`** — run pipeline stages locally via `act`. Supports same-repo and cross-repo stages, context passing, artifact extraction, `when:` evaluation. `--workspace`, `--act`, `--artifact-dir`, `--container-image` flags.
+- **`run:` stage field** — standalone executor: shell commands instead of workflow files. Context interpolation via `${{ context.stage.key }}`, outputs via `$PIPELINE_COMPOSE_OUTPUTS` env var. No Docker/act needed.
+- **Pipeline state store** — `pipeline-compose state list/show` persists local run state to `.pipeline-compose/state/`. Auto-saved on each `local` run.
+
+### Changed
+
+- **README** — pipeline-compose local and state commands documented.
+
 ## [1.16.0] - 2026-06-17
 
 ### Added

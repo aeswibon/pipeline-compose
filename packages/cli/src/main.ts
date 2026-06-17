@@ -7,17 +7,23 @@ import {
   collectCrossRepoSlugs,
   collectRepoAccessIssues,
   evaluateExpression,
+  formatLocalRunResult,
+  formatPipelineState,
   formatSimulateReport,
   formatValidateReport,
   formatWorkflowSyncPreview,
   generateWorkflow,
+  listPipelineStates,
   loadPipelineDocumentFromFile,
   loadPipelineDocumentsFromInputs,
+  loadPipelineState,
   loadValidatePolicyFromFile,
   parseRerunState,
   previewWorkflowSync,
   renderPipelineMermaid,
+  runPipelineLocal,
   runWorkflowSync,
+  savePipelineState,
   serializeValidateReport,
   simulatePipeline,
   validatePipelineDocument,
@@ -32,6 +38,8 @@ import {
   parseTurboTaskGraph,
   renderImportedPipelineYaml,
   stagesFromMonorepoTaskGraph,
+  type LocalRunResult,
+  type PipelineStateRecord,
   type ResolvedPipeline,
   type SimulatePipelineOptions,
 } from '@aeswibon/pipeline-compose-core';
@@ -72,13 +80,27 @@ function syncUsage(): never {
 }
 
 function rootUsage(): never {
-  console.error('Usage: pipeline-compose <compile|eval|validate|sync|init|import> ...');
+  console.error('Usage: pipeline-compose <compile|eval|validate|sync|init|import|local|state> ...');
   process.exit(1);
 }
 
 function importUsage(): never {
   console.error(
     'Usage: pipeline-compose import <turbo|nx|rush> [--config <path>] [--output <path>] [--name <pipeline>] [--workflow-pattern <path>]',
+  );
+  process.exit(1);
+}
+
+function localUsage(): never {
+  console.error(
+    'Usage: pipeline-compose local <pipeline.yml> [--repo-root <path>] [--act <path>] [--workspace <path>] [--artifact-dir <path>] [--container-image <name>] [--state-dir <path>]',
+  );
+  process.exit(1);
+}
+
+function stateUsage(): never {
+  console.error(
+    'Usage: pipeline-compose state <list|show> [<pipeline-name>] [<run-id>] [--state-dir <path>]',
   );
   process.exit(1);
 }
@@ -536,6 +558,126 @@ function runImport(args: string[]): void {
   console.log('ponytail: workflow paths are placeholders; add workflows or re-point stages.');
 }
 
+function runLocal(args: string[]): void {
+  let repoRoot = '';
+  let actBinary = '';
+  let workspace = '';
+  let artifactDir = '';
+  let containerImage = '';
+  let stateDir = '';
+  const positional: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--repo-root') {
+      repoRoot = args[++i] ?? '';
+    } else if (args[i] === '--act') {
+      actBinary = args[++i] ?? '';
+    } else if (args[i] === '--workspace') {
+      workspace = args[++i] ?? '';
+    } else if (args[i] === '--artifact-dir') {
+      artifactDir = args[++i] ?? '';
+    } else if (args[i] === '--container-image') {
+      containerImage = args[++i] ?? '';
+    } else if (args[i] === '--state-dir') {
+      stateDir = args[++i] ?? '';
+    } else {
+      positional.push(args[i]);
+    }
+  }
+
+  const target = positional[0];
+  if (!target) {
+    localUsage();
+  }
+
+  const absoluteTarget = path.resolve(target);
+  if (!fs.existsSync(absoluteTarget)) {
+    console.error(`Pipeline file not found: ${target}`);
+    process.exit(1);
+  }
+
+  const pipeline = loadPipelineDocumentFromFile(absoluteTarget);
+  const resolved = validatePipelineDocument(pipeline);
+  const pipelineName = resolved.name;
+  const resolvedRoot = path.resolve(repoRoot || process.cwd());
+  const resolvedWorkspace = path.resolve(workspace || '.pipeline-compose/repos');
+  const resolvedArtifacts = path.resolve(artifactDir || '.pipeline-compose/artifacts');
+  const resolvedStateDir = path.resolve(stateDir || resolvedRoot);
+
+  const result = runPipelineLocal(
+    resolved,
+    resolvedRoot,
+    resolvedWorkspace,
+    actBinary || 'act',
+    resolvedArtifacts,
+    containerImage || 'catthehacker/ubuntu:act-latest',
+  );
+
+  console.log(formatLocalRunResult(result));
+
+  const runId = new Date().toISOString().replace(/[:.]/g, '-');
+  savePipelineState(resolvedStateDir, {
+    version: 1,
+    pipelineName,
+    runId,
+    startedAt: new Date().toISOString(),
+    completedAt: new Date().toISOString(),
+    stages: result.stages.map((s) => ({
+      id: s.id,
+      status: s.status,
+      outputs: s.outputs,
+      workflow: s.workflow,
+      repo: s.repo,
+      startedAt: new Date(Date.now() - s.durationMs).toISOString(),
+      completedAt: new Date().toISOString(),
+      durationMs: s.durationMs,
+    })),
+    success: result.success,
+  });
+
+  process.exit(result.success ? 0 : 1);
+}
+
+function runState(args: string[]): void {
+  let stateDir = '';
+  const subcommand = args[0];
+
+  for (let i = 1; i < args.length; i++) {
+    if (args[i] === '--state-dir') {
+      stateDir = args[++i] ?? '';
+    }
+  }
+
+  const resolvedDir = path.resolve(stateDir || process.cwd());
+
+  if (subcommand === 'list') {
+    const pipelineName = args[1] === '--state-dir' ? undefined : args[1];
+    const records = listPipelineStates(resolvedDir, pipelineName);
+    if (records.length === 0) {
+      console.log('No pipeline state records found.');
+      return;
+    }
+    for (const r of records) {
+      const date = r.completedAt ?? r.startedAt;
+      console.log(`  ${r.pipelineName.padEnd(20)} ${r.runId.padEnd(25)} ${date}  ${r.success ? 'PASS' : 'FAIL'}`);
+    }
+  } else if (subcommand === 'show') {
+    const pipelineName = args[1];
+    const runId = args[2];
+    if (!pipelineName || !runId) {
+      stateUsage();
+    }
+    const record = loadPipelineState(resolvedDir, pipelineName, runId);
+    if (!record) {
+      console.error(`State not found: ${pipelineName} / ${runId}`);
+      process.exit(1);
+    }
+    console.log(formatPipelineState(record));
+  } else {
+    stateUsage();
+  }
+}
+
 const [command, ...rest] = process.argv.slice(2);
 
 if (command === 'compile') {
@@ -550,6 +692,10 @@ if (command === 'compile') {
   runInit(rest);
 } else if (command === 'import') {
   runImport(rest);
+} else if (command === 'local') {
+  runLocal(rest);
+} else if (command === 'state') {
+  runState(rest);
 } else {
   rootUsage();
 }
