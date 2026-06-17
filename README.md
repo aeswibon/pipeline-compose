@@ -6,7 +6,7 @@
 
 Pipeline Compose gives you one `pipeline.yml`: ordered stages, wait-for-completion, and `context.*` wiring across repos — without Jenkins, without custom polling scripts, without leaving Actions.
 
-**Stable release:** **v1.12.0** — smarter `init`, cross-repo `pipeline_file` digest, Turbo/Nx import. Cross-repo [GitHub App auth](docs/tutorials/github-app-setup.md) since v1.6.
+**Stable release:** **v1.13.0** — `validate --check-repo-access`, GitHub App tutorial, `pr-bot` example. Cross-repo [GitHub App auth](docs/tutorials/github-app-setup.md) since v1.6.
 
 ## The problem
 

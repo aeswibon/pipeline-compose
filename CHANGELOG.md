@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-06-16
+
 ### Added
 
 - **`validate --check-repo-access`** — verifies `GITHUB_TOKEN` can read each `repo:` slug (including nested `pipeline_file` bundles).
