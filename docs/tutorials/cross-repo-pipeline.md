@@ -44,7 +44,7 @@ pipelines:
 ## Step 3 — Wire secrets in the entry workflow
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.13.0
+- uses: aeswibon/pipeline-compose-run@v1.14.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}
@@ -57,7 +57,7 @@ GitHub resolves `${{ secrets.* }}` before the action runs; the action receives p
 GitHub App alternative:
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.13.0
+- uses: aeswibon/pipeline-compose-run@v1.14.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}

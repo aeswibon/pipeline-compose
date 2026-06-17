@@ -15,7 +15,7 @@ jobs:
       deploy: ${{ steps.eval.outputs.result }}
     steps:
       - id: eval
-        uses: aeswibon/pipeline-compose-eval@v1.13.0
+        uses: aeswibon/pipeline-compose-eval@v1.14.0
         with:
           expression: startsWith(github.ref, 'refs/tags/v')
           github: ${{ toJson(github) }}
