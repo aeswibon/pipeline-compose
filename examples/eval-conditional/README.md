@@ -13,7 +13,7 @@ Copy `.github/workflows/deploy-gate.yml` into your repo.
 ## 2. Customize the expression
 
 ```yaml
-- uses: aeswibon/pipeline-compose-eval@v1.14.0
+- uses: aeswibon/pipeline-compose-eval@v1.15.0
   with:
     expression: startsWith(github.ref, 'refs/tags/v')
     github: ${{ toJson(github) }}

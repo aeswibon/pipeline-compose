@@ -83,7 +83,7 @@ pipelines:
 **2. Export** in any stage workflow that declares `outputs:`:
 
 ```yaml
-- uses: aeswibon/pipeline-compose-export@v1.14.0
+- uses: aeswibon/pipeline-compose-export@v1.15.0
   if: success()
   with:
     stage_id: ci
@@ -93,7 +93,7 @@ pipelines:
 **3. Entry workflow** (e.g. tag push):
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.14.0
+- uses: aeswibon/pipeline-compose-run@v1.15.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
 ```
