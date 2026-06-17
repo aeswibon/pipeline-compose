@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-06-17
+
 ### Added
 
 - **`validate --simulate --rerun-state`** — predicts `reuse` vs `dispatch` per stage when `smart_rerun: true` (fingerprints match prior artifact state).

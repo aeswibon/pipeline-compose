@@ -6,7 +6,7 @@
 
 Pipeline Compose gives you one `pipeline.yml`: ordered stages, wait-for-completion, and `context.*` wiring across repos — without Jenkins, without custom polling scripts, without leaving Actions.
 
-**Stable release:** **v1.14.0** — validate JSON embeds mermaid (single-pass PR bot). Cross-repo [GitHub App auth](docs/tutorials/github-app-setup.md) since v1.6.
+**Stable release:** **v1.15.0** — simulate smart-rerun column via `--rerun-state`. Cross-repo [GitHub App auth](docs/tutorials/github-app-setup.md) since v1.6.
 
 ## The problem
 
