@@ -21,7 +21,7 @@ inputs:
     description: Path embedded in compile-check job (defaults to output)
     required: false
   compile_action:
-    description: Compile action ref for compile-check job (default aeswibon/pipeline-compose-compile@v1.15.0)
+    description: Compile action ref for compile-check job (default aeswibon/pipeline-compose-compile@v1.16.0)
     required: false
   default_branch:
     description: Default branch in generated on.push.branches (default master)
