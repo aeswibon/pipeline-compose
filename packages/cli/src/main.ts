@@ -810,16 +810,14 @@ function runVisualize(args: string[]): void {
       process.exit(1);
     }
 
-    const summary = ['### Pipeline visualizer', '', `Pipeline: **${resolved.name}** — ${resolved.stages.length} stages`, '', ''];
+    const summary = ['### Pipeline visualizer', '', `Pipeline: **${resolved.name}** — ${resolved.stages.length} stages`, ''];
+    summary.push('| | Stage | Workflow | Status |');
+    summary.push('|---|---|---|---|');
     for (const stage of resolved.stages) {
       const s = state?.[stage.id];
       const icon = s?.status === 'success' ? ':white_check_mark:' : s?.status === 'failure' ? ':x:' : s?.status === 'skipped' ? ':heavy_minus_sign:' : s?.status === 'running' ? ':arrows_counterclockwise:' : ':hourglass:';
       const label = stage.workflow ?? stage.run ?? stage.pipeline_file ?? '';
       summary.push(`| ${icon} | **${stage.id}** | \`${label}\` | ${s?.status ?? 'pending'} |`);
-    }
-    if (summary.length > 3) {
-      summary.splice(3, 0, '| | Stage | Workflow | Status |');
-      summary.splice(4, 0, '|---|---|---|---|');
     }
     summary.push('');
     summary.push(`[Open full visualization](${process.env.GITHUB_SERVER_URL ?? 'https://github.com'}/${process.env.GITHUB_REPOSITORY ?? ''}/actions/runs/${process.env.GITHUB_RUN_ID ?? ''}) — download the *pipeline-viz* artifact`);
