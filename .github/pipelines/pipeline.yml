@@ -11,6 +11,7 @@ companion_workflows:
   - .github/workflows/release.yml
   - .github/workflows/smoke-cross-repo.yml
   - .github/workflows/pipeline-pr-comment.yml
+  - .github/workflows/visualize.yml
 pipelines:
   release:
     group: release

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.1] - 2026-06-18
+
+### Fixed
+
+- **pipeline validate —strict** — add `.github/workflows/visualize.yml` to `companion_workflows` so CI passes with the visualizer workflow present. (It's a standalone workflow, not a pipeline stage.)
+
+### Changed
+
+- **CI actions** — bump `actions/github-script@v7` → `@v9`, `actions/upload-artifact@v4` → `@v7` to avoid Node 20 deprecation warnings.
+
 ## [1.17.0] - 2026-06-17
 
 ### Added

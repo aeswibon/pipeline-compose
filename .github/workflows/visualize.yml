@@ -32,8 +32,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
+        id: upload-viz
         with:
           name: pipeline-viz
           path: pipeline-visualization.html
           retention-days: 30
+
+      - name: Append artifact URL to step summary
+        if: steps.upload-viz.outputs.artifact-url != ''
+        run: |
+          echo "[📊 Download pipeline visualization](${{ steps.upload-viz.outputs.artifact-url }})" >> "$GITHUB_STEP_SUMMARY"
