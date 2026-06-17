@@ -221,7 +221,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: aeswibon/pipeline-compose-run@v1.15.0
+      - uses: aeswibon/pipeline-compose-run@v1.16.0
         with:
           pipeline_file: .github/pipelines/pipeline.yml
           github_token: ${{ github.token }}
@@ -270,7 +270,7 @@ jobs:
         run: |
           echo "version=1.2.3" >> "$GITHUB_OUTPUT"
           echo "skip_publish=false" >> "$GITHUB_OUTPUT"
-      - uses: aeswibon/pipeline-compose-export@v1.15.0
+      - uses: aeswibon/pipeline-compose-export@v1.16.0
         if: success()
         with:
           stage_id: version-sync          # must match pipeline id
@@ -283,7 +283,7 @@ Full copy-paste example: [run-tag-release](https://github.com/aeswibon/pipeline-
 
 <!-- start usage -->
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.15.0
+- uses: aeswibon/pipeline-compose-run@v1.16.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}
@@ -360,7 +360,7 @@ Entry workflow needs **`permissions: statuses: write`** (and existing `actions: 
 When a stage sets `repo: other-org/other-repo`, pass tokens GitHub Actions resolves from secrets:
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.15.0
+- uses: aeswibon/pipeline-compose-run@v1.16.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}
@@ -373,7 +373,7 @@ Tutorial: [docs/tutorials/cross-repo-pipeline.md](https://github.com/aeswibon/pi
 Using a GitHub App instead of PAT map:
 
 ```yaml
-- uses: aeswibon/pipeline-compose-run@v1.15.0
+- uses: aeswibon/pipeline-compose-run@v1.16.0
   with:
     pipeline_file: .github/pipelines/pipeline.yml
     github_token: ${{ github.token }}

@@ -67,7 +67,7 @@ GitHub does **not** let you read another workflow run’s job **`outputs`**. Thi
     echo "version=1.2.3" >> "$GITHUB_OUTPUT"
     echo "skip_publish=false" >> "$GITHUB_OUTPUT"
 
-- uses: aeswibon/pipeline-compose-export@v1.15.0
+- uses: aeswibon/pipeline-compose-export@v1.16.0
   if: success()
   with:
     stage_id: version-sync
