@@ -319,9 +319,8 @@ async function runValidateAsync(args: string[]): Promise<void> {
     : undefined;
 
   if (mermaid && json) {
-    console.log(renderPipelineMermaid(report.pipeline, { issues: report.issues }));
-    console.log('');
-    console.log(serializeValidateReport(report, simulation));
+    const mermaidText = renderPipelineMermaid(report.pipeline, { issues: report.issues });
+    console.log(serializeValidateReport(report, simulation, { mermaid: mermaidText }));
     process.exit(validateReportExitCode(report));
   }
 

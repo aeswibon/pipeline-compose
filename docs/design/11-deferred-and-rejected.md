@@ -92,8 +92,8 @@ From [product growth roadmap](../superpowers/specs/product-growth-roadmap.md) an
 | Item | Why deferred |
 |------|----------------|
 | **Marketplace GitHub App** | Auth plumbing shipped BYO; product needs install UX, support, security review |
-| **PR dry-run bot / App** | `validate --simulate` + mermaid exist; meta-repo PR bot covers hosted mermaid |
-| **Mermaid in PR comments (hosted)** | Shipped via workflow bot; standalone App still deferred |
+| **PR dry-run bot / App** | `validate --simulate` + mermaid exist; **portable `examples/pr-bot/` shipped v1.13**; meta PR bot dogfoods single-pass JSON+mermaid (v1.14) |
+| **Mermaid in PR comments (hosted)** | Shipped via workflow bot + `examples/pr-bot`; standalone App still deferred |
 
 **Shipped:** per-stage **PR commit statuses** (v1.7), **remote `catalog_from`** (v1.8), **global concurrency locks** (v1.8).
 

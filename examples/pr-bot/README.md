@@ -25,3 +25,5 @@ pnpm exec tsx path/to/pipeline-compose/packages/cli/src/main.ts validate \
 
 - Change `on.pull_request.paths` to match your pipeline layout.
 - Add `--check-repo-access` in CI when `repo:` stages are present and `GITHUB_TOKEN` can read targets.
+
+The workflow runs **one** `validate --json --mermaid --simulate` invocation (mermaid is in the JSON `mermaid` field).

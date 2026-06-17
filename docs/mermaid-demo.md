@@ -16,7 +16,8 @@ pnpm run validate .github/pipelines/pipeline.yml \
 | Flag | Effect |
 |------|--------|
 | `--mermaid` | Print `flowchart TD` after validation |
-| `--json` | JSON report instead of human text (do not combine with `--mermaid`) |
+| `--json` | JSON report instead of human text |
+| `--json --mermaid` | JSON report with a `mermaid` field (single pass for PR bots) |
 | `--workflows` | Resolve workflow files under `--repo-root` |
 | `--strict` | Promote deprecation warnings to errors (matches CI) |
 
@@ -86,7 +87,7 @@ Workflow: [`.github/workflows/pipeline-pr-comment.yml`](../.github/workflows/pip
 
 **Behavior:**
 
-1. Runs `validate --workflows --strict --mermaid` and `--json`.
+1. Runs one `validate --workflows --strict --json --mermaid --simulate` invocation.
 2. Posts or updates a sticky PR comment (`<!-- pipeline-compose-pr-bot -->`) with status, the Mermaid diagram, and a bullet list of issues.
 
 Updating the pipeline file on the same PR refreshes the existing comment (same marker), it does not spam new comments.

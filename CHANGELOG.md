@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Validate JSON + mermaid** — `--json --mermaid` embeds topology in the `mermaid` field (one CLI pass).
+- **PR bot single-pass** — meta and `examples/pr-bot` use combined validate flags.
+
 ## [1.13.0] - 2026-06-16
 
 ### Added

@@ -59,7 +59,7 @@ Documented in [1.0 contracts](../specs/1.0-contracts.md). Categories:
 | **Wiring** | `context.unknown-stage`, `context.unknown-output` | error |
 | **Schema** | `context-schema.*` | error |
 | **Sub-pipeline** | `subpipeline.invalid`, `subpipeline.unknown-output` | error |
-| **Cross-repo** | `stage.cross-repo`, `stage.cross-repo-token` | warn |
+| **Cross-repo** | `stage.cross-repo`, `stage.cross-repo-token`, `repo.access-denied`, `repo.access-check-failed` | warn / error |
 | **Hygiene** | `group.path-prefix`, `group.mixed` | warn |
 | **Deprecations** | `uses.master-pin-deprecated`, `export.manual-upload-deprecated` | warn → error in strict |
 
@@ -105,7 +105,7 @@ Rendered from parsed pipeline + validation issues for node styling (error red, b
 
 ### JSON report
 
-`--json` emits machine-readable report + optional `simulation` array. Used by PR bot; mutually exclusive with `--mermaid` in CLI (two invocations in CI).
+`--json` emits machine-readable report + optional `simulation` array + optional `mermaid` when combined with `--mermaid`. Used by PR bot (single invocation).
 
 ---
 
@@ -116,6 +116,8 @@ Workflow: [`.github/workflows/pipeline-pr-comment.yml`](../../.github/workflows/
 **Triggers:** PR changes to `.github/pipelines/**` or `packages/core/schema/**`.
 
 **Posts:** mermaid topology, simulate table, issue list. Updates single comment via HTML marker `<!-- pipeline-compose-pr-bot -->`.
+
+**Validate:** one CLI invocation with `--json --mermaid --simulate` (mermaid embedded in JSON report).
 
 **Why not a GitHub App (yet):** workflow + `github-script` achieves 80% of roadmap “dry-run PR bot” without install surface—see [11](11-deferred-and-rejected.md).
 
@@ -147,7 +149,7 @@ Workflow: [`.github/workflows/pipeline-pr-comment.yml`](../../.github/workflows/
 
 - **False confidence:** simulate `run` ≠ stage workflow will succeed (only that orchestrator would dispatch).
 - **Strict orphans** annoy repos with experimental workflows—use `companion_workflows` or fix references.
-- **Dual CLI invoke** in PR bot (mermaid + json) — two parse passes; acceptable for PR frequency.
+- **Dual CLI invoke** in PR bot (mermaid + json) — **resolved v1.14:** `--json --mermaid` embeds diagram in JSON.
 
 ---
 
@@ -192,7 +194,7 @@ pnpm run validate examples/cross-repo-dispatch/.github/pipelines/pipeline.yml \
 
 ## Revisit criteria
 
-- **Single CLI pass** outputs mermaid + json together (UX).
+- ~~**Single CLI pass** outputs mermaid + json together (UX).~~ Shipped v1.14 (`mermaid` field in JSON report).
 - **Simulate includes smart rerun** column when flag set.
 - **Policy-as-code** layer maps issue codes to allow/deny per repo (platform request).
 

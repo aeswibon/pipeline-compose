@@ -216,10 +216,18 @@ describe('serializeValidateReport', () => {
     const report = buildValidateReport(samplePipeline);
     const json = JSON.parse(
       serializeValidateReport(report, [
-        { id: 'ci', status: 'run', workflow: '.github/workflows/ci.yml' },
+        { id: 'ci', status: 'run', workflow: '.github/workflows/ci.yml', wave: 1 },
       ]),
     ) as { simulation: unknown[] };
     expect(json.simulation).toHaveLength(1);
+  });
+
+  it('includes mermaid diagram when provided', () => {
+    const report = buildValidateReport(samplePipeline);
+    const json = JSON.parse(
+      serializeValidateReport(report, undefined, { mermaid: 'flowchart TD\n  ci --> deploy' }),
+    ) as { mermaid: string };
+    expect(json.mermaid).toContain('flowchart TD');
   });
 });
 

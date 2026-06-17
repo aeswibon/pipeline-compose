@@ -446,6 +446,7 @@ export function validateReportExitCode(report: ValidateReport): number {
 export function serializeValidateReport(
   report: ValidateReport,
   simulation?: import('./simulate.js').SimulateStageResult[],
+  options?: { mermaid?: string },
 ): string {
   return JSON.stringify(
     {
@@ -462,6 +463,7 @@ export function serializeValidateReport(
           pipelineKey: stage.pipelineKey,
         })),
       },
+      ...(options?.mermaid !== undefined ? { mermaid: options.mermaid } : {}),
       ...(simulation ? { simulation } : {}),
       issues: report.issues,
     },

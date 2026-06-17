@@ -31,10 +31,7 @@ jobs:
         run: |
           set +e
           pnpm exec tsx packages/cli/src/main.ts validate .github/pipelines/pipeline.yml \
-            --workflows --strict --mermaid > /tmp/pipeline-mermaid.txt
-          echo "mermaid_exit=$?" >> "$GITHUB_OUTPUT"
-          pnpm exec tsx packages/cli/src/main.ts validate .github/pipelines/pipeline.yml \
-            --workflows --strict --json --simulate --github "$SIMULATE_GITHUB" \
+            --repo-root . --workflows --strict --json --mermaid --simulate --github "$SIMULATE_GITHUB" \
             > /tmp/pipeline-report.json
           echo "report_exit=$?" >> "$GITHUB_OUTPUT"
       - name: Post PR comment
@@ -43,8 +40,8 @@ jobs:
           script: |
             const fs = require('node:fs');
             const marker = '<!-- pipeline-compose-pr-bot -->';
-            const mermaid = fs.readFileSync('/tmp/pipeline-mermaid.txt', 'utf8').trim();
             const report = JSON.parse(fs.readFileSync('/tmp/pipeline-report.json', 'utf8'));
+            const mermaid = (report.mermaid ?? '').trim();
             const ok = report.ok;
             const issues = (report.issues ?? [])
               .map((issue) => `- **${issue.level}**: ${issue.message}`)
