@@ -25,7 +25,7 @@ describe('renderPipelineHtml', () => {
     const html = renderPipelineHtml(pipeline);
     expect(html).toContain('Test');
     expect(html).toContain('mermaid');
-    expect(html).toContain('flowchart TD');
+    expect(html).toContain('flowchart LR');
     expect(html).toContain('a --&gt; b');
     expect(html).toContain('mermaid@11');
     expect(html).toContain('<!DOCTYPE html>');

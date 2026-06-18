@@ -20,7 +20,7 @@ describe('renderPipelineMermaid', () => {
     };
 
     const diagram = renderPipelineMermaid(pipeline);
-    expect(diagram).toContain('flowchart TD');
+    expect(diagram).toContain('flowchart LR');
     expect(diagram).toContain('ci["ci"]');
     expect(diagram).toContain('deploy["deploy [org/app]"]');
     expect(diagram).toContain('ci --> deploy');

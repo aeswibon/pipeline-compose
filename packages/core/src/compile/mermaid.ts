@@ -125,7 +125,7 @@ export function renderPipelineMermaid(
   const issues = options.issues ?? [];
   const errorsByStage = errorStageIds(issues);
   const blockedByStage = blockedStageIds(pipeline, errorsByStage);
-  const lines: string[] = ['flowchart TD'];
+  const lines: string[] = ['flowchart LR'];
   const stageIds = new Set(pipeline.stages.map((stage) => stage.id));
   let hasErrorStyle = false;
   let hasBlockedStyle = false;

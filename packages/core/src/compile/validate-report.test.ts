@@ -225,9 +225,9 @@ describe('serializeValidateReport', () => {
   it('includes mermaid diagram when provided', () => {
     const report = buildValidateReport(samplePipeline);
     const json = JSON.parse(
-      serializeValidateReport(report, undefined, { mermaid: 'flowchart TD\n  ci --> deploy' }),
+      serializeValidateReport(report, undefined, { mermaid: 'flowchart LR\n  ci --> deploy' }),
     ) as { mermaid: string };
-    expect(json.mermaid).toContain('flowchart TD');
+    expect(json.mermaid).toContain('flowchart LR');
   });
 });
 

@@ -13,10 +13,10 @@ export interface StageState {
 }
 
 const STATUS_COLORS: Record<string, { fill: string; stroke: string; label: string }> = {
-  success: { fill: '#dafbe1', stroke: '#2da44e', label: 'success' },
-  failure: { fill: '#ffebe9', stroke: '#cf222e', label: 'failure' },
-  skipped: { fill: '#f6f8fa', stroke: '#8b949e', label: 'skipped' },
-  running: { fill: '#ddf4ff', stroke: '#0969da', label: 'running' },
+  success: { fill: '#ffffff', stroke: '#2da44e', label: 'success' },
+  failure: { fill: '#ffffff', stroke: '#cf222e', label: 'failure' },
+  skipped: { fill: '#ffffff', stroke: '#8b949e', label: 'skipped' },
+  running: { fill: '#ffffff', stroke: '#0969da', label: 'running' },
 };
 
 function nodeId(id: string): string {
@@ -44,7 +44,7 @@ export function renderPipelineHtml(
     const assignments: string[] = [];
 
     for (const [status, colors] of Object.entries(STATUS_COLORS)) {
-      classDefs.push(`  classDef ${status} fill:${colors.fill},stroke:${colors.stroke},stroke-width:3px,color:#1f2328`);
+      classDefs.push(`  classDef ${status} fill:${colors.fill},stroke:${colors.stroke},stroke-width:2px,color:#1f2328`);
     }
 
     for (const stage of pipeline.stages) {

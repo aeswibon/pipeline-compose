@@ -826,7 +826,7 @@ function runVisualize(args: string[]): void {
       skipped: { fill: '#f6f8fa', stroke: '#8b949e' },
       running: { fill: '#ddf4ff', stroke: '#0969da' },
     })) {
-      classDefs.push(`  classDef ${status} fill:${css.fill},stroke:${css.stroke},stroke-width:3px,color:#1f2328`);
+      classDefs.push(`  classDef ${status} fill:${css.fill},stroke:${css.stroke},stroke-width:2px,color:#1f2328`);
     }
     for (const stage of resolved.stages) {
       const s = state?.[stage.id];
