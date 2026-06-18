@@ -25,9 +25,8 @@ describe('renderPipelineHtml', () => {
     const html = renderPipelineHtml(pipeline);
     expect(html).toContain('Test');
     expect(html).toContain('<svg');
-    expect(html).toContain('stroke="#d0d7de"');
-    expect(html).toContain('>a</text>');
-    expect(html).toContain('>b</text>');
+    expect(html).toContain('>a</span>');
+    expect(html).toContain('>b</span>');
     expect(html).toContain('<!DOCTYPE html>');
   });
 
@@ -46,8 +45,8 @@ describe('renderPipelineHtml', () => {
 
     expect(html).toContain('#2da44e');
     expect(html).toContain('#cf222e');
-    expect(html).toContain('d="M4 8l3 3 5-5"');
-    expect(html).toContain('d="M4 4l8 8M12 4l-8 8"');
+    expect(html).toContain('bar" style="background:#2da44e');
+    expect(html).toContain('bar" style="background:#cf222e');
   });
 
   it('summarizes state counts', () => {
