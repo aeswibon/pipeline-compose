@@ -689,6 +689,10 @@ function runState(args: string[]): void {
   }
 }
 
+function currentRepo(): string | undefined {
+  return process.env.GITHUB_REPOSITORY || undefined;
+}
+
 function fetchLiveState(
   pipeline: ResolvedPipeline,
 ): Record<string, StageState> {
@@ -697,9 +701,11 @@ function fetchLiveState(
   // ponytail: per-(repo,workflow) API call, cached in-memory to avoid duplicates
   const byRepo = new Map<string, Map<string, string>>();
   for (const stage of pipeline.stages) {
-    if (!stage.repo || !stage.workflow) continue;
-    if (!byRepo.has(stage.repo)) byRepo.set(stage.repo, new Map());
-    byRepo.get(stage.repo)!.set(stage.workflow, stage.id);
+    if (!stage.workflow) continue;
+    const repo = stage.repo || currentRepo();
+    if (!repo) continue;
+    if (!byRepo.has(repo)) byRepo.set(repo, new Map());
+    byRepo.get(repo)!.set(stage.workflow, stage.id);
   }
 
   const cache = new Map<string, 'success' | 'failure' | 'running' | 'skipped' | undefined>();
@@ -810,17 +816,51 @@ function runVisualize(args: string[]): void {
       process.exit(1);
     }
 
-    const summary = ['### Pipeline visualizer', '', `Pipeline: **${resolved.name}** — ${resolved.stages.length} stages`, ''];
-    summary.push('| | Stage | Workflow | Status |');
-    summary.push('|---|---|---|---|');
+    // Build mermaid source with status class defs
+    const mermaidLines = renderPipelineMermaid(resolved).split('\n');
+    const classDefs: string[] = [];
+    const assignments: string[] = [];
+    for (const [status, css] of Object.entries({
+      success: { fill: '#dafbe1', stroke: '#2da44e' },
+      failure: { fill: '#ffebe9', stroke: '#cf222e' },
+      skipped: { fill: '#f6f8fa', stroke: '#8b949e' },
+      running: { fill: '#ddf4ff', stroke: '#0969da' },
+    })) {
+      classDefs.push(`  classDef ${status} fill:${css.fill},stroke:${css.stroke},stroke-width:2px`);
+    }
     for (const stage of resolved.stages) {
       const s = state?.[stage.id];
-      const icon = s?.status === 'success' ? ':white_check_mark:' : s?.status === 'failure' ? ':x:' : s?.status === 'skipped' ? ':heavy_minus_sign:' : s?.status === 'running' ? ':arrows_counterclockwise:' : ':hourglass:';
-      const label = stage.workflow ?? stage.run ?? stage.pipeline_file ?? '';
-      summary.push(`| ${icon} | **${stage.id}** | \`${label}\` | ${s?.status ?? 'pending'} |`);
+      if (s) assignments.push(`  class ${stage.id.replace(/[^a-zA-Z0-9_]/g, '_')} ${s.status}`);
     }
-    summary.push('');
-    summary.push(`See the *pipeline-viz* artifact in this run for the full interactive visualization.`);
+    if (assignments.length > 0) {
+      mermaidLines.push('', ...classDefs, ...assignments);
+    }
+
+    const summary = [
+      '## Pipeline Visualizer',
+      '',
+      `**${resolved.name}** — ${resolved.stages.length} stages`,
+      '',
+      '```mermaid',
+      ...mermaidLines,
+      '```',
+      '',
+      '### Status',
+      '',
+      '| Stage | Status |',
+      '|---|---|',
+    ];
+    for (const stage of resolved.stages) {
+      const s = state?.[stage.id];
+      const icon = s?.status === 'success' ? ':white_check_mark:'
+        : s?.status === 'failure' ? ':x:'
+        : s?.status === 'skipped' ? ':heavy_minus_sign:'
+        : s?.status === 'running' ? ':arrows_counterclockwise:'
+        : ':hourglass:';
+      const label = stage.workflow ?? stage.run ?? stage.pipeline_file ?? '';
+      summary.push(`| **${stage.id}**${label ? `<br>\`${label}\`` : ''} | ${icon} ${s?.status ?? 'pending'} |`);
+    }
+
     fs.appendFileSync(summaryPath, '\n' + summary.join('\n') + '\n');
   }
 
