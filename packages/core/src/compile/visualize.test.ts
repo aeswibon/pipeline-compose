@@ -13,7 +13,7 @@ function mkStage(overrides: Partial<ResolvedStage> & { id: string }): ResolvedSt
 }
 
 describe('renderPipelineHtml', () => {
-  it('renders a simple pipeline as mermaid', () => {
+  it('renders a simple pipeline as SVG DAG', () => {
     const pipeline: ResolvedPipeline = {
       name: 'Test',
       stages: [
@@ -24,10 +24,10 @@ describe('renderPipelineHtml', () => {
 
     const html = renderPipelineHtml(pipeline);
     expect(html).toContain('Test');
-    expect(html).toContain('mermaid');
-    expect(html).toContain('flowchart LR');
-    expect(html).toContain('a --&gt; b');
-    expect(html).toContain('mermaid@11');
+    expect(html).toContain('<svg');
+    expect(html).toContain('stroke="#d0d7de"');
+    expect(html).toContain('>a</text>');
+    expect(html).toContain('>b</text>');
     expect(html).toContain('<!DOCTYPE html>');
   });
 
@@ -44,10 +44,10 @@ describe('renderPipelineHtml', () => {
       state: { pass: { status: 'success' }, fail: { status: 'failure' } },
     });
 
-    expect(html).toContain('classDef success');
-    expect(html).toContain('classDef failure');
-    expect(html).toContain('class pass success');
-    expect(html).toContain('class fail failure');
+    expect(html).toContain('#2da44e');
+    expect(html).toContain('#cf222e');
+    expect(html).toContain('d="M4 8l3 3 5-5"');
+    expect(html).toContain('d="M4 4l8 8M12 4l-8 8"');
   });
 
   it('summarizes state counts', () => {
@@ -65,10 +65,10 @@ describe('renderPipelineHtml', () => {
       state: { a: { status: 'success' }, b: { status: 'failure' }, c: { status: 'skipped' }, d: { status: 'running' } },
     });
 
-    expect(html).toContain('success');
-    expect(html).toContain('failed');
-    expect(html).toContain('skipped');
-    expect(html).toContain('running');
+    expect(html).toContain('1 success');
+    expect(html).toContain('1 failed');
+    expect(html).toContain('1 skipped');
+    expect(html).toContain('1 running');
     expect(html).toContain('4 stages · 1 success · 1 failed · 1 skipped · 1 running');
   });
 });
