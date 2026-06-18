@@ -44,7 +44,7 @@ export function renderPipelineHtml(
     const assignments: string[] = [];
 
     for (const [status, colors] of Object.entries(STATUS_COLORS)) {
-      classDefs.push(`  classDef ${status} fill:${colors.fill},stroke:${colors.stroke},stroke-width:2px`);
+      classDefs.push(`  classDef ${status} fill:${colors.fill},stroke:${colors.stroke},stroke-width:3px,color:#1f2328`);
     }
 
     for (const stage of pipeline.stages) {
